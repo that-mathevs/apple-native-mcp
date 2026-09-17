@@ -1,6 +1,10 @@
 MIT License
 
+Copyright (c) 2026 Matthew Ernewein
 Copyright (c) 2025 Dhravya Shah
+
+This project is a rewrite of apple-mcp (github.com/supermemoryai/apple-mcp), whose
+copyright notice is kept above.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

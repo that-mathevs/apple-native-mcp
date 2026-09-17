@@ -1,45 +1,56 @@
-# apple-mcp Development Guidelines
+# apple-native-mcp
+
+An MCP server that gives an agent safe, reliable access to the user's own data in the
+native macOS apps: Calendar, Reminders, Contacts, Messages, Notes and Mail.
+
+It is a rewrite of the archived [supermemoryai/apple-mcp](https://github.com/supermemoryai/apple-mcp).
+None of that code survives. Read [`plan.md`](plan.md) before doing anything: its
+**Non-negotiables** apply to every change, and the phases say what is being built and in
+what order.
 
 ## Commands
-- `bun run dev` - Start the development server
-- No specific test or lint commands defined in package.json
 
-## Code Style
+- `npm run spec` — the whole suite. `npm run spec:watch` while working.
+- `npm run typecheck` — `tsc --noEmit`.
+- `npm run lint` — ESLint, type-aware.
+- `npm run check` — all three, as CI runs them.
 
-### TypeScript Configuration
-- Target: ESNext
-- Module: ESNext
-- Strict mode enabled
-- Bundler module resolution
+Node 24 or newer. CI runs on a macOS runner.
 
-### Formatting & Structure
-- Use 2-space indentation (based on existing code)
-- Keep lines under 100 characters
-- Use explicit type annotations for function parameters and returns
+## How we work
 
-### Naming Conventions
-- PascalCase for types, interfaces and Tool constants (e.g., `CONTACTS_TOOL`)
-- camelCase for variables and functions
-- Use descriptive names that reflect purpose
+**BDD, outside in.** The suite is the specification: printing the test names has to read
+as a document that teaches a stranger what the server does and what it refuses to do. Use
+the `bdd` skill for what a test says and the `tdd` skill for the red → green → refactor
+loop. No code exists without a scenario asking for it.
 
-### Imports
-- Use ESM import syntax with `.js` extensions
-- Organize imports: external packages first, then internal modules
+**The glossary comes first.** `CONTEXT.md` holds the project's words — handle, chat,
+buddy, account, calendar, event, occurrence, reminder list, note folder, mailbox. Every
+test name and every exported identifier uses them. A scenario that needs a word the
+glossary lacks stops until the word is agreed.
 
-### Error Handling
-- Use try/catch blocks around applescript execution and external operations
-- Return both success status and detailed error messages
-- Check for required parameters before operations
+**Write the reason into the scenario.** Where a rule exists because of a real failure,
+name the upstream issue or fork commit in a one-line comment above it.
 
-### Type Safety
-- Define strong types for all function parameters 
-- Use type guard functions for validating incoming arguments
-- Provide detailed TypeScript interfaces for complex objects
+## Architecture
 
-### MCP Tool Structure
-- Follow established pattern for creating tool definitions
-- Include detailed descriptions and proper input schema
-- Organize related functionality into separate utility modules
+Ports and adapters, laid out in [`src/README.md`](src/README.md). The layers are not a
+convention: they are dependency rules in `.dependency-cruiser.mjs`, each one specified by
+a scenario in `spec/architecture/dependency-rules.spec.ts` that cruises a fixture tree
+breaking it. There are no boundary or lint exceptions.
+
+Decisions that shape the code are ADRs in [`docs/adr/`](docs/adr). The scenario backlog
+drawn from every fork and upstream issue is
+[`docs/research/findings.md`](docs/research/findings.md).
+
+## Code style
+
+- TypeScript, ESM, `.js` extensions on relative imports, `node:` prefix on builtins.
+- Explicit return types on exported functions. Types over interfaces unless extending.
+- Two-space indent, lines under 100 characters, double quotes.
+- Name things with the glossary's words, not the framework's.
+- Errors are named failures a caller can act on, never a bare string. A missing macOS
+  permission says which setting to change and where.
 
 ## Agent skills
 
