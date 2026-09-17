@@ -192,9 +192,8 @@ refused, naming the contact rather than the handle.
 _Avoid_: mismatch, bad number
 
 **Name resolution**:
-What a name comes to: one person, several, unknown, or unavailable when Contacts can't be read. How a
-send may name its recipient is still open
-([#17](https://github.com/that-mathevs/apple-native-mcp/issues/17)).
+What a name comes to: one person, several, unknown, or unavailable when Contacts can't be read. A
+send needs exactly one; anything else is refused.
 _Avoid_: lookup, matching
 
 ### Notes
