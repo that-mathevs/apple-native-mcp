@@ -234,7 +234,7 @@
 - **Evidence:** `96759b3`; upstream #62 (can't read messages)
 - **Quality of the fix:** partial. It merges every chat the handle belongs to (1:1 and every
   group) into one list, so "a chat" isn't a unit the agent can address. The date filter compares
-  local-time strings. The `better-sqlite3` native addon forced the build switch in C22.
+  local-time strings. The `better-sqlite3` native addon forced the build switch in C30.
   `node:sqlite` avoids that.
 - **Verdict:** adopt the idea (read-only, prepared statements, chat-centred joins, tapback
   filter, Apple epoch in nanoseconds, attachments listed). Reject merging all of a handle's
@@ -718,8 +718,9 @@
   (invoice/receipt heuristics) to keep the server generic.
 - **Evidence:** `db82ca5`, `e64a658`, `de6b9f6`
 - **Quality of the fix:** partial. `exportDirectory` is any path the process can write, so a
-  prompt-injected call can put attacker-supplied attachment bytes anywhere under `$HOME`. It is
-  undownloaded attachments are reported as exported whenever `Mail.save` doesn't throw.
+  prompt-injected call can put attacker-supplied attachment bytes anywhere under `$HOME`.
+  Attachments that were never downloaded are reported as exported whenever `Mail.save` doesn't
+  throw.
 - **Verdict:** out of v1 scope. If revisited, reject caller-chosen directories: export only
   into a configured folder.
 - **Scenarios:**
@@ -807,7 +808,7 @@
   findable; create into a missing folder errors; scoped notes ≤ all notes; a missing account
   throws; an unsupported mailbox op says "unsupported". `tests/basic.test.ts` asserts
   `1 + 1`.
-- **Evidence:** `bcb1357`, `97d5918`, `d76f3ec`, `a8283e2`, `a977f72`, `5c01104`, `05d1658`
+- **Evidence:** `97d5918`, `d76f3ec`, `a8283e2`, `a977f72`, `5c01104`, `05d1658`
 - **Quality of the fix:** partial. Behaviour is almost never specified. The unit tests would pass
   with the injections in C3–C5 and fail on a harmless refactor. The cleanup helpers delete
   *every* note, folder, list or event with a matching name on the user's real data.
@@ -858,7 +859,7 @@
 - **Technique:** Maps functions rewritten over `executeJXA` with escaped literals. Search opens
   `maps://?q=`, waits 2 s, and reads `selectedLocation()`. **When nothing is selected it returns
   a success with a made-up location named after the query.** Web search re-indented only.
-- **Evidence:** `1074bb8`, `d76f3ec`, `5fa172e`
+- **Evidence:** `d76f3ec`, `5fa172e` (re-indentation in `1074bb8` is listed under Noise)
 - **Quality of the fix:** wrong for Maps (a fabricated result)
 - **Verdict:** out of v1 scope
 - **Scenarios:**
@@ -884,10 +885,9 @@
 - Docs, plans, reference files (Mail `.sdef` dump, "apple-map-plan" that is really a mail plan,
   function catalog, AGENTS.md "keep the server generic" note), README fix: `a8c8ab2`, `00741ac`,
   `0fedf0e`, `e9146c7`, `f2ddfdf`, `36f0fed`
-- Re-indentation of every util, lint script: `1074bb8` (also listed under C32 as the Maps/web
-  search touch)
+- Re-indentation of every util, lint script: `1074bb8`
 - Commented out `console.log` inside JXA calendar scripts: `0ec1adc`
-- ESLint setup and a `1 + 1` placeholder test: `bcb1357` (also cited under C29)
+- ESLint setup and a `1 + 1` placeholder test: `bcb1357`
 
 ## Glossary candidates
 
