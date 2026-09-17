@@ -122,6 +122,11 @@ The `bdd` skill decides what tests say. The `tdd` skill (red → green → refac
 
 **Exit:** CI is green on an empty skeleton, and a failing boundary rule shows up as a CI failure.
 
+_Done 2026-09-17, except the Swift helper: CI cannot build `native/` until Phase 2 creates
+it, tracked as [#28](https://github.com/that-mathevs/apple-native-mcp/issues/28). The
+boundary rules are scenarios in `spec/architecture/dependency-rules.spec.ts`, each cruising
+a fixture tree that breaks the rule, rather than a separate `boundaries` script._
+
 ## Phase 1: go through the forks
 
 Output is research only. No product code.
