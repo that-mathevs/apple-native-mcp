@@ -3,8 +3,9 @@
 An MCP server that gives an agent safe, reliable access to the user's own data in the
 native macOS apps: Calendar, Reminders, Contacts, Messages, Notes and Mail.
 
-It is a rewrite of the archived [supermemoryai/apple-mcp](https://github.com/supermemoryai/apple-mcp).
-None of that code survives. Read [`plan.md`](plan.md) before doing anything: its
+It is a rewrite of the archived
+[supermemoryai/apple-mcp](https://github.com/supermemoryai/apple-mcp). None of that code
+survives. Read [`plan.md`](plan.md) before doing anything: its
 **Non-negotiables** apply to every change, and the phases say what is being built and in
 what order.
 
@@ -47,7 +48,8 @@ drawn from every fork and upstream issue is
 
 - TypeScript, ESM, `.js` extensions on relative imports, `node:` prefix on builtins.
 - Explicit return types on exported functions. Types over interfaces unless extending.
-- Two-space indent, lines under 100 characters, double quotes.
+- Two-space indent, double quotes, and lines under 100 characters in code. Prose and
+  Markdown tables wrap where they read best.
 - Name things with the glossary's words, not the framework's.
 - Errors are named failures a caller can act on, never a bare string. A missing macOS
   permission says which setting to change and where.

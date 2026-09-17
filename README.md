@@ -14,12 +14,17 @@ send messages and create events. Around 25 forks each fixed a piece of it, and n
 brought the fixes together. This project collects what those forks learned and rebuilds
 the server from scratch, crediting every fork whose idea it adopts.
 
-## What "safe" means here
+## What "safe" will mean here
+
+These are the rules the rewrite is being built to, and the specs are written before the
+code that satisfies them. None of it works yet.
 
 - **Tool input is hostile.** Nothing that reaches a tool is ever spliced into a script, a
-  shell command or a SQL string. Scripts are static files that take JSON arguments, SQL is
-  always a prepared statement, and there is no shell anywhere — a dependency rule fails the
-  build if a module so much as imports `node:child_process`.
+  shell command or a SQL string. Scripts are static files that take JSON arguments, and SQL
+  is always a prepared statement. The one process the server starts is its own signed
+  helper, launched by path with an argument list: a dependency rule already fails the build
+  if any other module imports `node:child_process`, or if any module at all imports a
+  package that builds a command line.
 - **Read-only by default.** Every capability that writes is off until you turn it on, and
   sending a message or an email asks you to confirm that send.
 - **Results tell the truth.** A tool reports success only after checking the store, and

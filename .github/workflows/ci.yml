@@ -11,8 +11,9 @@ concurrency:
 
 jobs:
   check:
-    # macOS, because the specs that need a real Mac live in the same suite as the ones
-    # that don't, and the Swift helper only builds here.
+    # macOS because the Swift helper only builds here. The contract specs that need a
+    # real Mac are not part of this run: a hosted runner cannot grant the permissions
+    # they need, so they stay on a maintainer's Mac (plan.md, "Three kinds of spec").
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v5

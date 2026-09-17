@@ -64,22 +64,37 @@ export default {
       },
     },
     {
-      name: "only-main-wires-everything",
+      name: "nothing-imports-the-composition-root",
       comment:
         "main.ts is the composition root: the one place adapters meet use cases. " +
-        "Nothing imports it, so nothing can borrow its wiring.",
+        "It is the only module exempt from the rules above, so nothing may import it " +
+        "and borrow that exemption.",
       severity: "error",
       from: { pathNot: "(?:^|/)src/main\\.ts$" },
       to: { path: "(?:^|/)src/main\\.ts$" },
     },
     {
-      name: "no-shell-anywhere",
+      name: "only-the-helper-launcher-starts-a-process",
       comment:
-        "Hostile tool input must never reach a shell. Scripts are static files run " +
-        "with JSON arguments, so nothing in the server spawns a command line.",
+        "Hostile tool input must never reach a shell. The server starts exactly one " +
+        "process, the signed Swift helper, launched by path with an argument list " +
+        "(ADR-0002, ADR-0003). Only the adapter that owns that launch may import " +
+        "child_process; anywhere else it is a way to run a command line.",
+      severity: "error",
+      from: { path: "(?:^|/)src/", pathNot: "(?:^|/)src/adapters/native/" },
+      to: { path: "^(?:node:)?child_process$" },
+    },
+    {
+      name: "nothing-runs-a-command-line",
+      comment:
+        "The packages that build a command line out of strings, or run AppleScript " +
+        "by handing text to osascript, are how upstream's injection hole was reached. " +
+        "Not even the helper launcher may import one.",
       severity: "error",
       from: { path: "(?:^|/)src/" },
-      to: { path: "^(?:node:)?child_process$" },
+      to: {
+        path: "^(?:execa|zx|shelljs|cross-spawn|child-process-promise|run-applescript|@jxa/run)$",
+      },
     },
     {
       name: "no-circular-imports",
@@ -91,7 +106,6 @@ export default {
   ],
   options: {
     doNotFollow: { path: "(?:^|/)node_modules/" },
-    exclude: { path: "(?:^|/)node_modules/" },
     tsPreCompilationDeps: true,
     enhancedResolveOptions: {
       extensions: [".ts", ".js"],
