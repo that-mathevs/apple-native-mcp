@@ -19,7 +19,7 @@ _Avoid_: database, backend, provider
 **Capability**:
 A group of operations the user switches on together, such as sending messages. A **write
 capability** covers anything that changes a store or reaches another person, and is off until
-configured. Settings are still open ([#19](https://github.com/that-mathevs/apple-native-mcp/issues/19)).
+configured, and is set only in the client's configuration.
 _Avoid_: scope, permission (that word is macOS's), toggle, app switch
 
 **Confirmation**:
@@ -62,8 +62,8 @@ A result that stopped at a limit is **truncated**, and says so.
 _Avoid_: partial, incomplete, scan window
 
 **Index and detail**:
-An index lists many items briefly; a detail read returns one item in full. The exact result shape is
-still open ([#22](https://github.com/that-mathevs/apple-native-mcp/issues/22)).
+An index lists many items briefly; a detail read returns one item in full. Both are records, never
+prose.
 _Avoid_: summary, preview (except a note preview), listing
 
 **Helper**:
@@ -122,9 +122,8 @@ _Avoid_: list (bare), calendar, folder
 
 **Reminder**:
 An item in a reminder list with a title, notes, a completion state, an optional due date and a
-priority. It is **open** until it is **completed**. Which identifier addresses it is still open
-([#20](https://github.com/that-mathevs/apple-native-mcp/issues/20) and the verification in
-`findings.md`).
+priority. It is **open** until it is **completed**. Which of EventKit's identifiers addresses it
+waits on the verification REM-V6 in `findings.md`.
 _Avoid_: task, to-do, incomplete, done, body, description
 
 **Due date and due time**:
