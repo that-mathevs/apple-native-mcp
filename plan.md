@@ -180,7 +180,7 @@ Each context is a series of vertical slices taken from the Phase 1 backlog. Read
 2. **Reminders:** lists, search, create with a due time. Upstream #64, #34, #53, #26, #10, #59, #27.
 3. **Contacts:** find by name, phone and email. Returns every kind of contact detail. Messages depends on it. Upstream #75, #65, #58, #47.
 4. **Messages (read):** recent chats, a chat's messages, unread, with attachments listed. Upstream #62, #3.
-5. **Messages (send):** confirmed and verified, known recipients only, then scheduled sends. Upstream #48, #24, #66.
+5. **Messages (send):** confirmed and verified, known recipients only, iMessage only. Upstream #48, #24, #66. _Scheduled sends and SMS/RCS sends are out of v1, settled in [#18](https://github.com/that-mathevs/apple-native-mcp/issues/18); that ticket also fixes v1's write list to this section's creates._
 6. **Notes:** list, search the full note content, create, update without losing formatting (KassebaumEngineering "refuses lossy rewrites"). Upstream #67, #44, #27, #22.
 7. **Mail:** accounts and mailboxes, search, latest, drafts, then send (confirmed). Upstream #69, #58, #51, #30, #19, PRs #73, #68.
 
