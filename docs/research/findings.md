@@ -24,7 +24,15 @@ no personal data is copied from the reports, and every example is invented.
     then.
   - The checkbox is ticked when the slice is built (plan.md Phase 3).
 - **Conflicts** (`X-Cn`) list each option with its sources, a recommendation, and whether a human has
-  to decide. "Owned by #n" points at the open ticket that already carries the question.
+  to decide. "Owned by #n" points at the open ticket that already carries the question. A conflict a
+  closed ticket has answered carries **Settled by #n** with the answer, in place of the
+  "Needs a human decision" line.
+- **A scenario a closed decision overtook** keeps its id and is marked in place, never deleted:
+  - **rejected by #n** and no checkbox means the decision chose against it, with the reason.
+  - _No tool in v1 (#18)_ under a subject means the whole operation is outside v1, so it has no tool
+    at all — not in `tools/list`, not in any description — and its scenarios wait for whenever it is
+    pulled in. They still count as backlog.
+  - An operation a decision put outside v1 altogether moves to **Out of scope**, with its id.
 - **Verification tasks** (`X-Vn`) state a claim, where it comes from, and what would prove or
   disprove it on a real Mac. Tags: *(permission prompts)* for what #4 left open; *(evidence only)*
   for claims that only explain a fork's or upstream's failure, so nothing is built on them; *(only
@@ -32,45 +40,59 @@ no personal data is copied from the reports, and every example is invented.
   under their tickets, #6 and #7, not repeated as tasks. "Same claim as" marks a duplicate kept once.
 - **Settled decisions respected here:** one tool per operation (#13, ADR-0001), macOS 14 or later
   (#14), v1 is the six contexts over stdio only (map #1), permission-prompt attribution (#4) and the
-  elicitation facts (#5).
+  elicitation facts (#5). Since the merge, also: the signed helper at a fixed path (#8, ADR-0002,
+  ADR-0003), elicitation for every send (#9, ADR-0004), the known-recipient rule (#16, ADR-0005),
+  how a recipient is named (#17), v1's six writes (#18), where settings live (#19), the four
+  defaults (#20), the typedstream decoder (#21), records not prose (#22, ADR-0006), and one search
+  grammar (#24).
 
 ## Summary
 
 | Group | Scenarios | Required by an NN | Conflicts | Need a human | Verification tasks |
 |---|---|---|---|---|---|
-| Calendar | 93 | 19 | 11 | 4 | 14 (2 evidence only, 3 permission prompts) |
-| Reminders | 66 | 22 | 11 | 2 | 18 (7 evidence only, 3 permission prompts) |
-| Contacts | 55 | 28 | 8 | 2 | 11 (2 evidence only, 2 permission prompts) |
-| Messages | 95 | 48 | 13 | 5 | 15 (2 permission prompts, 1 of them a duplicate) |
+| Calendar | 92 | 19 | 11 | 1 | 14 (2 evidence only, 3 permission prompts) |
+| Reminders | 66 | 22 | 11 | 0 | 18 (7 evidence only, 3 permission prompts) |
+| Contacts | 55 | 28 | 8 | 0 | 11 (2 evidence only, 2 permission prompts) |
+| Messages | 99 | 52 | 13 | 0 | 13 (2 permission prompts, 1 of them a duplicate) |
 | Notes | 65 | 19 | 12 | 4 | 1 duplicate of X-V5, plus 16 claims for #6 |
-| Mail | 109 | 34 | 16 | 7 | 10 (3 duplicates, 3 only if in scope), plus 16 claims for #7 |
-| Cross-cutting | 71 | 35 | 20 | 7 | 12 (2 duplicates, 1 evidence only, 2 permission prompts) |
-| **Total** | **554** | **205** | **91** | **31** | **81** |
+| Mail | 107 | 36 | 16 | 3 | 10 (3 duplicates, 3 only if in scope), plus 16 claims for #7 |
+| Cross-cutting | 92 | 54 | 20 | 0 | 12 (2 duplicates, 1 evidence only, 2 permission prompts) |
+| **Total** | **576** | **230** | **91** | **8** | **79** |
 
-Out of scope parks 11 more scenarios. Rejected lists 137 report entries.
+Out of scope parks 17 more scenarios, 6 of them moved out of the backlog by #18 and #19. Six
+scenarios are **rejected in place** by a closed decision and don't count above: CAL-42 (#20),
+CON-37 (#17), MSG-45 (#17), MSG-60 (#17), MSG-83 (#24) and MAIL-38 (#24). Rejected lists 137 report
+entries.
+
+The threat-to-scenario mapping in [`docs/security-coverage.md`](../security-coverage.md) reads this
+backlog and is where the 34 scenarios added for #26 came from.
 
 ## Open decisions
 
-Conflicts that need a human, merged where several groups ask the same question. Those already
-owned by an open ticket come last.
+Eight conflicts still need a human. Every one of them waits on a mechanism ticket that is still
+open, and each names its ticket in the group above.
 
-- **Known recipients** (map fog "The known-recipient rule", "Settings"): MSG-C5, MAIL-C12, X-C3
-  (who counts as known for a message and for an email, and how an allowlist combines with it);
-  CON-C2 (whether a bare national number may be read in the user's region, against MSG-C4's
-  region-independent match); MSG-C6 (whether a send accepts names at all).
-- **Settings** (map fog "Settings"): X-C2 (capability granularity, where settings live); CAL-C3 (the
-  calendar for a new event when none is named); CAL-C10 (which calendars the agent sees by default).
-- **Scope:** X-C20 with CON-C7 (writes beyond plan.md's Phase 3 list); MSG-C9 (scheduled sends).
-- **Decoding attributedBody** (map fog): MSG-C1 (write a typedstream decoder or adopt one).
-- **Threats to scenarios** (map fog): X-C6 (tool results as prose or as structured records).
-- **Tool surface and glossary:** CAL-C7 (default range length); REM-C4 (whether a plain reminder
-  listing shows completed reminders); REM-C9 (whether a due time also sets an alert, only if REM-V4
-  fails); NOT-C6 (a note's title as a field or as the body's first line, with #11); MAIL-C4 (a mail
-  search with no window: default window or refusal, only if #7 picks a slow mechanism); MAIL-C10
-  (one search-query grammar for Mail and Messages, with #11); X-C19 (which app a permission failure
-  names, depends on #8).
-- **Owned by open tickets:** #6 (NOT-C1, NOT-C5, NOT-C11); #7 (MAIL-C1, MAIL-C7, MAIL-C9); #8
-  (X-C13); #9 (MSG-C8, MAIL-C11, X-C4); #10 (CAL-C1).
+- **#6 — how Notes is reached:** NOT-C1 (scripting or the note store), NOT-C5 (how a note's body is
+  changed, which needs the real note document), NOT-C11 (whether Notes has to be started first).
+- **#7 — how Mail is reached:** MAIL-C1 (scripting or the Envelope Index), MAIL-C7 (which identifier
+  an email reference is built on), MAIL-C9 (whether body search is feasible).
+- **#10 — how calendar data is reached:** CAL-C1.
+- **NOT-C6, with #11:** whether a note's title is a field of its own or the first line of its body.
+  A modelling choice for the glossary that also depends on NOT-M11 (#6).
+
+**Settled since this file was merged** (23 conflicts, each carrying its answer in the group above):
+X-C2, X-C19 and CAL-C10 by [#19](https://github.com/that-mathevs/apple-native-mcp/issues/19) and
+[#8](https://github.com/that-mathevs/apple-native-mcp/issues/8); X-C3, MSG-C5, CON-C2 and MAIL-C12
+by [#16](https://github.com/that-mathevs/apple-native-mcp/issues/16) and
+[#17](https://github.com/that-mathevs/apple-native-mcp/issues/17); X-C4, MSG-C8 and MAIL-C11 by
+[#9](https://github.com/that-mathevs/apple-native-mcp/issues/9); X-C6 by
+[#22](https://github.com/that-mathevs/apple-native-mcp/issues/22); X-C13 by
+[#8](https://github.com/that-mathevs/apple-native-mcp/issues/8); X-C20, CON-C7 and MSG-C9 by
+[#18](https://github.com/that-mathevs/apple-native-mcp/issues/18); CAL-C3, CAL-C7, REM-C4 and REM-C9
+by [#20](https://github.com/that-mathevs/apple-native-mcp/issues/20); MSG-C1 by
+[#21](https://github.com/that-mathevs/apple-native-mcp/issues/21); MSG-C6 by
+[#17](https://github.com/that-mathevs/apple-native-mcp/issues/17); MAIL-C4 and MAIL-C10 by
+[#24](https://github.com/that-mathevs/apple-native-mcp/issues/24).
 
 ## Calendar
 
@@ -80,7 +102,7 @@ owned by an open ticket come last.
 
 - [ ] **CAL-01** [acceptance] lists each calendar with its identifier, its type and the account it belongs to: calendar names repeat across accounts · — · brightline `6bc977a`, `882140f`, `bc8e4a1`; mjmcg `17cba98`, `d4ec06d`, `dcf1993`
 - [ ] **CAL-02** [acceptance] says which calendars accept new events · — · chrischall `29af0a2`, `60f9977`, `8c12640`, `bf6dc37`; mjmcg `17cba98`, `d4ec06d`, `dcf1993`
-- [ ] **CAL-03** [acceptance] given a calendar the user excluded, shows it as excluded so the user can see the setting took effect · — · ANierbeck `3005df4`
+- [ ] **CAL-03** [acceptance] given calendars the settings exclude, says how many were left out and never their titles or identifiers, so the user can see the setting took effect · — · ANierbeck `3005df4`; #19
 
 #### listing events
 
@@ -104,7 +126,7 @@ owned by an open ticket come last.
 - [ ] **CAL-21** [acceptance] given calendar access was denied, fails naming Privacy & Security › Calendars rather than reporting no events · NN5, NN3 · arr2036 `9097294`; brightline `4fb39a3`; morquis `96759b3`, `d76f3ec`; fpjnijweide `42c9e11`; upstream #74, #25, #65, #71
 - [ ] **CAL-22** [acceptance] given access to add events only, explains that reading needs full access · NN5 · brightline `4fb39a3`; mjmcg `bde3e31`, `804b77d`; upstream #65
 - [ ] **CAL-23** [acceptance] given calendar access is restricted by policy, says the user cannot grant it themselves · NN5 · brightline `4fb39a3`; upstream #65
-- [ ] **CAL-24** [acceptance] given access reported as granted but no calendars visible, says which app needs calendar permission (after CAL-V13) · NN5 · brightline `91b6cab`
+- [ ] **CAL-24** [acceptance] given access reported as granted but no calendars visible, names the helper as the identity that needs calendar access (after CAL-V13) · NN5 · brightline `91b6cab`; #4, ADR-0002
 - [ ] **CAL-25** [acceptance] needs calendar access only, never permission to control the Calendar app · — · arr2036 `9097294`; upstream #65, #71
 
 #### searching events
@@ -135,12 +157,16 @@ owned by an open ticket come last.
 
 #### creating an event
 
+_[#20](https://github.com/that-mathevs/apple-native-mcp/issues/20) settles CAL-C3: an event with no
+calendar named goes to the calendar the user set in Calendar for new events, unless the settings
+name one. CAL-41 ships; CAL-42 is rejected._
+
 - [ ] **CAL-37** [acceptance] given calendar writing is not enabled, refuses: writes are off by default · NN2 · arr2036 `3a26c9a`, `9097294`; upstream #34, #74
 - [ ] **CAL-38** [acceptance] given a calendar that does not exist, refuses and lists the calendars events can be created in: an event never lands somewhere unexpected · — · arr2036 `3a26c9a`, `9097294`; KassebaumEngineering `1d47e74`; chrischall `3bb2b01`; faces-sh `34dced4`, `82efc89`; morquis `d76f3ec`; therealap `d50bfae`; upstream #70, #34, #74, #25, #6, #66
 - [ ] **CAL-39** [acceptance] given a calendar that does not accept new events, refuses and names the calendars that do rather than writing somewhere else · — · faces-sh `34dced4`, `82efc89`; mjmcg `17cba98`, `d4ec06d`, `dcf1993`; therealap `d50bfae`
-- [ ] **CAL-40** [acceptance] given no calendar and a default calendar configured in settings, files the event in that calendar (after CAL-C3) · — · chrischall `3bb2b01`
-- [ ] **CAL-41** [acceptance] given no calendar and no default configured, files the event in the user's default calendar for new events and says so (after CAL-C3) · — · therealap `d50bfae`
-- [ ] **CAL-42** [acceptance] given no calendar and no default configured, refuses and lists the calendars events can be created in (after CAL-C3) · — · chrischall `3bb2b01`
+- [ ] **CAL-40** [acceptance] given no calendar and a default calendar named in the settings, files the event in that calendar · — · chrischall `3bb2b01`; #20
+- [ ] **CAL-41** [acceptance] given no calendar and no default in the settings, files the event in the user's default calendar for new events and says so · — · therealap `d50bfae`; #20
+- **CAL-42** [acceptance] given no calendar and no default configured, refuses and lists the calendars events can be created in · **rejected by #20**: every "add lunch tomorrow" would cost two calls, and the user already answered this in Calendar's own settings (CAL-41) · chrischall `3bb2b01`
 - [ ] **CAL-43** [acceptance] given a start of 17:30 local time, stores and reports an event starting at 17:30 local time · — · boutquin `8a5d2e0`; upstream #34, #64
 - [ ] **CAL-44** [acceptance] given a start and an end with offsets, creates the event at those instants and reports them · — · mjmcg `17cba98`, `d4ec06d`, `dcf1993`; upstream #70
 - [ ] **CAL-45** [acceptance] given a title, location and notes containing quotes, backslashes, line breaks and script text, stores each exactly as given and runs nothing · NN1 · ANierbeck `3005df4`; brightline `859a9c8`; chrischall `18660e4`, `1a358d6`, `29af0a2`, `2e06954`, `60f9977`, `6831a90`, `88b58d0`, `91e0101`, `bf6dc37`, `fa61e37`; fpjnijweide `42c9e11`; therealap `d50bfae`; upstream #74, #25
@@ -151,6 +177,10 @@ owned by an open ticket come last.
 - [ ] **CAL-50** [acceptance] given the caller says a second copy is wanted, creates the event despite an overlapping one with the same title · — · faces-sh `bcdc856`; upstream #27
 
 #### updating an event
+
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18)): an operation
+outside v1 has no tool at all, so it is absent from `tools/list` and from every tool description,
+and an agent can't propose it. CAL-51 to CAL-60 are kept for whenever it is pulled in._
 
 - [ ] **CAL-51** [acceptance] given a new start later than the old end, moves the whole event · — · chrischall `05e1ed7`, `29af0a2`, `60f9977`, `c9727ec`
 - [ ] **CAL-52** [acceptance] given only a new title, leaves its times, location and notes as they were · — · chrischall `05e1ed7`, `29af0a2`, `60f9977`, `c9727ec`
@@ -164,13 +194,15 @@ owned by an open ticket come last.
 
 #### deleting an event
 
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18))._
+
 - [ ] **CAL-60** [acceptance] given a recurring event and no span, refuses: it cannot tell one occurrence from the whole series (after CAL-C5) · — · arr2036 `9097294`; chrischall `29af0a2`, `60f9977`, `8c12640`, `bf6dc37`
 
 #### an event range
 
 - [ ] **CAL-61** [domain] given no start, begins at the start of today in the user's time zone · — · chrischall `05e1ed7`, `25d47cc`, `3bb2b01`; upstream #74, #25, #6
 - [ ] **CAL-62** [domain] given no range just after local midnight or late in the evening west of UTC, starts on the user's local day, not the UTC one · — · boutquin `8a5d2e0`; mjmcg `4ca8065`, `7623d19`, `88e26b9`, `d4ec06d`, `e85c620`; upstream #34, #64, #74, #25, #70
-- [ ] **CAL-63** [domain] given no dates, covers the start of today through the end of the default window's last day in the user's time zone (after CAL-C7) · — · ANierbeck `3005df4`
+- [ ] **CAL-63** [domain] given no dates, covers a default range of seven days, from the start of today through the end of the seventh day, in the user's time zone · — · ANierbeck `3005df4`; #20
 - [ ] **CAL-64** [domain] given a start day and an end day without times, spans both whole days in the user's time zone, so events starting on the end day are included · — · brightline `6bc977a`, `bc8e4a1`, `be4becf`; boutquin `8a5d2e0`; arr2036 `1027ad1`, `3a26c9a`, `9097294`; upstream #74, #25, #70, #6, #34, #64
 - [ ] **CAL-65** [domain] given bounds with a time and an offset, keeps them to the second rather than widening to whole days · — · boutquin `8a5d2e0`; upstream #34, #64
 - [ ] **CAL-66** [domain] given an event that starts before the range and ends inside it, counts it as in range · — · chrischall `05e1ed7`, `25d47cc`, `3bb2b01`; morquis `0ec1adc`, `d76f3ec`; upstream #25, #74, #6
@@ -192,8 +224,8 @@ owned by an open ticket come last.
 
 #### calendar scoping
 
-- [ ] **CAL-73** [domain] given a calendar that is both allowed and blocked, treats it as blocked · — · ANierbeck `3005df4`
-- [ ] **CAL-74** [domain] given a calendar the user has hidden in Calendar, leaves it out unless the settings name it (after CAL-V7) · — · fpjnijweide `42c9e11`
+- [ ] **CAL-73** [domain] given a calendar identifier that is both allowed and blocked, treats it as blocked: the settings name calendars by identifier, never by title · — · ANierbeck `3005df4`; #19
+- [ ] **CAL-74** [domain] given a calendar the user has hidden in Calendar, still reports it unless the settings exclude it: a hidden calendar is not an excluded one, and CAL-V7 is unverified · — · fpjnijweide `42c9e11`; #19
 
 #### open slots in a range
 
@@ -275,8 +307,11 @@ owned by an open ticket come last.
   the calendar the user chose as the default for new events in Calendar's settings. A settings
   default overrides it. Always report the calendar used (CAL-47). An unknown calendar name always
   refuses (CAL-38).
-- **Needs a human decision:** Yes — feeds map fog "Settings". The choice is between convenience
-  (CAL-41) and asking every time (CAL-42), and whether a calendar allowlist limits writes too.
+- **Settled by [#20](https://github.com/that-mathevs/apple-native-mcp/issues/20):** an event with
+  no calendar named goes to the calendar the user set in Calendar for new events (CAL-41), and a
+  calendar named in the settings overrides it (CAL-40). Refusing and listing the calendars every
+  time is rejected (CAL-42). A calendar the settings exclude is not writable either
+  ([#19](https://github.com/that-mathevs/apple-native-mcp/issues/19)).
 
 #### CAL-C4 How a tool names a calendar
 
@@ -341,8 +376,9 @@ owned by an open ticket come last.
   CAL-62). Starting at "now" drops today's earlier events, and UTC dates pick the wrong day
   (felkru, boutquin, mjmcg). For the length, use 7 days for listing (upstream's documented
   promise, shared by three forks) and the same for search unless the caller widens it.
-- **Needs a human decision:** Yes — only the length. The start is settled by evidence. The length
-  is a product choice that no observation decides.
+- **Settled by [#20](https://github.com/that-mathevs/apple-native-mcp/issues/20):** the default
+  range is seven days, from the start of today in the user's time zone, for listing and for search
+  alike, and every result states the range it used (CAL-63).
 
 #### CAL-C8 How event times are written in results
 
@@ -387,11 +423,13 @@ owned by an open ticket come last.
     `6e5ff6c`.
   - Every calendar: most other forks.
 - **Recommendation:** Settings allow and block calendars by identifier, and blocked wins
-  (CAL-73). Calendars hidden in Calendar.app are left out by default only if CAL-V7 holds
-  (CAL-74). Never use a skip list of titles. `list_calendars` shows excluded calendars as
-  excluded (CAL-03).
-- **Needs a human decision:** Yes — feeds map fog "Settings" (whether Calendar.app's hidden state
-  should count as a privacy setting).
+  (CAL-73). Never use a skip list of titles. A listing says how many calendars the settings
+  excluded and never names them (CAL-03).
+- **Settled by [#19](https://github.com/that-mathevs/apple-native-mcp/issues/19):** calendars are
+  allowed and blocked by identifier, never by display name, and a block-list wins over an
+  allow-list (CAL-73). Calendar.app's own hidden calendars are not read in v1 — `DisabledCalendars`
+  is undocumented and CAL-V7 is unverified — so a hidden calendar stays visible unless the settings
+  exclude it (CAL-74). Excluded items are counted in a result, never named (CAL-03, X-81).
 
 #### CAL-C11 What an availability answer reveals
 
@@ -565,11 +603,11 @@ owned by an open ticket come last.
 #### listing reminders
 
 - [ ] **REM-04** [acceptance] given reminders in several lists, reports each with its id, list, due date, creation date and completion state · — · mjmcg `bde3e31`, `804b77d`; sicdigital `791f5f2`, `3cfb29d`; gene-jelly `c5a0edd`; upstream #53, #26, #10, #59, #70
-- [ ] **REM-05** [acceptance] given open and completed reminders, reports only the open ones unless completed ones are asked for (after REM-V8) · — · boutquin `8a5d2e0`; mjmcg `804b77d`, `fed09d1`, `5ca5e55`; upstream #53, #26
+- [ ] **REM-05** [acceptance] given open and completed reminders, reports only the open ones unless completed ones are asked for, in every scope including a named list (after REM-V8) · — · boutquin `8a5d2e0`; mjmcg `804b77d`, `fed09d1`, `5ca5e55`; upstream #53, #26; #20
 - [ ] **REM-06** [acceptance] given reminders in several lists, names every reminder under its list, open before completed, rather than only counting them · — · faces-sh `94149a2`, `dbffae5`
 - [ ] **REM-07** [acceptance] given a reminder list, reports only reminders from that list · — · mjmcg `5ca5e55`
-- [ ] **REM-08** [acceptance] given a reminder list and the overdue window, reports only overdue reminders from that list · — · mjmcg `5ca5e55`
-- [ ] **REM-09** [acceptance] given the overdue window, reports open reminders whose due time has passed · — · mjmcg `804b77d`, `fed09d1`, `5ca5e55`
+- [ ] **REM-08** [acceptance] given a reminder list and the overdue range, reports only overdue reminders from that list · — · mjmcg `5ca5e55`
+- [ ] **REM-09** [acceptance] given the overdue range, reports open reminders whose due time has passed · — · mjmcg `804b77d`, `fed09d1`, `5ca5e55`
 - [ ] **REM-10** [acceptance] given a due-date range, reports only reminders due inside it and leaves out reminders with no due date (after REM-V8) · — · sicdigital `3cfb29d`
 - [ ] **REM-11** [acceptance] given a range bound that is not a date, refuses and says which bound · — · sicdigital `3cfb29d`
 - [ ] **REM-12** [acceptance] given a list name two accounts share, refuses: it names both lists by account (after REM-V5) · — · mjmcg `5ca5e55`
@@ -610,6 +648,10 @@ owned by an open ticket come last.
 
 #### editing a reminder
 
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18), which settles
+Phase 3's ambiguity about upstream #27): editing, completing and deleting a reminder have no tool at
+all. REM-41 to REM-49 are kept for whenever they are pulled in._
+
 - [ ] **REM-41** [acceptance] given the reminder's identifier and a new due time, changes that reminder and creates no new one (after REM-V6) · — · mjmcg `804b77d`, `fed09d1`; upstream #27
 - [ ] **REM-42** [acceptance] given a request to clear the due date, reports the reminder with no due date · — · mjmcg `804b77d`, `fed09d1`
 - [ ] **REM-43** [acceptance] given another reminder list, moves the reminder there · — · mjmcg `804b77d`, `fed09d1`
@@ -618,9 +660,13 @@ owned by an open ticket come last.
 
 #### completing a reminder
 
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18))._
+
 - [ ] **REM-46** [acceptance] given an open reminder, reports it completed only after the store shows it completed · NN3 · mjmcg `bde3e31`, `804b77d`, `fed09d1`
 
 #### deleting a reminder
+
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18))._
 
 - [ ] **REM-47** [acceptance] given writes are not enabled, refuses: reminders are read-only by default · NN2 · mjmcg `bde3e31`, `804b77d`, `fed09d1`
 - [ ] **REM-48** [acceptance] given the store still holds the reminder afterwards, reports the outcome as unconfirmed · NN3 · mjmcg `bde3e31`, `804b77d`, `fed09d1`
@@ -633,14 +679,18 @@ owned by an open ticket come last.
 
 #### a due time
 
+_[#20](https://github.com/that-mathevs/apple-native-mcp/issues/20) settles REM-C9: a due time sets
+no alert, and if REM-V4 shows a due time alone never notifies, the answer is an explicit alert
+argument, never an implied one._
+
 - [ ] **REM-52** [domain] given a wall-clock time with no offset, reads it in the user's time zone (after REM-V3) · — · chrischall `6831a90`, `1a358d6`, `b6a4ec6`, `2846497`; mjmcg `bde3e31`, `804b77d`; upstream #34, #64
 - [ ] **REM-53** [domain] given a time with a UTC offset, keeps the instant rather than the wall-clock digits (after REM-V3) · — · mjmcg `bde3e31`, `804b77d`; upstream #64, #34
 - [ ] **REM-54** [domain] given a date on the 31st, keeps its day and month · — · KassebaumEngineering `1d47e74`
 
-#### a due window
+#### a due range
 
 - [ ] **REM-55** [domain] given "this week", spans the user's local days from today through the seventh day · — · mjmcg `804b77d`, `fed09d1`, `5ca5e55`
-- [ ] **REM-56** [domain] given a reminder with no due date, excludes it from every dated window · — · mjmcg `804b77d`, `fed09d1`, `5ca5e55`
+- [ ] **REM-56** [domain] given a reminder with no due date, excludes it from every dated range · — · mjmcg `804b77d`, `fed09d1`, `5ca5e55`
 
 #### a date range
 
@@ -714,7 +764,7 @@ owned by an open ticket come last.
   - Raise the buffer and read everything: mjmcg `2743d84`.
   - A time budget that states how many lists it covered: faces-sh `8ac7cb9`, `39585ad`.
   - A `LIMIT` in the store query: felkru `12ad33f`.
-- **Recommendation:** Filter in the store fetch (open reminders, the list, the due window), apply
+- **Recommendation:** Filter in the store fetch (open reminders, the list, the due range), apply
   a limit, say when more exist (REM-16, REM-26) and page past the helper's response ceiling
   (REM-17). Every silent cap led an agent to present a partial answer as complete.
 - **Needs a human decision:** No — silent truncation breaks NN3 wherever it appears. The shape
@@ -733,10 +783,10 @@ owned by an open ticket come last.
   completed ones on request (REM-05). REM-06 then orders open before completed only when both
   are asked for. Completed history is what flooded responses and timed out (upstream #53, mjmcg
   C5).
-- **Needs a human decision:** Yes — REM-05 and REM-06 pull in opposite directions. Hiding done
-  items keeps responses small. Showing them marked (faces-sh's index, mjmcg's checklist lists)
-  lets an agent answer "did I already buy it?" without a second call. Only the maintainer can
-  weigh context size against that.
+- **Settled by [#20](https://github.com/that-mathevs/apple-native-mcp/issues/20):** a plain
+  listing shows open reminders only, in every scope including a named list, and completed ones come
+  only when asked for (REM-05); REM-06 then orders open before completed when both are asked for.
+  mjmcg's "checklist-style" lists are rejected: one rule everywhere is easier to state and to test.
 
 #### REM-C5 What a reminder search looks at
 
@@ -812,9 +862,10 @@ owned by an open ticket come last.
 - **Recommendation:** Keep due time and alert apart, and add no alert that wasn't asked for, as
   long-tail L1 decided. If REM-V4 shows that a due time alone never notifies, add an explicit
   alert argument rather than an implied one.
-- **Needs a human decision:** Yes — only if REM-V4 shows that a reminder with a due time and no
-  alert stays silent. Then "remind me at 5" wouldn't remind, and the maintainer chooses between
-  an alert implied by every due time and an explicit alert the agent must ask for.
+- **Settled by [#20](https://github.com/that-mathevs/apple-native-mcp/issues/20):** a due time
+  sets no alert. If REM-V4 shows a due time alone never notifies, the answer is an **explicit alert
+  argument, never an implied alert**: an implied one would fire a notification the user never asked
+  for, and leave no way to ask for a quiet reminder.
 
 #### REM-C10 Stopping a changed reminder from becoming a second reminder (upstream #27)
 
@@ -928,7 +979,7 @@ Not about Notes or Mail mechanisms or permission prompts:
   reminders remain. Outcome decides whether the fork gets a security note, not our design.
 - **REM-V13** (evidence only) `remindctl show week` covers the next seven days rather than the calendar week, and
   `upcoming` leaves out undated reminders. *From:* mjmcg `804b77d`, `fed09d1`, `5ca5e55` (C5
-  verify). Evidence only: REM-55 and REM-56 define our own windows. *Proves it:* with reminders
+  verify). Evidence only: REM-55 and REM-56 define our own ranges. *Proves it:* with reminders
   due today+6, today+8 and undated, `remindctl show week --json` returns only today+6, and
   `show upcoming --json` omits the undated one. *Disproves it:* the output differs.
 - **REM-V14** (evidence only) `remindctl show all --list <name>` ignores `--list` and returns reminders from every
@@ -995,7 +1046,7 @@ Permission prompts (left open by #4):
 - **long-tail/brunnoaraujo:** a create that reports the list actually used.
 - **long-tail/Heming-Zhong:** notes and due date that reach the store on create.
 - **mjmcg:** EventKit-backed reads with list, due date and completion state; editing a reminder
-  in place, including moving it and clearing its due date; completing and deleting; due windows
+  in place, including moving it and clearing its due date; completing and deleting; due ranges
   such as overdue; open and overdue counts per list; a list scope that really scopes; an
   unreadable store as a failure, never an empty list.
 - **morquis:** listing reminder lists first, and reminders per list on request.
@@ -1036,9 +1087,16 @@ Permission prompts (left open by #4):
 - [ ] **CON-22** [acceptance] given two contacts with the same name, reports both with their own details · — · boutquin `2894ab6`
 - [ ] **CON-23** [acceptance] returns a bounded page, says how many contacts there are and how to fetch the next page, rather than reading every contact or stopping silently · NN3 · upstream #17; fpjnijweide `42c9e11`; nivra `0b616cd`, `2860fb6`
 
+#### the contact tools
+
+- [ ] **CON-56** [acceptance] offers no tool that creates, changes or deletes a contact: a contact write would let injected input widen who counts as a known recipient · NN4 · #18
+
 #### creating a contact
 
-_Contact writes are parked behind the write setting until CON-C7 decides whether v1 has them._
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18), settling CON-C7):
+create, update and delete have no tool at all, because Contacts decides who counts as a known
+recipient. CON-56 is v1's positive statement; CON-24 to CON-32 are kept for whenever contact writes
+are pulled in._
 
 - [ ] **CON-24** [acceptance] given contact writes are not enabled, refuses: writes are off by default · NN2 · fpjnijweide `42c9e11`, `48cd701`; faces-sh `431f4b1`
 - [ ] **CON-25** [acceptance] reports the contact as read back from the contact store after saving, not the values it was given · NN3 · morquis `2483f04`, `a77212a`, `5fa172e`, `5c01104`; faces-sh `431f4b1`
@@ -1047,12 +1105,16 @@ _Contact writes are parked behind the write setting until CON-C7 decides whether
 
 #### updating a contact
 
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18))._
+
 - [ ] **CON-28** [acceptance] given a detail whose text looks like script or replacement patterns, stores exactly that text or refuses it, and runs nothing · NN1 · morquis `2483f04`, `a77212a`, `5c01104`
 - [ ] **CON-29** [acceptance] given a label that is not one of Apple's well-known labels, keeps it as a custom label rather than relabelling the value as work · — · morquis `2483f04`, `a77212a`, `5fa172e`, `5c01104`
 - [ ] **CON-30** [acceptance] given an empty phone number or email address, refuses rather than removing every one of them · — · fpjnijweide `42c9e11`, `48cd701`
 - [ ] **CON-31** [acceptance] given a family name of several words, stores it intact rather than splitting it at a space · — · fpjnijweide `42c9e11`, `48cd701`
 
 #### deleting a contact
+
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18))._
 
 - [ ] **CON-32** [acceptance] given a name rather than an identifier, refuses and lists the contacts the name matches: a write never guesses its target · NN3 · faces-sh `431f4b1`; fpjnijweide `42c9e11`, `48cd701`
 
@@ -1066,9 +1128,12 @@ _Contact writes are parked behind the write setting until CON-C7 decides whether
 #### a phone number
 
 _Messages depends on these rules (matching a handle to a contact, the known-recipient rule).
-Rules that only resolve a message recipient live in Messages._
+Rules that only resolve a message recipient live in Messages.
+[#17](https://github.com/that-mathevs/apple-native-mcp/issues/17) settles CON-C2: two numbers are
+the same only when their full E.164 forms are equal, and a bare national number is never given a
+country, so CON-37 is rejected._
 
-- [ ] **CON-37** [domain] given a national number and the user's region, normalises it to E.164 in that region rather than assuming the US · NN4 · upstream #35; morquis `4e257c8`, `96759b3`
+- **CON-37** [domain] given a national number and the user's region, normalises it to E.164 in that region rather than assuming the US · **rejected by #17**: a bare national number is never given a country and the answer must not depend on the Mac's region; it is matched against stored handles instead (MSG-54 to MSG-56) · upstream #35; morquis `4e257c8`, `96759b3`
 - [ ] **CON-38** [domain] given a number with a country code and a national trunk prefix, normalises it to one E.164 number · NN4 · upstream #35
 - [ ] **CON-39** [domain] given the same number written with spaces, dashes, brackets or its country code, counts it as the same number · NN4 · ANierbeck `813c232`
 - [ ] **CON-40** [domain] given two numbers where one merely contains the other, does not treat them as the same number · NN4 · upstream #35; ANierbeck `813c232`
@@ -1135,12 +1200,14 @@ Rules that only resolve a message recipient live in Messages._
     ambiguous: faces-sh `784db41`, `9609cb4`, `ad467f8`, `ac0058a`, `a663d12` (upstream #24, #48).
 - **Recommendation:** Two numbers are the same only when their full E.164 forms are equal;
   containment and shared tails are never a match (CON-40, CON-41). A number that states its country
-  normalises exactly. For a bare national number the user's region gives the reading used to find a
-  contact (CON-07, CON-37), but the result says the region was assumed, so Messages can refuse a
-  number that fits two countries, as faces-sh learned after it sent to the wrong country.
-- **Needs a human decision:** Yes — feeds map fog "The known-recipient rule": whether a bare national
-  number may be read in the user's region at all (convenient, and #35 asks for it) or must match
-  the same way whatever the region (faces-sh's evidence), is a trade-off Messages inherits.
+  normalises exactly. A bare national number is compared against the numbers already stored rather
+  than read in the Mac's region, so one that fits handles in two countries is ambiguous and refused,
+  as faces-sh learned after it sent to the wrong country.
+- **Settled by [#17](https://github.com/that-mathevs/apple-native-mcp/issues/17):** a bare national
+  number is never given a country. It is compared against the stored handles the user has real
+  traffic with, after those are normalised, and exactly one match is the recipient. The answer must
+  not depend on the Mac's region, so CON-37 is rejected and CON-07, CON-40, CON-41 and MSG-54 to
+  MSG-56 carry the rule.
 
 #### CON-C3 How a name matches a contact
 
@@ -1204,10 +1271,12 @@ Rules that only resolve a message recipient live in Messages._
     `431f4b1` (C35) and fpjnijweide `42c9e11`, `48cd701` (C7).
   - Create, update and delete by identifier through Contacts.framework, behind the write setting:
     morquis `2483f04`, `a77212a`, `5fa172e`, `5c01104`.
-- **Recommendation:** Ship reads first, as Phase 3 orders. Keep CON-24 to CON-32 in the backlog
-  behind the write setting, so writes are specified when they are wanted.
-- **Needs a human decision:** Yes — part of **X-C20** (which writes beyond Phase 3 are in v1); feeds
-  map fog "Settings". Non-negotiable 2 does not say whether v1 offers contact writes.
+- **Recommendation:** Ship reads only, as Phase 3 orders. Keep CON-24 to CON-32 in the backlog
+  with no tool in v1, so writes are specified when they are wanted.
+- **Settled by [#18](https://github.com/that-mathevs/apple-native-mcp/issues/18):** v1 has no
+  contact writes and no tool for them. Contacts decides who counts as a known recipient (NN4), and
+  a tool that edits contacts lets injected input widen that set. CON-56 states the absence; CON-24
+  to CON-32 stay in the backlog.
 
 #### CON-C8 What happens to a label the address book doesn't know
 
@@ -1316,7 +1385,7 @@ Rules that only resolve a message recipient live in Messages._
 #### listing recent chats
 
 - [ ] **MSG-01** [acceptance] lists one row per chat, group chats included and marked as groups, newest first · — · faces-sh `cad640a`, `ccc9f55`, `20c7fa3`, `0736b63`; upstream #3, #62
-- [ ] **MSG-02** [acceptance] given a chat holding only the user's own failed sends, leaves it out: a failed send is not contact · NN4 · faces-sh `6e4b47a`, `9852b0e`, `ac0058a`
+- [ ] **MSG-02** [acceptance] given a chat holding only the user's own failed sends, leaves it out: a failed send is not real traffic · NN4 · faces-sh `6e4b47a`, `9852b0e`, `ac0058a`
 
 #### reading messages
 
@@ -1337,9 +1406,9 @@ Rules that only resolve a message recipient live in Messages._
 - [ ] **MSG-11** [acceptance] given two people's names, opens the newest chat that holds both of them · — · faces-sh `cad640a`, `ccc9f55`, `20c7fa3`, `0736b63`
 - [ ] **MSG-12** [acceptance] given contacts cannot be read, fails as a missing Contacts permission rather than saying nobody has that name · NN5 · faces-sh `cad640a`, `0d381f9`, `68cd07b`, `9852b0e`; upstream #48
 
-#### reading a chat for a period
+#### reading a chat for a range
 
-- [ ] **MSG-13** [acceptance] given a start and end date, returns every message between them up to the raised ceiling and says which period it covered · — · faces-sh `1fa9dc5`, `64dac13`
+- [ ] **MSG-13** [acceptance] given a start and end date, returns every message between them up to the raised ceiling and says which range it covered · — · faces-sh `1fa9dc5`, `64dac13`
 
 #### listing unread messages
 
@@ -1361,29 +1430,31 @@ Rules that only resolve a message recipient live in Messages._
 - [ ] **MSG-23** [acceptance] given the user has not confirmed this send, refuses and sends nothing · NN2 · brightline `859a9c8`
 - [ ] **MSG-24** [acceptance] given a recipient the user has never messaged, refuses and names the contacts they probably meant · NN4 · ANierbeck `813c232`; morquis `d76f3ec`; upstream #48
 - [ ] **MSG-25** [acceptance] given a number that belongs to no contact and was never messaged, refuses: recipients must be known · NN4 · faces-sh `ddf6cb1`, `9852b0e`, `ac0058a`; upstream #48
-- [ ] **MSG-26** [acceptance] given a number never messaged that belongs to a contact who writes from another number, refuses and names the number they write from · NN4 · faces-sh `ddf6cb1`, `9852b0e`, `ac0058a`
+- [ ] **MSG-26** [acceptance] given a number never messaged that belongs to a contact the user reaches on another handle, refuses and names the contact, never the handle they write from: a refusal is not a way to read contact details out of the machine · NN4 · faces-sh `ddf6cb1`, `9852b0e`, `ac0058a`; #16, ADR-0005
 - [ ] **MSG-27** [acceptance] refuses to reroute to another number on its own: a changed number would reach a phone the person no longer holds · NN4 · faces-sh `ddf6cb1`, `9852b0e`, `ac0058a`
 - [ ] **MSG-28** [acceptance] given contacts cannot be read, refuses to send to a number never messaged rather than allowing it · NN4 · faces-sh `ddf6cb1`, `9852b0e`, `ac0058a`
 - [ ] **MSG-29** [acceptance] given an email-address handle the user has messaged before, sends to it: a handle is not always a phone number · NN4 · ANierbeck `cd72bdf`, `fc893d7`
 - [ ] **MSG-30** [acceptance] given a number that fits known handles in two countries, refuses before anything is sent and asks for the country code · NN4 · faces-sh `784db41`, `9609cb4`, `ad467f8`, `ac0058a`, `a663d12`; upstream #24, #48
 - [ ] **MSG-31** [acceptance] given a recipient that is neither a handle nor a resolvable name, refuses and says nothing was sent · NN4 · faces-sh `20c7fa3`, `0736b63`, `9852b0e`, `39b7e40`; upstream #48, #66
-- [ ] **MSG-32** [acceptance] given a number not on the send allowlist, refuses and says which setting allows it · NN4, NN5 · KassebaumEngineering `13fd400`; upstream #48
+- [ ] **MSG-32** [acceptance] given a number not on the send allowlist, refuses and says which setting allows it · NN4, NN5 · KassebaumEngineering `13fd400`; upstream #48; #16, #19
+- [ ] **MSG-96** [acceptance] given a handle known only from a group chat the user has real traffic in, refuses to message that person privately: a group chat is a chat, not a licence · NN4 · ADR-0005, #16
+- [ ] **MSG-99** [acceptance] reports the recipient by contact name and chat identifier and never by the handle addressed: the user already saw the handle in the confirmation, and a printed handle would make every send a way to read contact details out of the machine · NN4 · ADR-0005, #17
 - [ ] **MSG-33** [acceptance] given a body containing quotes, backslashes, line breaks and script syntax, delivers exactly that text and runs nothing · NN1 · faces-sh `784db41`, `42c2fd7`, `39b7e40`; upstream #48
 - [ ] **MSG-34** [acceptance] given a body containing text shaped like an internal reference, sends that text literally · NN1 · faces-sh `455d4ba`
 - [ ] **MSG-35** [acceptance] given Automation control of Messages is denied, fails as a missing permission that names Automation > Messages (after MSG-V15) · NN5 · faces-sh `ac53e87`, `4c3096d`, `42c2fd7`; upstream #65, #71
-- [ ] **MSG-36** [acceptance] given the store shows the outgoing message left with no error, reports it sent to the handle actually addressed · NN3 · faces-sh `68cd07b`, `9852b0e`, `ac0058a`, `39b7e40`; upstream #48, #66, #24
+- [ ] **MSG-36** [acceptance] given the store shows the outgoing message left with no error, reports it sent, naming the recipient by contact name and chat identifier · NN3 · faces-sh `68cd07b`, `9852b0e`, `ac0058a`, `39b7e40`; upstream #48, #66, #24; #17
 - [ ] **MSG-37** [acceptance] given the store records the outgoing message with a delivery error, reports it not sent and names the error (after MSG-V8) · NN3 · faces-sh `68cd07b`, `9852b0e`, `ac0058a`, `39b7e40`; upstream #66, #24
 - [ ] **MSG-38** [acceptance] given the send raised no error but no outgoing message to that recipient appears in the store, reports the outcome as unconfirmed · NN3 · chrischall `fa61e37`, `209f3a4`; morquis `d76f3ec`
 - [ ] **MSG-39** [acceptance] given no outgoing record for that recipient appears, reports that it does not appear to have been sent and warns against sending twice (after MSG-V7, MSG-V8) · NN3 · faces-sh `68cd07b`, `9852b0e`, `ac0058a`, `39b7e40`; upstream #66, #24
 - [ ] **MSG-40** [acceptance] given the store cannot be read after the send, reports the outcome as unconfirmed rather than as sent or failed · NN3 · faces-sh `68cd07b`, `9852b0e`, `ac0058a`, `39b7e40`; upstream #24, #66
 - [ ] **MSG-41** [acceptance] given Messages stops answering, still checks the store before reporting anything · NN3 · faces-sh `68cd07b`, `9852b0e`, `ac0058a`, `39b7e40`
-- [ ] **MSG-42** [acceptance] given a recipient without iMessage, reports which service would carry the message before sending (after MSG-V12) · — · gene-jelly `b99bbce`; upstream #24
+- [ ] **MSG-42** [acceptance] given a recipient without iMessage, refuses by name and sends nothing: v1 carries a send over iMessage only · — · gene-jelly `b99bbce`; upstream #24; #18
 
 #### sending a message by name
 
 - [ ] **MSG-43** [acceptance] given the name fits several people, sends nothing and lists who they could be · NN4 · faces-sh `20c7fa3`, `0736b63`, `9852b0e`, `39b7e40`; upstream #48
-- [ ] **MSG-44** [acceptance] given a name that resolves to exactly one person with one handle, sends to that handle and reports the handle addressed alongside the name asked for · NN4 · faces-sh `20c7fa3`, `0736b63`, `9852b0e`, `39b7e40`; upstream #24
-- [ ] **MSG-45** [acceptance] given a recipient that is a name rather than a handle, refuses and lists the contacts that name matches · NN4 · upstream #48
+- [ ] **MSG-44** [acceptance] given a name that resolves to exactly one person with one handle the user has real traffic with, sends to that handle and reports the recipient by contact name and chat identifier · NN4 · faces-sh `20c7fa3`, `0736b63`, `9852b0e`, `39b7e40`; upstream #24; #17
+- **MSG-45** [acceptance] given a recipient that is a name rather than a handle, refuses and lists the contacts that name matches · **rejected by #17**: names are accepted and must resolve to exactly one recipient; refusing them pushes users back to pasting phone numbers, and MSG-44 and MSG-62 carry the behaviour · upstream #48
 
 #### sending a message to several people
 
@@ -1392,15 +1463,8 @@ Rules that only resolve a message recipient live in Messages._
 
 #### sending a message into a chat
 
-- [ ] **MSG-48** [acceptance] given a chat in which nothing was ever genuinely exchanged, refuses · NN4 · faces-sh `ddf6cb1`, `9852b0e`, `ac0058a`
-
-#### scheduling a message
-
-These three stand only if scheduled sends stay in v1 (MSG-C9).
-
-- [ ] **MSG-49** [acceptance] given a recipient the user has never messaged, refuses when asked to schedule, not later when it fires · NN4 · ANierbeck `813c232`
-- [ ] **MSG-50** [acceptance] refuses when the schedule would not survive the server stopping · NN3 · chrischall `fa61e37`, `209f3a4`
-- [ ] **MSG-51** [acceptance] given a time that cannot be read, refuses rather than sending now · — · faces-sh `431f4b1`, `42c2fd7`
+- [ ] **MSG-48** [acceptance] given a chat with no real traffic in it, refuses · NN4 · faces-sh `ddf6cb1`, `9852b0e`, `ac0058a`; ADR-0005
+- [ ] **MSG-97** [acceptance] given several names that no single existing chat holds exactly, refuses and creates no chat: the server never creates a chat · NN4 · #16, #17
 
 #### a handle
 
@@ -1421,18 +1485,19 @@ These three stand only if scheduled sends stay in v1 (MSG-C9).
 #### a name resolution
 
 - [ ] **MSG-59** [domain] given exactly one matching card, resolves to that person however long since they were in touch · — · faces-sh `cad640a`, `0d381f9`, `68cd07b`, `9852b0e`
-- [ ] **MSG-60** [domain] given several matching cards and only one in touch, resolves to the one in touch · — · faces-sh `cad640a`, `0d381f9`, `68cd07b`, `9852b0e`
-- [ ] **MSG-61** [domain] given several matching cards all in touch, asks which one and lists them with when each was last in touch · NN4 · faces-sh `cad640a`, `0d381f9`, `68cd07b`, `9852b0e`
+- **MSG-60** [domain] given several matching cards and only one in touch, resolves to the one in touch · **rejected by #17**: recency never picks among namesakes on a send; MSG-62 refuses and names the candidates · faces-sh `cad640a`, `0d381f9`, `68cd07b`, `9852b0e`
+- [ ] **MSG-61** [domain] given several matching cards all in touch, asks which one and names each by contact name alone: last-contact times are contact detail a refusal must not hand over · NN4 · faces-sh `cad640a`, `0d381f9`, `68cd07b`, `9852b0e`; #17, ADR-0005
 - [ ] **MSG-62** [domain] given a name that fits several contacts, refuses and names each candidate · NN4 · fpjnijweide `93daf09`, `48cd701`; long-tail/tomsr73 `35e211d`; upstream #48
 - [ ] **MSG-63** [domain] given no card matches, reports the name as unknown rather than claiming there are no messages · NN3 · faces-sh `cad640a`, `0d381f9`, `68cd07b`, `9852b0e`
 - [ ] **MSG-64** [domain] given two cards share a surname, never merges their handles · NN4 · faces-sh `cad640a`, `0d381f9`, `68cd07b`, `9852b0e`; upstream #48
 - [ ] **MSG-65** [domain] given "dad", does not match a contact named Trinidad: names match whole words only · NN4 · long-tail/tomsr73 `35e211d`; upstream #48
-- [ ] **MSG-66** [domain] given a contact with several numbers and no chat history with any, refuses: the intended number is unknown · NN4 · fpjnijweide `93daf09`, `48cd701`
+- [ ] **MSG-66** [domain] given a contact with several numbers and no real traffic on any, refuses: the intended number is unknown · NN4 · fpjnijweide `93daf09`, `48cd701`; ADR-0005
+- [ ] **MSG-98** [domain] given several candidates, names each by contact name alone and never by a handle: a refusal is not a way to read contact details out of the machine · NN4 · ADR-0005, #17
 
-#### genuine contact
+#### real traffic
 
 - [ ] **MSG-67** [domain] given only the user's own undelivered messages to a handle, counts that handle as never in touch · NN4 · faces-sh `6e4b47a`, `9852b0e`, `ac0058a`
-- [ ] **MSG-68** [domain] given a message the other person sent, counts it as contact · — · faces-sh `6e4b47a`, `9852b0e`, `ac0058a`
+- [ ] **MSG-68** [domain] given a message the other person sent, counts it as real traffic · — · faces-sh `6e4b47a`, `9852b0e`, `ac0058a`
 
 #### a chat
 
@@ -1442,17 +1507,22 @@ These three stand only if scheduled sends stay in v1 (MSG-C9).
 
 - [ ] **MSG-70** [domain] given a typedstream blob, decodes the message text exactly · — · upstream #62
 - [ ] **MSG-71** [domain] given accented text, non-Latin script and emoji, decodes it intact · — · faces-sh `cad640a`; morquis `96759b3`; upstream #62
-- [ ] **MSG-72** [domain] given a body longer than 127 bytes, reads its multi-byte length and decodes the full text (after MSG-V4) · — · faces-sh `cad640a`; morquis `96759b3`
+- [ ] **MSG-72** [domain] given a body longer than 127 bytes, reads its multi-byte length and decodes the full text · — · faces-sh `cad640a`; morquis `96759b3`; #21
 - [ ] **MSG-73** [domain] given an audio message, finds the transcript among the archive's own attribute names · — · faces-sh `cad640a`
 - [ ] **MSG-74** [domain] given a length that overruns the blob, yields nothing rather than garbage · — · faces-sh `cad640a`
 - [ ] **MSG-75** [domain] given plain text that is only the object-replacement placeholder, reads the text from the archive · — · morquis `96759b3`
+- [ ] **MSG-100** [domain] given a truncated blob, reports no readable text as a named failure rather than crashing · NN5 · #21
+- [ ] **MSG-101** [domain] given a cycle in the archive's back-references, stops rather than following it forever · — · #21
+- [ ] **MSG-102** [domain] given a declared length larger than the whole blob, reads nothing past the blob · — · #21
+- [ ] **MSG-103** [domain] never creates an object because the archive names its class: a stranger's message chooses nothing inside this process · NN1 · #21
+- [ ] **MSG-104** [domain] given nesting deeper than the bound, stops at the bound and reports no readable text · — · #21
 
 #### a message timestamp
 
 - [ ] **MSG-76** [domain] given nanoseconds since 2001-01-01, reports the same instant in UTC · — · morquis `96759b3`
 - [ ] **MSG-95** [domain] converts a moment to Apple-epoch nanoseconds and back without loss: the store's own unit, so a send check compares like with like · — · faces-sh `68cd07b`, `9852b0e`, `ac0058a`, `39b7e40`; upstream #66, #24
 
-#### a period
+#### a range
 
 - [ ] **MSG-77** [domain] given a bare end date, includes the whole of that day · — · faces-sh `1fa9dc5`, `64dac13`
 - [ ] **MSG-78** [domain] given a date, starts at local midnight rather than UTC midnight · — · faces-sh `1fa9dc5`, `64dac13`
@@ -1460,14 +1530,22 @@ These three stand only if scheduled sends stay in v1 (MSG-C9).
 
 #### a search query
 
+_[#24](https://github.com/that-mathevs/apple-native-mcp/issues/24) settles MAIL-C10: this is one
+grammar, in one domain module, shared with Mail search (MAIL-71). Messages has no default range,
+because its store answers quickly._
+
 - [ ] **MSG-80** [domain] given bare words, treats each as optional and ranks messages matching more of them higher · — · faces-sh `cad640a`, `ccc9f55`, `fa7dcbd`, `bdbb896`
 - [ ] **MSG-81** [domain] given a quoted phrase, matches it only as consecutive words · — · faces-sh `cad640a`, `ccc9f55`, `fa7dcbd`, `bdbb896`
 - [ ] **MSG-82** [domain] given a word prefixed with a minus, excludes any message containing it · — · faces-sh `cad640a`, `ccc9f55`, `fa7dcbd`, `bdbb896`
-- [ ] **MSG-83** [domain] given capitalised OR between phrases, treats it as an operator rather than a word · — · faces-sh `cad640a`, `ccc9f55`, `fa7dcbd`, `bdbb896`
+- **MSG-83** [domain] given capitalised OR between phrases, treats it as an operator rather than a word · **rejected by #24**: the settled grammar is quoted phrases, a leading `-`, remaining words optional and ranking, case and diacritics folded, and every other character literal — there is no OR · faces-sh `cad640a`, `ccc9f55`, `fa7dcbd`, `bdbb896`
 - [ ] **MSG-84** [domain] given an empty query, matches nothing rather than everything · — · faces-sh `cad640a`, `ccc9f55`, `fa7dcbd`, `bdbb896`
 - [ ] **MSG-85** [domain] ignores accents and case · — · faces-sh `cad640a`, `ccc9f55`, `fa7dcbd`, `bdbb896`
 
 #### the message store
+
+_[ADR-0002](../adr/0002-helper-owns-every-protected-access.md) moves this port behind the helper
+protocol: the store is opened and queried inside the Swift helper, so these prepared statements are
+Swift. The behaviours stand as written._
 
 - [ ] **MSG-86** [contract] opens the store read-only: no query can change it · NN1 · ANierbeck `768c941`; faces-sh `784db41`, `42c2fd7`, `39b7e40`
 - [ ] **MSG-87** [contract] given a handle containing quotes and SQL keywords, matches it literally and returns only that handle's messages · NN1 · ANierbeck `768c941`
@@ -1481,6 +1559,7 @@ These three stand only if scheduled sends stay in v1 (MSG-C9).
 #### the message sender
 
 - [ ] **MSG-94** [contract] given a recipient containing a backslash followed by a quote, treats it as part of the recipient and runs nothing else · NN1 · chrischall `2e06954`, `18660e4`, `88b58d0`, `bf6dc37`, `29af0a2`, `60f9977`, `91e0101`, `6831a90`, `1a358d6`, `fa61e37`
+- [ ] **MSG-105** [contract] addresses an existing chat by its identifier or a service-scoped handle, never Messages' app-level name form: the name form creates ghost chats · NN1, NN4 · upstream #48; #17
 
 ### Conflicts
 
@@ -1499,9 +1578,12 @@ These three stand only if scheduled sends stay in v1 (MSG-C9).
   The regex produced mojibake and "not readable" bodies (upstream #62); morquis has no 3-byte
   length and a fixed preamble (MSG-V4); faces-sh's "first non-bookkeeping string" is the best
   evidence so far but unproven for mentions, rich links, edits and inline replies (MSG-V3).
-- **Needs a human decision:** Yes — feeds map fog "Decoding attributedBody": write our own parser
-  from the format, or take a published decoder as a dependency (NN6 rules out porting a fork's
-  code, not adopting a library).
+- **Settled by [#21](https://github.com/that-mathevs/apple-native-mcp/issues/21):** we write our
+  own typedstream decoder, in Swift, inside the helper ([ADR-0002](../adr/0002-helper-owns-every-protected-access.md)).
+  It walks the archive's structure, is total, and bounds depth, length and total size, because a
+  message body is attacker-controlled input. `NSUnarchiver` is excluded because it instantiates
+  classes named in the data (MSG-103). #21 also absorbs MSG-V3 and MSG-V4 as decoder fixtures
+  (MSG-100 to MSG-104).
 
 #### MSG-C2 Reading the message store without a shell
 
@@ -1564,16 +1646,19 @@ These three stand only if scheduled sends stay in v1 (MSG-C9).
   - A buddy must already exist on the iMessage service: morquis `d76f3ec`.
   - Allowed unless the number belongs to a contact who writes from another handle; allowed when
     Contacts can't be read: faces-sh `ddf6cb1`, `9852b0e`, `ac0058a`.
-- **Recommendation:** NN4 strictly: send only to a stored handle with genuine contact (faces-sh
+- **Recommendation:** NN4 strictly: send only to a stored handle with real traffic (faces-sh
   C23's definition, so failed sends never qualify), fail closed, and use faces-sh's wrong-number
   refusal to name the handle the person really uses. An explicit allowlist is an optional setting
   on top. Admitting any contact card (ANierbeck) or failing open (faces-sh) both let a
   prompt-injected "text this number" through.
-- **Needs a human decision:** Yes — feeds map fog "The known-recipient rule": whether a contact
-  card whose handle was never used counts as known (NN4's "a contact or number the user has
-  already messaged" reads both ways; MSG-44 and MSG-59 against MSG-24 and MSG-66), whether one
-  incoming message is enough or the user must have sent one, and how group chats qualify. Whether
-  the allowlist narrows or widens the rule feeds map fog "Settings".
+- **Settled by [#16](https://github.com/that-mathevs/apple-native-mcp/issues/16)
+  ([ADR-0005](../adr/0005-a-known-recipient-is-one-with-real-traffic.md)):** a handle is known only
+  when the store shows **real traffic** with it — an incoming message, or an outgoing one the store
+  shows as sent or delivered. A contact card alone is never enough, however it got there, and ghost
+  chats and failed sends never qualify. One incoming message is enough. A group chat qualifies as a
+  chat and never as a licence to message a member privately (MSG-96), and the server can't create a
+  chat (MSG-97). An allowlist narrows the rule and can never widen it
+  ([#19](https://github.com/that-mathevs/apple-native-mcp/issues/19)).
 
 #### MSG-C6 Whether a send accepts a name, and how a name becomes one person
 
@@ -1586,13 +1671,17 @@ These three stand only if scheduled sends stay in v1 (MSG-C9).
   - Resolve to one person, several (a question), unknown, or cannot ask; recency breaks ties among
     several; several names must land on one chat with nobody else in it: faces-sh `cad640a`,
     `0d381f9`, `68cd07b`, `9852b0e`, `0736b63`.
-- **Recommendation:** If names are accepted, use faces-sh's four outcomes with tomsr73's whole-word
+- **Recommendation:** Accept names, use faces-sh's four outcomes with tomsr73's whole-word
   matching (faces-sh's own card match is a substring match, so a short name can hit inside
-  another), refuse every ambiguity on a send, and always report the handle addressed.
-  Contains-first-hit is exactly the ghost-recipient failure of upstream #48.
-- **Needs a human decision:** Yes — feeds map fog "The known-recipient rule" and #9: whether
-  sending takes names at all or only handles (MSG-44 against MSG-45), and whether "only one of
-  them is in touch" may pick among namesakes on a send without asking (MSG-60 against MSG-62).
+  another), and refuse every ambiguity on a send. Contains-first-hit is exactly the ghost-recipient
+  failure of upstream #48.
+- **Settled by [#17](https://github.com/that-mathevs/apple-native-mcp/issues/17):** a send accepts
+  a handle, a contact name or an existing chat, and it must resolve to exactly one recipient.
+  Names are accepted (MSG-45 is rejected), matching is at word boundaries with case and diacritics
+  folded, and recency never picks among namesakes (MSG-60 is rejected in favour of MSG-62). The
+  **result** names the recipient by contact name and chat identifier, never by handle (MSG-36,
+  MSG-44, MSG-99) — which is not the same as the **confirmation**, where ADR-0004 shows the user
+  the resolved handle and the whole body before anything is sent.
 
 #### MSG-C7 How a send's outcome is established
 
@@ -1605,7 +1694,7 @@ These three stand only if scheduled sends stay in v1 (MSG-C9).
     store is also reported as not sent: faces-sh `68cd07b`, `9852b0e`, `ac0058a`, `39b7e40`.
 - **Recommendation:** faces-sh's poll, with three fixes from its quality notes: "unconfirmed" is
   its own outcome (NN3), the recipient's handles are resolved before sending, and a row that
-  exists but isn't sent yet is pending, not "no record". Whether "no row within the window" may say
+  exists but isn't sent yet is pending, not "no record". Whether "no row within the wait" may say
   not sent (MSG-39) or only unconfirmed (MSG-38) depends on MSG-V7 and MSG-V8; until they pass,
   report unconfirmed with the warning against sending twice.
 - **Needs a human decision:** No — NN3 decides the shape, and the rest is empirical.
@@ -1620,7 +1709,13 @@ These three stand only if scheduled sends stay in v1 (MSG-C9).
 - **Recommendation:** Neither. Sampling asks a model that shares the possibly injected context, and
   substring matching approves "no, I would not say yes". Confirm each send with the user, showing
   the resolved handle and the body, as #5's findings allow.
-- **Needs a human decision:** Yes — owned by #9.
+- **Settled by [#9](https://github.com/that-mathevs/apple-native-mcp/issues/9)
+  ([ADR-0004](../adr/0004-sends-require-elicitation.md)):** every send is confirmed through MCP
+  elicitation, which shows the resolved recipient, how it was resolved, the service and the whole
+  body, never truncated, as untrusted content (X-76). A client that doesn't declare elicitation is
+  not offered the send tools at all, and no setting turns them on (X-72, X-73, X-78). The form
+  carries a required field, so a client that auto-accepts an empty form is a decline (X-74). Accept
+  or decline only (X-75, X-77), and no prepare/confirm tool pair (X-92). X-31 stands as written.
 
 #### MSG-C9 Scheduled sends
 
@@ -1635,9 +1730,10 @@ These three stand only if scheduled sends stay in v1 (MSG-C9).
   a send that fires after the tool call returned (NN3), and ANierbeck `813c232`'s guard skipped
   scheduled sends entirely. If it is kept, the schedule must outlive the server and the recipient
   check and confirmation must happen when scheduling (MSG-49 to MSG-51).
-- **Needs a human decision:** Yes — plan.md Phase 3 step 5 lists scheduled sends, the reports
-  reject them for v1 (faces-sh C31, chrischall C16, morquis C10), and upstream.md open question 11
-  asks the same scope question.
+- **Settled by [#18](https://github.com/that-mathevs/apple-native-mcp/issues/18):** scheduled
+  sends are out of v1 and have no tool at all, so MSG-49 to MSG-51 move to **Out of scope**. Doing
+  it properly needs persistence, a runner and its own confirmation model. `plan.md` Phase 3 step 5
+  is updated.
 
 #### MSG-C10 Addressing the recipient inside the send script
 
@@ -1676,7 +1772,7 @@ These three stand only if scheduled sends stay in v1 (MSG-C9).
   that motivated caching goes away without Apple Events.
 - **Needs a human decision:** No — the measured timings and the stale-name case decide it.
 
-#### MSG-C13 Reading a period
+#### MSG-C13 Reading a range
 
 - **Options:**
   - Compare local-time strings built in SQL: morquis `96759b3`.
@@ -1704,17 +1800,12 @@ None concern the Notes or Mail mechanisms (#6, #7).
   `display_name` or more than one participant has style 43, a group chat left with one other
   participant still has 43, and every direct chat has 45. *Disproves it:* any group chat has 45,
   or the style changes when participants leave.
-- **MSG-V3** The first non-bookkeeping string in an `attributedBody` is the message text for a
-  message with a mention, a rich link preview, an edited message and an inline reply. *From:*
-  faces-sh `cad640a`. *Proves it:* send one of each from a test account, decode each blob with the
-  frame scan, and get exactly the typed text. *Disproves it:* any of them yields a link title, a
-  mention's name alone, the pre-edit text or the replied-to text.
-- **MSG-V4** Strings in `attributedBody` are framed by a length that is one byte below `0x80`,
-  `0x81` plus 2 bytes little-endian, or `0x82` plus 3 bytes, and morquis' fixed 5-byte skip after
-  `NSString` lands on that length. *From:* morquis `96759b3`; faces-sh `cad640a`. *Proves it:*
-  real blobs for bodies of 100, 300 and over 70,000 bytes decode fully with those three length
-  forms and the 5-byte skip. *Disproves it:* any body needs another length form, or the preamble
-  length varies between blobs.
+_**MSG-V3** (the first non-bookkeeping string is the text for a mention, a rich link, an edit and
+an inline reply; faces-sh `cad640a`) and **MSG-V4** (strings are framed by a 1-byte, `0x81`+2-byte
+or `0x82`+3-byte length; morquis `96759b3`, faces-sh `cad640a`) are no longer verification tasks.
+[#21](https://github.com/that-mathevs/apple-native-mcp/issues/21) absorbs them as decoder fixtures,
+because the decoder walks the format rather than scanning for markers._
+
 - **MSG-V5** Sending through Messages' app-level `buddy "<name>"` with a string that isn't a
   registered handle raises no error, delivers nothing and creates a chat named by that string.
   *From:* faces-sh `20c7fa3`, `0736b63`, `9852b0e`, `39b7e40`; upstream #48, #24. *Proves it:*
@@ -1777,12 +1868,12 @@ None concern the Notes or Mail mechanisms (#6, #7).
 - **faces-sh:** the chat as the unit of reading, with group chats marked; decoding attributedBody
   from its framing, with real-world fixtures; a name resolving to one person or becoming a
   question, recency only breaking ties; matching addresses only to stored handles, independent of
-  the Mac's region, and refusing ambiguous numbers; genuine contact, so failed sends never count;
+  the Mac's region, and refusing ambiguous numbers; real traffic, so failed sends never count;
   the wrong-number refusal that names the handle the person uses and never reroutes; confirming a
   send against the store, with a timeout that is not a verdict; telling a denied, missing and
   broken message store apart; permission failures that name the setting and the app; one
   address-book read per request; stating totals and how far a search reached; empty searches that
-  suggest a next step; periods in the user's local days; a ranked search grammar over people and
+  suggest a next step; ranges in the user's local days; a ranked search grammar over people and
   text; refusing a send to several people unless one chat holds exactly them; a read-only store
   with a bounded wait on a lock.
 - **morquis:** reading through chats so sent and group messages appear; leaving reactions out;
@@ -1871,6 +1962,9 @@ something #6 has to establish, it points at a `NOT-M` claim listed under Verific
 - [ ] **NOT-47** [acceptance] given the update succeeds, reports the previous body so the change can be undone by another update · — · KassebaumEngineering `e766bc9`
 
 #### deleting a note
+
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18)): deleting a note
+is destructive and has no tool at all. NOT-48 is kept for whenever it is pulled in._
 
 - [ ] **NOT-48** [acceptance] given several notes whose titles contain the text and none equals it, refuses and lists them: a note is never deleted by a partial title match · — · faces-sh `431f4b1`; upstream #27, #22; upstream PR #28
 
@@ -2180,7 +2274,7 @@ outcome is marked `(after #7)`.
 #### searching mail
 
 - [ ] **MAIL-28** [acceptance] given text that appears in an email's subject or sender, finds that email · — · upstream #69
-- [ ] **MAIL-29** [acceptance] given text that appears only in an email's body, finds the email (after #7) · — · felkru `22aa354`
+- [ ] **MAIL-29** [acceptance] given text that appears only in an email's body, finds the email only when the caller asked for bodies to be searched, and states its coverage (after #7) · — · felkru `22aa354`; #24
 - [ ] **MAIL-30** [acceptance] reports which parts of an email it searched: subject only, or subject and body · NN3 · brightline `0833904`, `ba218e6`, `d2eef83`
 - [ ] **MAIL-31** [acceptance] given a term that appears only in an attachment name, finds the email when attachment names are searched · — · morquis `5ce2351`
 - [ ] **MAIL-32** [acceptance] given an account, a mailbox and a date range, returns only emails inside all three · — · brightline `0833904`, `ba218e6`, `d2eef83`; upstream PR #37
@@ -2188,8 +2282,8 @@ outcome is marked `(after #7)`.
 - [ ] **MAIL-34** [acceptance] given a matching email outside the inbox, finds it · — · long-tail/zaclohrenz `277aac7`
 - [ ] **MAIL-35** [acceptance] given a match older than the most recent emails, still finds it · — · chrischall `0860cf8`, `18660e4`, `88b58d0`
 - [ ] **MAIL-36** [acceptance] given more matches than the limit, returns the newest ones across every mailbox searched · — · upstream PR #37
-- [ ] **MAIL-37** [acceptance] given no date window, searches the last 90 days and says so in the result (see MAIL-C4) · NN3 · chrischall `e23e11e`
-- [ ] **MAIL-38** [acceptance] given no date window, refuses: an unbounded search never finishes on large accounts (see MAIL-C4) · — · morquis `5ce2351`
+- [ ] **MAIL-37** [acceptance] given no range, searches the last 30 days and says in the result which range it used and how far back it reached · NN3 · chrischall `e23e11e`; #24
+- **MAIL-38** [acceptance] given no date window, refuses: an unbounded search never finishes on large accounts · **rejected by #24**: MAIL-37 ships and MAIL-38 doesn't — an agent refused until it names both dates has to guess them, and every ordinary search costs a round trip · morquis `5ce2351`
 - [ ] **MAIL-39** [acceptance] given a search date that cannot be read as a date, refuses: a silent empty result looks like no mail · NN3 · chrischall `25d47cc`
 - [ ] **MAIL-40** [acceptance] given an email deleted since the last search, does not report it · NN3 · felkru `22aa354`
 - [ ] **MAIL-41** [acceptance] never stores email contents outside Mail's own storage · — · felkru `22aa354`
@@ -2235,26 +2329,30 @@ These scenarios hold for every read operation above.
 
 - [ ] **MAIL-57** [acceptance] given sending is not enabled, refuses: sending mail is off until the user turns it on · NN2 · brightline `859a9c8`
 - [ ] **MAIL-58** [acceptance] given the user has not confirmed this send, refuses and sends nothing · NN2 · brightline `859a9c8`; morquis `d76f3ec`
-- [ ] **MAIL-59** [acceptance] given a to, cc or bcc address that is not a known recipient, refuses the whole email (see MAIL-C12) · NN4 · ANierbeck `813c232`
+- [ ] **MAIL-59** [acceptance] given a to, cc or bcc address that is not a known recipient, refuses the whole email · NN4 · ANierbeck `813c232`; #16, ADR-0005
+- [ ] **MAIL-110** [acceptance] given an address that account's Sent mail and existing conversations do not hold, refuses and names the contact rather than the address · NN4 · ADR-0005, #16
+- [ ] **MAIL-111** [acceptance] given the known-recipient check could not finish inside its budget, refuses and says how far back it looked · NN3, NN4 · #16, #24
 - [ ] **MAIL-60** [acceptance] given a recipient field with one allowed and one unparsable address, refuses the whole send (after MAIL-V5) · NN4 · KassebaumEngineering `13fd400`
 - [ ] **MAIL-61** [acceptance] given the allowlist cannot be read, refuses every send · NN4 · KassebaumEngineering `13fd400`
 - [ ] **MAIL-62** [acceptance] reports the email as sent only once it is found in the sending account's Sent mailbox (after MAIL-V2) · NN3 · morquis `d76f3ec`
 - [ ] **MAIL-63** [acceptance] given the email does not appear in the Sent mailbox afterwards, reports the send as unconfirmed (after MAIL-V2) · NN3 · morquis `d76f3ec`; brightline `859a9c8`
-- [ ] **MAIL-64** [acceptance] given an attachment outside the folders the user allowed, refuses: a tool call must not mail arbitrary files · — · chrischall `0860cf8`, `18660e4`, `d401ca1`
 
 #### replying to an email
 
 - [ ] **MAIL-99** [acceptance] given the user has not confirmed this reply, refuses to send it · NN2 · chrischall `1a45550`, `9a62bc9`, `bfa14df`, `c9f9c48`
 
-#### saving an attachment
-
-- [ ] **MAIL-65** [acceptance] given a destination outside the configured download folder, refuses · — · chrischall `0860cf8`, `18660e4`, `d401ca1`
-
 #### trashing an email
+
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18)): mail triage —
+move, mark read, delete, rules — has no tool at all, because the mechanism isn't settled (#7) and
+triage is destructive at scale. MAIL-66, MAIL-67 and MAIL-100 to MAIL-105 are kept for whenever it
+is pulled in._
 
 - [ ] **MAIL-66** [acceptance] given two emails that match the description, refuses rather than guessing which one · — · ANierbeck `3005df4`
 
 #### moving an email
+
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18))._
 
 - [ ] **MAIL-67** [acceptance] given moves are not enabled in settings, refuses and says which setting enables them · NN2, NN5 · upstream #51
 - [ ] **MAIL-100** [acceptance] given an email reference from an earlier read, moves exactly that email and reports its new mailbox as read back from the store · NN3 · gene-jelly `bb07be5`, `d13e5b4`; upstream #51
@@ -2264,24 +2362,24 @@ These scenarios hold for every read operation above.
 
 #### deleting an email
 
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18))._
+
 - [ ] **MAIL-104** [acceptance] given deleting is not enabled, refuses and says which setting enables it · NN2, NN5 · gene-jelly `bb07be5`, `d13e5b4`; upstream #51
 
 #### marking an email read
+
+_No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18))._
 
 - [ ] **MAIL-105** [acceptance] given a subject containing a double quote, marks the email read and runs nothing else · NN1 · gene-jelly `bb07be5`, `d13e5b4`; upstream #51
 
 #### checking for a reply
 
 - [ ] **MAIL-106** [acceptance] given a sent email that answers this one, reports replied with when it was sent · — · gene-jelly `bb07be5`
-- [ ] **MAIL-107** [acceptance] given a sent email with the same subject in another thread, reports not replied · — · gene-jelly `bb07be5`
-
-#### exporting an email
-
-- [ ] **MAIL-108** [acceptance] given a destination outside the configured export folder, refuses · — · morquis `db82ca5`, `de6b9f6`, `e64a658`
+- [ ] **MAIL-107** [acceptance] given a sent email with the same subject that answers a different email, reports not replied · — · gene-jelly `bb07be5`
 
 #### managing mailboxes
 
-- [ ] **MAIL-68** [acceptance] refuses to create, rename, move or delete a mailbox, and says to do it in Mail · — · morquis `016aeaf`, `2465ad5`, `5c01104`
+- [ ] **MAIL-68** [acceptance] offers no way to create, rename, move or delete a mailbox: an operation outside v1 has no tool at all, so an agent can't propose it · — · morquis `016aeaf`, `2465ad5`, `5c01104`; #18
 - [ ] **MAIL-109** [acceptance] offers no way to change the user's mail rules: disabling a rule such as a junk filter is a quiet, harmful action · — · chrischall `0860cf8`, `0703ad1`
 
 #### a mailbox
@@ -2294,7 +2392,7 @@ These scenarios hold for every read operation above.
 
 #### a mail search query
 
-- [ ] **MAIL-71** [domain] given characters such as an asterisk, matches them literally rather than as a wildcard (see MAIL-C10) · — · upstream #30
+- [ ] **MAIL-71** [domain] given characters such as an asterisk, matches them literally rather than as a wildcard: Mail and Messages parse one grammar in one domain module (MSG-80 to MSG-85) · — · upstream #30; #24
 
 #### a date range
 
@@ -2372,15 +2470,15 @@ These scenarios hold for every read operation above.
 - **Recommendation:** Recognise the inbox by its role, never by its name. A silent fallback to "the first mailbox" is a false result under NN3. MAIL-15 and MAIL-79 pin this down whichever way the role turns out to be read.
 - **Needs a human decision:** No — name lists fail by construction (localised and provider names). Which role signal is reliable is a #7 fact.
 
-#### MAIL-C4 How much work a search may do when no window is given
+#### MAIL-C4 How much work a search may do when no range is given
 
 - **Options:**
   - Look only at the newest N emails of the inbox and say nothing: brightline `ba218e6` (100); chrischall `18660e4`, `88b58d0` (30)
   - Search the last 90 days by default: chrischall `e23e11e`; ANierbeck `3005df4` (latest only)
   - Refuse unless account, mailbox, start and end dates are given: morquis `5ce2351`
   - No bound, one indexed query: fpjnijweide `6cf16c0`, `05305b2`
-- **Recommendation:** Never bound silently (MAIL-19, MAIL-30). If #7 shows an unbounded store query answers within the time budget, search needs no default window. Otherwise, apply a default window and state it in the result (MAIL-37) rather than refusing (MAIL-38). An agent that is told the window can widen it, but one that is refused has to guess dates.
-- **Needs a human decision:** Yes — whether a missing window is filled in or refused is a tool-surface trade-off (agent convenience against explicitness), and it only arises if #7 picks a slow mechanism. MAIL-37 and MAIL-38 can't both ship.
+- **Recommendation:** Never bound silently (MAIL-19, MAIL-30). Apply a default range and state it in the result (MAIL-37) rather than refusing (MAIL-38). An agent that is told the range can widen it, but one that is refused has to guess dates.
+- **Settled by [#24](https://github.com/that-mathevs/apple-native-mcp/issues/24):** the default range is the last 30 days, newest first, and the result states the range it used and its coverage — how far back it reached and whether it stopped at its time budget. **MAIL-37 ships, MAIL-38 doesn't.** #7 measured Mail at about 17 ms per *matching* email, with a date search on a large mailbox failing after 120 s, so an unbounded search is not viable. Messages has no default range, because its store answers quickly.
 
 #### MAIL-C5 How several accounts are read without hanging Mail
 
@@ -2440,8 +2538,8 @@ These scenarios hold for every read operation above.
   - Separate sender, subject and content filters combined with AND: fpjnijweide `6cf16c0`, `05305b2`; chrischall `18660e4`
   - A term with full-text syntax stripped and each word quoted: felkru `22aa354`
   - A known grammar (quoted phrases, `-` exclusions, optional words ranked by matches), with a shared test corpus that a mail proxy also meets: faces-sh `cad640a`, `ccc9f55`, `fa7dcbd`, `bdbb896` (built for Messages search)
-- **Recommendation:** Typed arguments for account, mailbox, sender and date window, plus one free-text query parsed by the same domain grammar as Messages search, with every other character literal (MAIL-71, upstream #30). With one grammar, agents learn one syntax, and faces-sh's corpus shows a single grammar can serve both apps.
-- **Needs a human decision:** Yes — whether Mail and Messages share one search-query grammar is a glossary and tool-surface choice (feeds #11).
+- **Recommendation:** Typed arguments for account, mailbox, sender and range, plus one free-text query parsed by the same domain grammar as Messages search, with every other character literal (MAIL-71, upstream #30). With one grammar, agents learn one syntax, and faces-sh's corpus shows a single grammar can serve both apps.
+- **Settled by [#24](https://github.com/that-mathevs/apple-native-mcp/issues/24):** Mail and Messages share one grammar in one domain module — quoted phrases match as a phrase, a leading `-` excludes, remaining words are optional and rank the results, case and diacritics are folded, and every other character is literal. There is no `OR` (MSG-83 is rejected). Searching bodies is opt-in and always states its coverage (MAIL-29, MAIL-30). The terms are already in `CONTEXT.md` as **search query**, **range** and **coverage**.
 
 #### MAIL-C11 How a send is gated
 
@@ -2450,7 +2548,7 @@ These scenarios hold for every read operation above.
   - Always allowed, with only a recipient check: ANierbeck `813c232`; KassebaumEngineering `13fd400`
   - No gate at all: morquis `d76f3ec`
 - **Recommendation:** Per-capability write enablement plus the user's confirmation of each send, never a model's reply (MAIL-57, MAIL-58). Drafts need enablement but no confirmation (MAIL-52, MAIL-53).
-- **Needs a human decision:** Yes — owned by #9.
+- **Settled by [#9](https://github.com/that-mathevs/apple-native-mcp/issues/9) ([ADR-0004](../adr/0004-sends-require-elicitation.md)):** every send is confirmed through MCP elicitation, and a client that doesn't declare elicitation is not offered the send tools at all (X-72, X-73). No setting may stand in for a confirmation (X-78). Drafts need the draft capability only, since nothing leaves the Mac (MAIL-53).
 
 #### MAIL-C12 Who an email may be sent to
 
@@ -2458,8 +2556,8 @@ These scenarios hold for every read operation above.
   - An explicit allowlist file that fails closed. Addresses are found with a regex, and a field with no parsable address is refused: KassebaumEngineering `13fd400` (upstream #48)
   - An env allowlist compared as raw strings, with email otherwise open and cc/bcc never checked: ANierbeck `813c232`
   - NN4's "known recipient": an address the user has already written to
-- **Recommendation:** Parse every recipient field completely and refuse the whole email if any address fails (MAIL-59, MAIL-60, MAIL-61). The default is a known recipient, with an allowlist as a setting on top. For email, "known" could mean addresses already in the user's Sent mail, or addresses on a contact card.
-- **Needs a human decision:** Yes — feeds map fog "The known-recipient rule" (what counts as known for email) and "Settings" (the allowlist).
+- **Recommendation:** Parse every recipient field completely and refuse the whole email if any address fails (MAIL-59, MAIL-60, MAIL-61). The default is a known recipient, with an allowlist as a setting on top.
+- **Settled by [#16](https://github.com/that-mathevs/apple-native-mcp/issues/16) ([ADR-0005](../adr/0005-a-known-recipient-is-one-with-real-traffic.md)):** for email, a known recipient is an address in that account's Sent mail or an existing conversation — a contact card is not enough (MAIL-110). Every address in To, Cc and Bcc must be known, and the whole email is refused if any is unknown or any field doesn't parse completely. When the check can't be completed inside its budget the send is refused, saying how far back it looked (MAIL-111). **Drafts are exempt**, because a draft never leaves the Mac (MAIL-53). The allowlist half is settled by [#19](https://github.com/that-mathevs/apple-native-mcp/issues/19): it narrows the rule and never widens it.
 
 #### MAIL-C13 How a draft is saved
 
@@ -2497,8 +2595,8 @@ These scenarios hold for every read operation above.
   - Match a name loosely and save into `~/.apple-mcp/attachments`: felkru `22aa354`
   - Save anywhere under `$HOME`, and attach any file on disk: chrischall `18660e4`, `d401ca1`
   - Export into any folder the caller names: morquis `db82ca5`, `e64a658`, `de6b9f6`
-- **Recommendation:** List attachments by name, type, size and MIME part (as for Messages, upstream #62 and #3). Open one by its part, never by a loose name (MAIL-51, MAIL-94). Saving and outgoing attachments wait until later, and then only from or into configured folders with confirmation (MAIL-64, MAIL-65, MAIL-108).
-- **Needs a human decision:** No — the exfiltration and persistence paths in chrischall C22 and morquis C25 settle it. The configured folders later feed map fog "Settings".
+- **Recommendation:** List attachments by name, type, size and MIME part (as for Messages, upstream #62 and #3). Open one by its part, never by a loose name (MAIL-51, MAIL-94). Sending, saving and exporting attachments are **Out of scope**: [#18](https://github.com/that-mathevs/apple-native-mcp/issues/18) fixes v1's six writes and none of them writes a file, and [#19](https://github.com/that-mathevs/apple-native-mcp/issues/19) names the settings — capabilities, calendars, mail accounts, note folders, chats and the send allow-list — with no download or export folder among them. MAIL-64, MAIL-65 and MAIL-108 are parked there.
+- **Needs a human decision:** No — the exfiltration and persistence paths in chrischall C22 and morquis C25 settle it, and #18 and #19 settle the scope.
 
 ### Verification tasks
 
@@ -2540,10 +2638,10 @@ These scenarios hold for every read operation above.
 - **gene-jelly:** pushing the unread filter into the store instead of checking one email at a time; covering every account; triage operations (archive, move, delete, mark read) and a "replied" state as wanted features (later scope), with mailboxes resolved exactly.
 - **ANierbeck:** hiding mail accounts from the agent; unread mail from the inbox, newest first, skipping emails that can't be read; finding an account by name or email address; checking cc and bcc recipients too; starting an app before driving it; showing that "MailKit" is an osascript wrapper.
 - **KassebaumEngineering:** a draft as the safe default way to compose; a send allowlist that fails closed and refuses unparsable recipient fields.
-- **chrischall:** a search that states its date window; searches scoped to an account and mailbox; unread counts per mailbox; accounts with their email addresses; checking an identifier's shape before touching Mail; restricting attachments to configured folders; replies kept behind the same per-send confirmation as sends.
+- **chrischall:** a search that states its range; searches scoped to an account and mailbox; unread counts per mailbox; accounts with their email addresses; checking an identifier's shape before touching Mail; restricting attachments to configured folders; replies kept behind the same per-send confirmation as sends.
 - **danielk-am:** labelling every result with both its account and its mailbox.
 - **fpjnijweide:** the Envelope Index as a candidate read path; sender, subject and body filters combined with AND; addressing an email by a stable identifier from a search result; reading one email's full text on demand.
-- **morquis:** mailbox paths inside an account compared after NFC; counts only when asked; localised inbox names; email metadata without bodies; an email reference with Message-ID, account and mailbox; cursor paging; a search that names its window; searching attachment names; dry runs with before-and-after reports; retiring mailbox management that doesn't work; starting Mail without bringing it to the front; exports only into a configured folder (later scope).
+- **morquis:** mailbox paths inside an account compared after NFC; counts only when asked; localised inbox names; email metadata without bodies; an email reference with Message-ID, account and mailbox; cursor paging; a search that names its range; searching attachment names; dry runs with before-and-after reports; retiring mailbox management that doesn't work; starting Mail without bringing it to the front; exports only into a configured folder (later scope).
 - **nivra:** evidence that parsing osascript's human-readable output was why nothing came back; a time budget with a named timeout.
 - **sicdigital:** ISO 8601 timestamps; a missing date reported as unknown, not invented.
 - **long-tail/zaclohrenz:** real accounts and mailboxes, with a failed read reported as an error, never an empty result.
@@ -2567,10 +2665,12 @@ These scenarios hold for every read operation above.
 - [ ] **X-04** [acceptance] lists exactly the operations the server can perform, one tool for each · — · morquis `64230cd`, `47f1515`, `5ce2351`, `fa7e5f9`, `db82ca5`, `59d3aa3`, `5c01104`
 - [ ] **X-05** [acceptance] marks every tool that only reads as read-only and not destructive · — · ANierbeck `87cb579`, `3005df4`; mjmcg `dcf1993`, `fed09d1`; upstream PR #76
 - [ ] **X-06** [acceptance] marks every tool that changes a store as not read-only, so a client can ask before it runs · NN2 · fpjnijweide `48cd701`; upstream PR #76
-- [ ] **X-07** [acceptance] marks every tool that changes or deletes existing data as destructive · — · chrischall `038ce2e`, `9efd4ef`, `0703ad1`, `473181a`, `add4b64`, `815f121`, `209f3a4`; mjmcg `dcf1993`, `fed09d1`
+- [ ] **X-07** [acceptance] marks every tool that changes or deletes existing data as destructive, `update_note` included: it changes data that already exists and can lose formatting · — · chrischall `038ce2e`, `9efd4ef`, `0703ad1`, `473181a`, `add4b64`, `815f121`, `209f3a4`; mjmcg `dcf1993`, `fed09d1`; #22 (correction), #18
 - [ ] **X-08** [acceptance] marks a tool that only adds a new item as not destructive: the hint means the tool may destroy something · — · ANierbeck `87cb579`, `3005df4`; upstream PR #76
 - [ ] **X-09** [acceptance] marks sending a message or an email as not read-only, destructive, not idempotent and open-world: a send reaches other people and cannot be taken back · NN2 · ANierbeck `87cb579`, `3005df4`; upstream PR #76
 - [ ] **X-10** [acceptance] given an in-memory client, offers the same tools as over stdio · — · sicdigital `c36da30`
+- [ ] **X-72** [acceptance] given a client that did not declare elicitation, offers no send tool, and no setting turns one on: a rule that holds only on some clients can't be stated honestly · NN2 · ADR-0004
+- [ ] **X-92** [acceptance] offers no tool that prepares a send for another tool to complete: the token would come back in a tool result and pass through the model · NN2 · ADR-0004, #5
 
 #### calling a tool
 
@@ -2583,35 +2683,47 @@ These scenarios hold for every read operation above.
 - [ ] **X-17** [acceptance] given arguments that fail validation, refuses before touching any app or store · NN1 · therealap `1ad9f60`, `5f50276`; chrischall `9efd4ef`, `add4b64`, `209f3a4`, `bf6dc37`, `29af0a2`, `91e0101`, `6831a90`, `18660e4`
 - [ ] **X-18** [acceptance] given a limit that is not a positive whole number, refuses and names the argument: only a number may reach the store · NN1 · chrischall `9efd4ef`, `add4b64`, `209f3a4`, `bf6dc37`, `29af0a2`, `91e0101`, `6831a90`, `18660e4`; fpjnijweide `48cd701`; sicdigital `d261523`, `eef6636`
 - [ ] **X-19** [acceptance] given an argument the tool does not declare, refuses the call: an ignored filter would make the reply lie · NN3 · fpjnijweide `48cd701`
-- [ ] **X-20** [acceptance] given any failure, reports it as an error whose first line names the failure and says what did not happen · NN5 · faces-sh `42c2fd7`, `ac53e87`; upstream #15
-- [ ] **X-21** [acceptance] given the app or store behind the tool complained, carries its words verbatim after the first line · — · faces-sh `42c2fd7`, `ac53e87`
+- [ ] **X-20** [acceptance] given any failure, answers with a named failure record carrying a stable code and one sentence saying what did not happen, with `isError` true · NN5 · faces-sh `42c2fd7`, `ac53e87`; upstream #15; ADR-0006
+- [ ] **X-21** [acceptance] given the app or store behind the tool complained, carries its words verbatim in the failure's evidence field, capped, never paraphrased · — · faces-sh `42c2fd7`, `ac53e87`; ADR-0006
 - [ ] **X-22** [acceptance] given an unexpected internal error, reports a generic failure without file paths or stack traces · — · ANierbeck `dd7eecb`
 - [ ] **X-23** [acceptance] given a failure that suggests a next step, names the action to take rather than a tool name that may not exist in the caller's toolset · NN5 · faces-sh `616cefe`, `049af46`, `6fe0c03`
-- [ ] **X-24** [acceptance] puts everything the agent needs in the content it reads, never only in a side field: clients do not show side fields · — · faces-sh `94149a2`, `dbffae5` (fork-internal #504, #499)
+- [ ] **X-24** [acceptance] puts everything the agent needs in the records it returns in `content`, mirrored in `structuredContent` against an output schema, never only in a side field: clients do not show side fields · — · faces-sh `94149a2`, `dbffae5` (fork-internal #504, #499); ADR-0006
+- [ ] **X-73** [acceptance] given a client that did not declare elicitation, refuses a send at dispatch and names the missing client support, for a client holding an older tool list · NN2, NN5 · ADR-0004, #19
+- [ ] **X-79** [acceptance] given arguments naming a capability, a setting or a helper path, changes nothing about what is enabled: settings never come from tool input · NN2 · #19, ADR-0003
+- [ ] **X-83** [acceptance] given a write the store could not confirm, reports an unconfirmed outcome and not an error, so the agent does not try the write again · NN3 · ADR-0006, #9
 
 #### calling a tool that reaches an app
 
 - [ ] **X-25** [acceptance] given Automation permission for the app is not granted, reports a permission failure naming the app, the setting to change and where it is · NN5 · ANierbeck `dd7eecb`; brightline `2bcee54`; nivra `0b616cd`, `2860fb6`; faces-sh `ac53e87`, `4c3096d`, `42c2fd7`; upstream #65, #71
 - [ ] **X-26** [acceptance] given the app does not answer within its time budget, reports that the app timed out, not that permission is missing (after X-V2) · NN5 · brightline `2bcee54`; nivra `0b616cd`, `2860fb6`
 - [ ] **X-27** [acceptance] given the store could not be read, reports a failure naming why, never an empty success · NN3 · upstream #66, #58, #69, #67, #75; faces-sh `42c2fd7`, `ac0058a`; morquis `96759b3`, `d76f3ec`; mjmcg `88e26b9`, `d4ec06d`, `bde3e31`; KassebaumEngineering `1d47e74`; nivra `0b616cd`, `2860fb6`
+- [ ] **X-90** [acceptance] reads no protected store from the server process itself: every privacy-protected access goes through the helper · NN1, NN5 · ADR-0002
 
 #### calling a tool that returns a list
 
 - [ ] **X-28** [acceptance] given more matches than the page holds, says more exist and how to ask for the next page · NN3 · sicdigital `d261523`, `eef6636`
+- [ ] **X-81** [acceptance] given items the settings exclude, says how many were left out and never their titles or identifiers · — · #19
 
 #### the settings
 
 - [ ] **X-29** [domain] given a write capability nobody configured, treats it as off · NN2 · sicdigital `e066b89`, `fa5a728`, `c36da30`, `398bcd5`, `91d7447`, `dd291b9`
-- [ ] **X-30** [domain] given settings that cannot be read, treats every write capability as off and says why · NN2 · KassebaumEngineering `13fd400`; sicdigital `91d7447`
+- [ ] **X-30** [domain] given the client's configuration cannot be read or does not parse, treats every write capability as off and says why · NN2 · KassebaumEngineering `13fd400`; sicdigital `91d7447`; #19
+- [ ] **X-78** [domain] requires a confirmation for every send whatever the settings say: no configuration removes it · NN2 · ADR-0004
+- [ ] **X-80** [domain] reads capabilities only from the client's configuration, so nothing the server itself can write can turn a write on · NN2 · #19
 
 #### a confirmation
 
-- [ ] **X-31** [domain] counts only an explicit approval from the user, never a model's reply · NN2 · brightline `859a9c8`
+- [ ] **X-31** [domain] counts only an explicit approval from the user, never a model's reply · NN2 · brightline `859a9c8`; ADR-0004
+- [ ] **X-74** [domain] given a response that leaves the required field unset, counts it as a decline: a client that auto-accepts an empty form is not a person · NN2 · ADR-0004
+- [ ] **X-75** [domain] given a decline or a cancel, sends nothing and says the user declined · NN2 · ADR-0004
+- [ ] **X-76** [domain] shows the resolved recipient, how it was resolved, the service and the whole body, never truncated · NN2 · ADR-0004
+- [ ] **X-77** [domain] given a body that differs from the one confirmed, refuses: what was approved is what is sent · NN2 · ADR-0004
 
 #### failure evidence
 
 - [ ] **X-32** [domain] given evidence carrying a bearer token, redacts the credential and keeps the rest · — · faces-sh `42c2fd7`, `ac53e87`
 - [ ] **X-33** [domain] given evidence longer than the cap, cuts it and marks the cut · — · faces-sh `42c2fd7`, `ac53e87`
+- [ ] **X-82** [domain] given evidence naming a path inside the user's home directory, keeps the evidence verbatim but writes that path with the home directory replaced by `~` · — · ADR-0006, #22
 
 #### a permission failure
 
@@ -2637,7 +2749,22 @@ These scenarios hold for every read operation above.
 
 - [ ] **X-42** [contract] advertises exactly the tools the server lists · — · therealap `1ad9f60`
 
+#### the helper binary
+
+_[ADR-0003](../adr/0003-signed-helper-at-a-fixed-path.md), decided in
+[#8](https://github.com/that-mathevs/apple-native-mcp/issues/8), settles X-C13._
+
+- [ ] **X-84** [acceptance] given a binary at the fixed path that does not meet the pinned code requirement, refuses to copy over it or to run it, and fails by name: the path is user-writable and a stranger's binary there would prompt under a trusted name · NN5 · ADR-0003
+- [ ] **X-85** [acceptance] given the helper changed since it was installed, checks it again and refuses it: the requirement is checked before every launch, not once · NN5 · ADR-0003
+- [ ] **X-86** [acceptance] given a helper newer than the one it ships, keeps the newer one and names which client's install to update rather than replacing it · NN5 · ADR-0003, #8
+- [ ] **X-87** [acceptance] given a development build and no developer setting in the client's configuration, refuses it · NN2, NN5 · ADR-0003
+- [ ] **X-91** [acceptance] installs the helper from the package it shipped in, running no install script and fetching nothing from the network · NN1 · #8
+
 #### the automation runner
+
+_[ADR-0002](../adr/0002-helper-owns-every-protected-access.md) moves this port behind the helper
+protocol: static scripts are run by the Swift helper, not by a Node adapter. The behaviours below
+stand as written, and X-C11's open question about argv against stdin is now internal to the helper._
 
 - [ ] **X-43** [contract] given a string containing quotes, backslashes, line breaks, «guillemets», dollar patterns, shell metacharacters or script source, delivers it to the script unchanged and runs nothing it contains · NN1 · ANierbeck `cd72bdf`, `fc893d7`; faces-sh `784db41`; morquis `d76f3ec`, `96759b3`; nivra `0b616cd`, `2860fb6`; sicdigital `791f5f2`, `d5d5df0`; brightline `859a9c8`; boutquin `2894ab6`, `8a5d2e0`; chrischall `2e06954`, `18660e4`, `88b58d0`, `bf6dc37`, `29af0a2`, `60f9977`, `91e0101`, `6831a90`, `1a358d6`, `fa61e37`
 - [ ] **X-44** [contract] given arguments of any JSON type, passes numbers, booleans and lists as data and never as script source · NN1 · chrischall `9efd4ef`, `add4b64`, `209f3a4`, `bf6dc37`, `29af0a2`, `91e0101`, `6831a90`, `18660e4`
@@ -2648,12 +2775,14 @@ These scenarios hold for every read operation above.
 - [ ] **X-49** [contract] given a result larger than a megabyte, returns all of it or fails naming the size · NN3 · KassebaumEngineering `1d47e74`; upstream #67, #58, #75
 - [ ] **X-50** [contract] given a script that outlives its time budget, stops it and leaves no process behind before reporting the timeout: a script left running keeps the app busy · — · brightline `84edc6b`, `304f384`; morquis `97d5918`, `a8283e2`, `a977f72`; nivra `0b616cd`, `2860fb6`; upstream #59, #19, #58
 - [ ] **X-51** [contract] given a child that ignores the polite stop, still ends it after the grace period · — · morquis `97d5918`, `a8283e2`, `a977f72`
-- [ ] **X-52** [contract] given the client cancels a request, stops the script it started so the app is left alone (after X-V8) · — · upstream #22, #59
+- [ ] **X-52** [contract] given the client cancels a request, stops the script it started so the app is left alone, and ends its own work on its time budget whether or not a cancellation ever arrives · — · upstream #22, #59; #25
 - [ ] **X-53** [contract] given a script still running, keeps answering other requests · — · nivra `0b616cd`, `2860fb6`
 - [ ] **X-54** [contract] given the target app refuses Apple Events, reports a missing Automation permission that names the app, told apart by error number rather than message text (after X-V1) · NN5 · morquis `97d5918`, `a8283e2`, `a977f72`; faces-sh `42c2fd7`, `ac53e87`
 - [ ] **X-55** [contract] given a script that throws, reports a named script failure carrying the script's message · NN5 · upstream #19
 
 #### the automation scripts
+
+_Shipped with the helper and run by it ([ADR-0002](../adr/0002-helper-owns-every-protected-access.md))._
 
 - [ ] **X-56** [contract] given the shipped scripts, every one compiles · — · felkru `c769cc0`
 - [ ] **X-57** [contract] each one runs under osascript with only the arguments it declares, on every macOS version it ships for · — · upstream #19
@@ -2671,6 +2800,8 @@ These scenarios hold for every read operation above.
 - [ ] **X-66** [contract] reports every date in the user's local time with its offset · — · faces-sh `7160b0a`, `bfd5b64`, `4587d0a`; upstream #64, #34, #53, #27
 - [ ] **X-67** [contract] given the helper does not answer within its time budget, ends the helper process, forcing it after a grace period, and reports a timeout · — · morquis `97d5918`, `a8283e2`, `a977f72`
 - [ ] **X-68** [contract] given the helper process crashed, starts it once more and then reports a named failure · NN5 · plan.md Phase 2 (edge cases for the walking skeleton)
+- [ ] **X-88** [contract] given a request naming a script or a query it does not ship, refuses it: the helper runs only the scripts and prepared statements built into it · NN1 · ADR-0002
+- [ ] **X-89** [contract] asks macOS for access under its own identity, so no grant lands on the process that launched it · NN5 · ADR-0002, #4
 
 #### every store port
 
@@ -2711,8 +2842,12 @@ These scenarios hold for every read operation above.
   the settings can't be read (X-30), and is checked both when listing tools and at dispatch (X-03, X-14).
   A deny-list lets every future write through, and a per-app switch leaves an app's writes on with its
   reads.
-- **Needs a human decision:** Yes — feeds map fog "Settings": how fine a capability is (per operation,
-  per context, per send) and whether settings live in the client's `env` block or in a file.
+- **Settled by [#19](https://github.com/that-mathevs/apple-native-mcp/issues/19):** one capability
+  per write operation — #18 fixed v1's writes at six, so the list is short enough to name each one —
+  set only in the client's `env` block. **No settings file in v1**, because every file the server can
+  read is one an agent with file access can write, and that would let a prompt-injected agent grant
+  itself the capability to send. Off when unset (X-29), fails closed (X-30), checked in the tool list
+  and again at dispatch (X-03, X-14), and never changed by tool input (X-79, X-80).
 
 #### X-C3 Who a send may reach
 
@@ -2726,8 +2861,11 @@ These scenarios hold for every read operation above.
   setting that narrows it further. Numbers are compared as normalised E.164 and addresses as parsed
   addresses, and a recipient field that doesn't parse completely is refused. The reports show bypasses
   in last-10-digit, substring and regex matching.
-- **Needs a human decision:** Yes — owned by map fog "The known-recipient rule". The allowlist
-  setting feeds "Settings". Messages and Mail own the scenarios.
+- **Settled by [#16](https://github.com/that-mathevs/apple-native-mcp/issues/16)
+  ([ADR-0005](../adr/0005-a-known-recipient-is-one-with-real-traffic.md)):** a send may reach only a
+  handle the user has **real traffic** with, matched on a normalised form exactly. An allowlist
+  narrows that and can never widen it ([#19](https://github.com/that-mathevs/apple-native-mcp/issues/19)).
+  Messages and Mail own the scenarios.
 
 #### X-C4 How a write is confirmed
 
@@ -2740,7 +2878,10 @@ These scenarios hold for every read operation above.
 - **Recommendation:** Never use sampling. It asks a model with the same possibly injected context, and
   substring matching accepts "no, I would not say yes". Annotations are advisory. Keep X-31 as the domain
   rule, whatever mechanism #9 picks.
-- **Needs a human decision:** Yes — owned by #9.
+- **Settled by [#9](https://github.com/that-mathevs/apple-native-mcp/issues/9)
+  ([ADR-0004](../adr/0004-sends-require-elicitation.md)):** every send is confirmed through MCP
+  elicitation, and a client that doesn't declare it is not offered the send tools at all. X-31
+  stands as written, and X-72 to X-78 and X-92 carry the rest.
 
 #### X-C5 How tools are annotated
 
@@ -2755,6 +2896,8 @@ These scenarios hold for every read operation above.
 - **Recommendation:** Follow the MCP definitions:
   - `readOnlyHint` is true only on reads (X-05) and false on anything that changes a store (X-06).
   - `destructiveHint` is true on updates, deletes and sends (X-07, X-09) and false on pure creates (X-08).
+    v1's only update is `update_note`, and it is destructive: #22's parenthesis "v1 has no updates or
+    deletes" was corrected on that ticket.
   - `idempotentHint` is false on creates and sends.
   - `openWorldHint` is true on sends only (a local lookup is not open-world, contrary to PR #76).
 
@@ -2774,8 +2917,13 @@ These scenarios hold for every read operation above.
   A body is then a field and can't pose as another record (ANierbeck's banner and `||` parsing were both
   forged by one email). Keep faces-sh's split between index and detail so a list stays small (its notes
   list was 2.3 MB of prose).
-- **Needs a human decision:** Yes — trades the token cost and readability of prose against records a
-  hostile body can't forge. Feeds map fog "Threats to scenarios".
+- **Settled by [#22](https://github.com/that-mathevs/apple-native-mcp/issues/22)
+  ([ADR-0006](../adr/0006-results-are-records-not-prose.md)):** every tool returns JSON records in
+  `content`, mirrored in `structuredContent` against an output schema, and text the user didn't
+  write is always a field (X-24, X-46, X-47). No banner and no per-field marker: the protection is
+  structural. A failure is a record with a stable code, one sentence and the outside evidence
+  verbatim, carried with `isError: true` (X-20, X-21). `unconfirmed` is an outcome field, not an
+  error (X-83).
 
 #### X-C7 How much of an underlying error reaches the agent
 
@@ -2844,7 +2992,8 @@ These scenarios hold for every read operation above.
   - Splice `JSON.stringify` literals into JXA source: morquis `96759b3`; KassebaumEngineering `1d47e74`
   - Pass values as arguments to a JXA function: faces-sh `784db41`
 - **Recommendation:** Scripts are static files, and values arrive only as JSON arguments (X-43, X-44).
-  Whether the JSON travels in argv or on stdin waits on X-V6.
+  Whether the JSON travels in argv or on stdin waits on X-V6, which
+  [ADR-0002](../adr/0002-helper-owns-every-protected-access.md) makes internal to the helper.
 - **Needs a human decision:** No — NN1 settles it. brightline missed the calendar location and notes,
   morquis lost two sites, and chrischall opened a numeric injection path.
 
@@ -2872,10 +3021,15 @@ These scenarios hold for every read operation above.
   - Its own `.app` bundle launched through LaunchServices so it holds its own grant: fpjnijweide
     `42c9e11`
   - External CLIs the user installs separately: mjmcg `bde3e31`
-- **Recommendation:** Never commit binaries. Build reproducibly from the repo's source. Choose between
-  building from source and shipping a signed binary with #4's finding in mind: ad-hoc builds lose the
-  grant on every rebuild.
-- **Needs a human decision:** Yes — owned by #8.
+- **Recommendation:** Never commit binaries. Build reproducibly from the repo's source.
+- **Settled by [#8](https://github.com/that-mathevs/apple-native-mcp/issues/8)
+  ([ADR-0003](../adr/0003-signed-helper-at-a-fixed-path.md)):** the helper ships as a signed,
+  notarised universal binary, not built from source on the user's Mac, because an ad-hoc build loses
+  its grant on every rebuild and every build loses it when the file moves. It runs from
+  `~/Library/Application Support/apple-native-mcp/apple-native-mcp`, so every install channel and
+  update shares one path and one grant, and it is checked against a pinned code requirement
+  (identifier plus team `4A82YT3HVP`) before copying and before every launch. The `the helper
+  binary` subject carries the scenarios (X-84 to X-87, X-91).
 
 #### X-C14 How large results are kept within limits
 
@@ -2959,9 +3113,12 @@ These scenarios hold for every read operation above.
 - **Recommendation:** Name the pane in current macOS wording, and name the app whose row the user will
   actually see. Per #4, that is the helper's own executable name when the helper disclaims
   responsibility, and otherwise the responsible host (Claude, Terminal). Never name a guess.
-- **Needs a human decision:** Yes — depends on #8. Whether the helper holds its own grant decides which
-  name appears in the Contacts, Calendars and Reminders panes. For Automation, the server has to find out
-  the host, or be told it in settings (map fog "Settings").
+- **Settled by [#8](https://github.com/that-mathevs/apple-native-mcp/issues/8)
+  ([ADR-0002](../adr/0002-helper-owns-every-protected-access.md)):** the helper disclaims
+  responsibility and owns every privacy-protected access, so a permission failure names the helper's
+  own executable name, `apple-native-mcp`, and the pane in current macOS wording. #4 showed the
+  prompt names the executable's file name. X-89 pins the grant to the helper's own identity, and
+  CAL-24 names it.
 
 #### X-C20 Which writes beyond plan.md's Phase 3 list are in v1
 
@@ -2978,14 +3135,16 @@ These scenarios hold for every read operation above.
     complete and delete (mjmcg `bde3e31`, `804b77d`, `fed09d1`), note delete (faces-sh `431f4b1`),
     contact create, update and delete by identifier (morquis `2483f04`, `a77212a`, `5c01104`), and
     mail triage: move, mark read, delete (gene-jelly `bb07be5`, `d13e5b4`; upstream #51).
-- **Recommendation:** Build Phase 3's writes first. Keep every other write scenario in the backlog
-  behind its own capability (CAL-51 to CAL-60, REM-46 to REM-49, NOT-48, CON-24 to CON-32, MAIL-66 to
-  MAIL-68, MAIL-100 to MAIL-109), so it is specified whenever it is pulled in. Destructive writes
-  (deletes, moves) wait until write settings and confirmation are proven on sends (upstream #51's
-  own verdict).
-- **Needs a human decision:** Yes — a scope call. NN2 makes every write opt-in but doesn't say which
-  writes v1 offers. It also sets how many capabilities map fog "Settings" has to express. CON-C7 is
-  the Contacts part of this question.
+- **Recommendation:** Build Phase 3's writes first. Keep every other write scenario in the backlog,
+  so it is specified whenever it is pulled in.
+- **Settled by [#18](https://github.com/that-mathevs/apple-native-mcp/issues/18):** v1 offers
+  exactly six writes — create an event, create a reminder with a due time, create a note, update a
+  note, draft an email, send an email, send a message over iMessage only. **An operation outside v1
+  has no tool at all:** it is absent from `tools/list` and from every description, so an agent can't
+  propose it. Every other write scenario stays in the backlog marked "no tool in v1" (CAL-51 to
+  CAL-60, REM-41 to REM-49, NOT-48, CON-24 to CON-32, MAIL-66, MAIL-67, MAIL-100 to MAIL-105,
+  MAIL-109), and scheduled sends and attachment writes move to **Out of scope**. This also settles
+  CON-C7 and MSG-C9.
 
 ### Verification tasks
 
@@ -3227,18 +3386,39 @@ later.
 - **MCP resources.** Tools cover reading a conversation and carry per-operation annotations.
   Source: upstream #3 (rejected; the need is covered by Messages read scenarios).
 
-### Deferred decisions, not settled as out of scope
+### Out of v1 by decision
 
-- **Scheduled message sends.** plan.md Phase 3 lists them, but faces-sh, chrischall and morquis
-  reject them for v1: see **MSG-C9**. Sources: faces-sh `431f4b1`, `42c2fd7` (C31); morquis
-  `d76f3ec` (C10); chrischall `fa61e37`, `209f3a4` (C16); ANierbeck `813c232` (C7); upstream.md open
-  question 11.
-- **Writes beyond plan.md's Phase 3 list** (event update and delete, reminder complete and delete,
-  note delete, contact writes, mail triage, mail rules): the scenarios stay in the backlog behind the
-  write setting, and **X-C20** asks which of them v1 offers. Sources are listed there.
-- **Saving or sending mail attachments.** Only from or into configured folders, confirmed, and
-  later than v1's first mail slices: **MAIL-C16**. Sources: chrischall `18660e4`, `0860cf8`, `d401ca1`
-  (C22); felkru `22aa354` (C5); morquis `db82ca5`, `e64a658`, `de6b9f6` (C25).
+Scenarios moved here from the backlog because a closed ticket put the whole operation outside v1.
+They keep their ids so nothing is lost.
+
+- **Scheduled message sends.** Out of v1 per [#18](https://github.com/that-mathevs/apple-native-mcp/issues/18):
+  no fork persisted a schedule and nothing could confirm a send that fires after the tool call
+  returned (NN3), so it needs persistence, a runner and its own confirmation model. This settles
+  **MSG-C9** and updates plan.md Phase 3 step 5. Sources: faces-sh `431f4b1`, `42c2fd7` (C31);
+  morquis `d76f3ec` (C10); chrischall `fa61e37`, `209f3a4` (C16); ANierbeck `813c232` (C7).
+  - Parked: **MSG-49** [acceptance] *scheduling a message* — given a recipient the user has never
+    messaged, refuses when asked to schedule, not later when it fires · NN4 · ANierbeck `813c232`
+  - Parked: **MSG-50** [acceptance] *scheduling a message* — refuses when the schedule would not
+    survive the server stopping · NN3 · chrischall `fa61e37`, `209f3a4`
+  - Parked: **MSG-51** [acceptance] *scheduling a message* — given a time that cannot be read,
+    refuses rather than sending now · — · faces-sh `431f4b1`, `42c2fd7`
+- **Sending, saving and exporting mail attachments.** Out of v1 per
+  [#18](https://github.com/that-mathevs/apple-native-mcp/issues/18), whose six writes do not include
+  writing a file, and [#19](https://github.com/that-mathevs/apple-native-mcp/issues/19), whose
+  settings name capabilities, calendars, mail accounts, note folders, chats and the send allow-list
+  and no download or export folder. See **MAIL-C16**. Sources: chrischall `18660e4`, `0860cf8`,
+  `d401ca1` (C22); felkru `22aa354` (C5); morquis `db82ca5`, `e64a658`, `de6b9f6` (C25).
+  - Parked: **MAIL-64** [acceptance] *sending an email* — given an attachment outside the folders
+    the user allowed, refuses: a tool call must not mail arbitrary files · — · chrischall `0860cf8`,
+    `18660e4`, `d401ca1`
+  - Parked: **MAIL-65** [acceptance] *saving an attachment* — given a destination outside the
+    configured download folder, refuses · — · chrischall `0860cf8`, `18660e4`, `d401ca1`
+  - Parked: **MAIL-108** [acceptance] *exporting an email* — given a destination outside the
+    configured export folder, refuses · — · morquis `db82ca5`, `de6b9f6`, `e64a658`
+
+Writes that stay in the backlog rather than moving here — event update and delete, reminder edit,
+complete and delete, note delete, contact writes, and mail triage — have **no tool in v1** per #18
+and are marked as such under their own subjects. **X-C20** is settled.
 
 ## Rejected
 
@@ -3552,8 +3732,8 @@ comes from. Nothing here is decided: #11 settles each term with the maintainer.
   due time. (long-tail)
 - **clear due:** removing a reminder's due date, as opposed to leaving it unchanged. (mjmcg)
 - **overdue:** an open reminder whose due time has passed. (mjmcg)
-- **due window:** a named span over due dates (today, overdue, this week) defined in our domain,
-  not a CLI preset. (mjmcg)
+- **due range:** a named span over due dates (today, overdue, this week) defined in our domain,
+  not a CLI preset. (mjmcg) `CONTEXT.md` settles the word as **range**, never "window".
 - **open count / overdue count:** per reminder list, how many open reminders it holds and how
   many of those are overdue. Avoid `reminderCount`. (mjmcg)
 - **repeat:** a reminder's recurrence, a frequency and an interval. It needs a due date as its
@@ -3609,9 +3789,10 @@ comes from. Nothing here is decided: #11 settles each term with the maintainer.
   chat* by the chat's own style, not by participant count. Avoid "conversation" and "thread" as
   synonyms (faces-sh, morquis, upstream).
 - **participant:** a handle that belongs to a chat; the user is never listed (faces-sh).
-- **genuine contact:** a message the other person sent, or one of the user's that left with no
-  error; failed sends don't count (faces-sh).
-- **last in touch:** the newest genuine contact on any of a person's handles; breaks ties, never
+- **real traffic:** a message the other person sent, or one of the user's that the store shows as
+  sent or delivered; failed sends don't count (faces-sh). Settled in `CONTEXT.md`; "genuine
+  contact" is not our word.
+- **last in touch:** the newest real traffic on any of a person's handles; breaks ties, never
   filters (faces-sh).
 - **ghost chat:** a chat holding only failed sends, or created by addressing a name instead of a
   handle (faces-sh, upstream #48).
@@ -3638,8 +3819,9 @@ comes from. Nothing here is decided: #11 settles each term with the maintainer.
 - **reaction:** a tapback stored as a message row that isn't a message the user wrote; avoid
   "tapback" in tool output (morquis).
 - **message timestamp:** nanoseconds since 2001-01-01 UTC, the store's own unit (faces-sh, morquis).
-- **period:** a start and end in the user's local time; a bare end date means that whole day
-  (faces-sh).
+- **range:** a start and end in the user's local time; a bare end date means that whole day
+  (faces-sh). Settled in `CONTEXT.md`; "period" and "window" are not our words, except for a
+  Calendar **busy period**.
 - **search query:** optional ranked terms, exact phrases and exclusions, folded for accents and
   case (faces-sh).
 - **coverage:** how far a search reached: messages scanned, whether it hit its ceiling, the oldest
@@ -3686,7 +3868,7 @@ comes from. Nothing here is decided: #11 settles each term with the maintainer.
 - **draft:** an unsent email saved in an account's Drafts mailbox. It isn't a compose window. (KassebaumEngineering, upstream PR #68)
 - **email reference:** what a read returns so a later operation can act on exactly that email (Message-ID, account, mailbox path, and a store id). Avoid matching by subject. (morquis, fpjnijweide, chrischall)
 - **Message-ID:** the RFC 5322 header, stored without angle brackets. Unlike Mail's scripting **mail object id**, it is not local to one Mac. (morquis)
-- **search window:** the date range a search covered, always stated in the result. **coverage:** how far back a read looked. Avoid "scan window". (chrischall, brightline, morquis, faces-sh)
+- **range:** the dates a search covered, always stated in the result. **coverage:** how far back a read looked. Avoid "window", "search window" and "scan window". (chrischall, brightline, morquis, faces-sh)
 - **search query:** the free-text part of a search, with a defined grammar and literal characters. Avoid "search term" when it means the parsed query. (faces-sh, upstream #30)
 - **attachment:** a MIME part of an email with a file name, content type and size, addressed by its part. (felkru, fpjnijweide)
 - **header selection:** the headers asked for by name, case-insensitively, with folded lines kept. (morquis)
@@ -3719,6 +3901,9 @@ comes from. Nothing here is decided: #11 settles each term with the maintainer.
   denied, write-only (events only) or full access (brightline, danielk-am, arr2036, mjmcg).
 - **responsible app:** the app macOS credits a permission prompt to, which isn't necessarily the
   process that asked. Avoid "host app" (upstream, brightline, nivra, fpjnijweide, faces-sh).
+  Settled by [ADR-0002](../adr/0002-helper-owns-every-protected-access.md): the helper disclaims
+  responsibility and holds every grant under its own identity, so it is the app a permission failure
+  names.
 - **Apple Event error number:** the OSStatus a failed script call carries (-1743 not permitted, -600
   not running), used to classify failures instead of message text (nivra, faces-sh, morquis).
 - **time budget:** the longest an operation may run before it is stopped and reported as timed out.
@@ -3762,6 +3947,12 @@ Phase 1's exit asks that every commit in every Appendix A fork, and every Append
 the findings as a scenario source, a rejection or a verification task. It was checked mechanically on
 this file:
 
+- **Scenarios:** 576 in the backlog, 230 of them required by a Non-negotiable, plus 17 parked under
+  Out of scope and 6 rejected in place by a closed decision. The 34 added for
+  [#26](https://github.com/that-mathevs/apple-native-mcp/issues/26) carry a ticket or an ADR as
+  their source rather than a fork commit, because they come from a decision rather than from
+  something a fork got wrong; they therefore add no commits or issues to the sets below.
+
 - **Commits:** the set is every commit (merges included) reachable from any branch of each
   `fork-<owner>` remote and not from any `upstream/*` branch (`git rev-list`), for the 18 Appendix A
   forks plus `yjbae-sqa`, and the 16 commits listed in `forks/long-tail.md`: 410 commits in 20 sets.
@@ -3769,6 +3960,8 @@ this file:
   commit only counts when it is a scenario source, a verification task, a rejection, an Out of scope
   entry, a repository or release input, or a Noise line. **All 410 are present.**
 - **Issues:** all 46 issue numbers in plan.md Appendix B appear as `upstream #n` in the same sections.
+  Bare `#n` references in this file are this project's own tickets on `that-mathevs/apple-native-mcp`,
+  never upstream's.
   **All 46 are present.** 39 are scenario sources, rejections, verification tasks or Out of scope
   entries. The seven that are purely setup problems (upstream #55, #50, #33, #29, #14, #5, #2) are
   accounted for, per their verdict in `upstream.md`, under Cross-cutting's "Install docs inputs"
