@@ -210,10 +210,9 @@ nest, and names repeat across accounts.
 _Avoid_: directory, category, group
 
 **Note**:
-An item in a note folder, addressed by its note identifier. Its **text** is the plain-text view that
-search matches, and its **document** is what the store holds: paragraphs, styles and attachments.
-What a note's **title** is remains open
-([#23](https://github.com/that-mathevs/apple-native-mcp/issues/23)).
+An item in a note folder, addressed by its note identifier. Its **title** is the name the store reports, which
+the server reads and never computes. Its **text** is the plain-text view that search matches, and
+its **document** is what the store holds: paragraphs, styles and attachments.
 _Avoid_: item, record, content, payload
 
 **Lossy rewrite**:
