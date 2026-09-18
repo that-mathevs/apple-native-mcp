@@ -24,6 +24,41 @@ type Response = {
   readonly failure?: { code?: unknown; sentence?: unknown; setting?: unknown; evidence?: unknown };
 };
 
+/**
+ * A request's time budget, from when it is sent: well past the two seconds the helper gives a read
+ * of the reminders, and well short of the sixty a client waits for a tool at the least (#25).
+ */
+const defaultTimeBudget = 10_000;
+
+/** How a request is asked. */
+export type Asking = {
+  /** A request that waits on a person, such as a permission prompt, has no time budget. */
+  readonly waitsOnTheUser?: boolean;
+};
+
+const helperTimedOut = (request: HelperRequest, timeBudget: number): NamedFailure => ({
+  code: "helper-timed-out",
+  sentence:
+    `The helper did not answer within ${String(timeBudget / 1000)} seconds, so it was stopped; ` +
+    "the next request starts a fresh one.",
+  evidence: request.request,
+});
+
+/** A request still waiting its turn when the helper stopped: it never reached the helper. */
+const notAsked = (evidence: string): NamedFailure => ({
+  code: "helper-not-asked",
+  sentence: "The helper stopped before this request reached it, and a fresh one did not answer.",
+  evidence,
+});
+
+/**
+ * Whether a request went unanswered after it reached the helper, which then stopped or was
+ * stopped. A write in that state may have happened, so it is reported as unconfirmed, never sent
+ * again.
+ */
+export const wentUnanswered = (failure: NamedFailure): boolean =>
+  failure.code === "helper-stopped" || failure.code === "helper-timed-out";
+
 const helperStopped = (evidence: string): NamedFailure => ({
   code: "helper-stopped",
   sentence: "The helper stopped before it answered, and starting it again did not help.",
@@ -63,16 +98,27 @@ const asFailure = (failure: NonNullable<Response["failure"]>): NamedFailure => {
   };
 };
 
-type Pending = {
+/** A request waiting its turn, or the one the helper is answering. */
+type Asked = {
+  readonly id: string;
+  readonly request: HelperRequest;
+  readonly timeBudget: number | undefined;
   readonly resolve: (outcome: Outcome<Record<string, unknown>>) => void;
 };
 
-/** A helper that is running, and the lines it has been asked to answer. */
+/**
+ * A helper that is running, and the requests it has been asked.
+ *
+ * The helper answers one request at a time, so they are sent to it one at a time: a request's
+ * time budget then starts when the helper takes it up, and a read waiting behind a slow one, or
+ * behind a prompt the user has yet to answer, cannot run out of time and stop a working helper.
+ */
 class Session {
   readonly #process: ChildProcessWithoutNullStreams;
   readonly #lines: Interface;
-  readonly #pending = new Map<string, Pending>();
+  readonly #waiting: Asked[] = [];
 
+  #answering: { readonly asked: Asked; readonly timer: NodeJS.Timeout | undefined } | undefined;
   #stopped: string | undefined;
 
   constructor(path: string) {
@@ -99,18 +145,49 @@ class Session {
     return this.#stopped;
   }
 
-  ask(id: string, request: HelperRequest): Promise<Outcome<Record<string, unknown>>> {
+  /** Ask, within the time budget when there is one. */
+  ask(
+    id: string,
+    request: HelperRequest,
+    timeBudget: number | undefined,
+  ): Promise<Outcome<Record<string, unknown>>> {
     return new Promise((resolve) => {
-      this.#pending.set(id, { resolve });
-      this.#process.stdin.write(
-        `${JSON.stringify({ protocolVersion: spokenProtocolVersion, id, ...request })}\n`,
-      );
+      if (this.#stopped !== undefined) {
+        resolve(failed(notAsked(this.#stopped)));
+        return;
+      }
+      this.#waiting.push({ id, request, timeBudget, resolve });
+      this.#sendNext();
     });
   }
 
   end(): void {
     this.#lines.close();
+    this.#process.stdin.end();
     this.#process.kill();
+  }
+
+  #sendNext(): void {
+    if (this.#answering !== undefined || this.#stopped !== undefined) return;
+    const asked = this.#waiting.shift();
+    if (asked === undefined) return;
+
+    // Past its time budget the helper is taken to be stuck: it is stopped, and whatever waits
+    // behind it goes to a fresh one.
+    const timer =
+      asked.timeBudget === undefined
+        ? undefined
+        : setTimeout(() => {
+            if (this.#answering?.asked !== asked) return;
+            this.#answering = undefined;
+            asked.resolve(failed(helperTimedOut(asked.request, asked.timeBudget ?? 0)));
+            this.#stop(`it did not answer ${asked.request.request} in time`);
+            this.end();
+          }, asked.timeBudget).unref();
+
+    this.#answering = { asked, timer };
+    const line = { protocolVersion: spokenProtocolVersion, id: asked.id, ...asked.request };
+    this.#process.stdin.write(`${JSON.stringify(line)}\n`);
   }
 
   #answer(line: string): void {
@@ -121,23 +198,35 @@ class Session {
       return;
     }
 
-    const id = typeof response.id === "string" ? response.id : undefined;
-    const waiting = id === undefined ? undefined : this.#pending.get(id);
-    if (!waiting || id === undefined) return;
+    const answering = this.#answering;
+    if (answering === undefined || response.id !== answering.asked.id) return;
 
-    this.#pending.delete(id);
+    clearTimeout(answering.timer);
+    this.#answering = undefined;
 
-    if (response.failure) waiting.resolve(failed(asFailure(response.failure)));
-    else if (response.result) waiting.resolve(succeeded(response.result));
-    else waiting.resolve(failed(unreadableAnswer(line)));
+    const { resolve } = answering.asked;
+    if (response.failure) resolve(failed(asFailure(response.failure)));
+    else if (response.result) resolve(succeeded(response.result));
+    else resolve(failed(unreadableAnswer(line)));
+
+    this.#sendNext();
   }
 
+  /**
+   * The request the helper had in hand may have been done, so it is reported as stopped; the ones
+   * waiting their turn never reached it, so they are reported as not asked, and asked afresh.
+   */
   #stop(evidence: string): void {
-    this.#stopped = evidence;
-    for (const [id, waiting] of this.#pending) {
-      this.#pending.delete(id);
-      waiting.resolve(failed(helperStopped(evidence)));
+    this.#stopped ??= evidence;
+
+    const answering = this.#answering;
+    this.#answering = undefined;
+    if (answering !== undefined) {
+      clearTimeout(answering.timer);
+      answering.asked.resolve(failed(helperStopped(evidence)));
     }
+
+    for (const asked of this.#waiting.splice(0)) asked.resolve(failed(notAsked(evidence)));
   }
 }
 
@@ -149,6 +238,7 @@ class Session {
  */
 export class Helper {
   readonly #helperToLaunch: () => Promise<Outcome<string>>;
+  readonly #timeBudget: number;
   #session: Promise<Outcome<Session>> | undefined;
   #nextId = 0;
   #stopping = false;
@@ -156,9 +246,14 @@ export class Helper {
   /**
    * @param helperToLaunch asked before every start, restarts included, for the path to launch or
    * the failure saying why nothing may be launched (ADR-0003).
+   * @param answersWithin each request's time budget in milliseconds, from when it is sent.
    */
-  constructor(helperToLaunch: () => Promise<Outcome<string>>) {
+  constructor(
+    helperToLaunch: () => Promise<Outcome<string>>,
+    { answersWithin = defaultTimeBudget }: { readonly answersWithin?: number } = {},
+  ) {
     this.#helperToLaunch = helperToLaunch;
+    this.#timeBudget = answersWithin;
   }
 
   /**
@@ -166,15 +261,27 @@ export class Helper {
    * may have died after doing it, and sending it again would do it twice.
    */
   async askOnce(request: HelperRequest): Promise<Outcome<Record<string, unknown>>> {
+    const first = await this.#askRunning(request);
+    // One that never reached the helper was never done, so it is safe to ask afresh.
+    if (first.ok || first.failure.code !== "helper-not-asked") return first;
+
     return await this.#askRunning(request);
   }
 
-  /** Ask for a read, which is asked again once if the helper died before answering. */
-  async ask(request: HelperRequest): Promise<Outcome<Record<string, unknown>>> {
-    const first = await this.#askRunning(request);
-    if (first.ok || first.failure.code !== "helper-stopped") return first;
+  /**
+   * Ask for a read, which is asked again once if the helper stopped before answering it. One that
+   * timed out is not: asked again, it would only time out again.
+   */
+  async ask(
+    request: HelperRequest,
+    asking: Asking = {},
+  ): Promise<Outcome<Record<string, unknown>>> {
+    const first = await this.#askRunning(request, asking);
+    const askAgain =
+      !first.ok && ["helper-stopped", "helper-not-asked"].includes(first.failure.code);
+    if (!askAgain) return first;
 
-    return await this.#askRunning(request);
+    return await this.#askRunning(request, asking);
   }
 
   /** End the helper, and start no other: a start already under way is ended when it lands. */
@@ -187,11 +294,18 @@ export class Helper {
     });
   }
 
-  async #askRunning(request: HelperRequest): Promise<Outcome<Record<string, unknown>>> {
+  async #askRunning(
+    request: HelperRequest,
+    { waitsOnTheUser = false }: Asking = {},
+  ): Promise<Outcome<Record<string, unknown>>> {
     const session = await this.#running();
     if (!session.ok) return session;
 
-    return await session.value.ask(this.#identifier(), request);
+    return await session.value.ask(
+      this.#identifier(),
+      request,
+      waitsOnTheUser ? undefined : this.#timeBudget,
+    );
   }
 
   #identifier(): string {

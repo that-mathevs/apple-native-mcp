@@ -13,7 +13,7 @@ import type { Range } from "../../domain/calendar/range.js";
 import type { Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
 import { writtenDay } from "../../domain/time-zone.js";
-import type { Helper } from "./helper.js";
+import { wentUnanswered, type Helper } from "./helper.js";
 
 /**
  * The event store as the helper answers it.
@@ -90,8 +90,8 @@ export const calendarEventStore = (helper: Helper): EventStore => ({
       ...(event.notes === undefined ? {} : { notes: event.notes }),
     });
 
-    // The helper died with the request in hand: it may have saved the event first.
-    if (!answered.ok && answered.failure.code === "helper-stopped") {
+    // The helper died, or was stopped, with the request in hand: it may have saved the event.
+    if (!answered.ok && wentUnanswered(answered.failure)) {
       return succeeded({ confirmed: false });
     }
 
