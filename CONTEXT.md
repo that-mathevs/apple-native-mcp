@@ -141,6 +141,11 @@ shares the series' event identifier, so an occurrence is addressed by the series
 start. A **span** says how far a change reaches: this occurrence, or this and later ones.
 _Avoid_: master event, instance, repeat (that word is Reminders'), recurrence
 
+**Event reference**:
+What a read returns so a later operation can act on exactly that event: its event identifier, and
+its original start when it is an occurrence of a series. Events are never addressed by title.
+_Avoid_: event address, event id alone for an occurrence
+
 **Availability**:
 Whether an event counts as busy or free. A **busy period** is a stretch when the user is busy, with
 no event details; an **open slot** is a gap between busy periods long enough for a requested

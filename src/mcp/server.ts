@@ -4,7 +4,10 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 import type { ListEventsDependencies } from "../application/calendar/list-events.js";
 import type { NamedFailure } from "../domain/failure.js";
 import { capabilityOff, isOn, type Settings } from "../domain/settings.js";
+import { listCalendarsTool } from "./calendar/list-calendars-tool.js";
 import { listEventsTool } from "./calendar/list-events-tool.js";
+import { readEventTool } from "./calendar/read-event-tool.js";
+import { searchEventsTool } from "./calendar/search-events-tool.js";
 import { refusing } from "./result.js";
 import type { Tool } from "./tool.js";
 
@@ -83,4 +86,12 @@ export const serverOffering = (tools: readonly Tool[], settings: Settings): McpS
  * nothing here depends on them for safety.
  */
 export const buildServer = (dependencies: ServerDependencies): McpServer =>
-  serverOffering([listEventsTool(dependencies)], dependencies.settings);
+  serverOffering(
+    [
+      listCalendarsTool(dependencies),
+      listEventsTool(dependencies),
+      searchEventsTool(dependencies),
+      readEventTool(dependencies),
+    ],
+    dependencies.settings,
+  );

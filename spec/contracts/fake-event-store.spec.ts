@@ -1,6 +1,10 @@
 import type { Occurrence } from "../../src/domain/calendar/event.js";
 import { FakeEventStore } from "../support/fake-event-store.js";
-import { anEventStore, anEventStoreThatCanBeLoaded } from "./event-store.contract.js";
+import {
+  anEventStore,
+  anEventStoreThatCanBeLoaded,
+  anEventStoreThatListsCalendars,
+} from "./event-store.contract.js";
 
 // The fake stands in for the real store in every acceptance scenario, so it answers the
 // same contract here. The helper-backed store answers it on a Mac.
@@ -21,6 +25,20 @@ const fake = (): {
 anEventStore({
   name: "the fake event store",
   build: () => Promise.resolve(fake()),
+});
+
+anEventStoreThatListsCalendars({
+  name: "the fake event store",
+  build: () => {
+    const { eventStore } = fake();
+    eventStore.hasCalendars({
+      identifier: "cal-1",
+      title: "Work",
+      account: "iCloud",
+      acceptsNewEvents: true,
+    });
+    return Promise.resolve({ eventStore });
+  },
 });
 
 anEventStoreThatCanBeLoaded({

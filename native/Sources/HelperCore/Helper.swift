@@ -28,11 +28,25 @@ public struct Helper: Sendable {
       return ["result": calendar.permission().asFields]
     case .requestCalendarPermission:
       return ["result": calendar.requestPermission().asFields]
-    case .eventsInRange(let range):
-      switch calendar.events(in: range) {
-      case .success(let found): return ["result": found.asFields]
-      case .failure(let failure): return ["failure": failure.asFields]
+    case .calendars:
+      return answering(calendar.calendars()) { ["calendars": $0.map(\.asFields)] }
+    case .event(let identifier, let originalStart):
+      return answering(calendar.event(identifier: identifier, originalStart: originalStart)) {
+        ["event": $0.map { $0.asFields as Any } ?? NSNull()]
       }
+    case .eventsInRange(let range):
+      return answering(calendar.events(in: range)) { $0.asFields }
+    }
+  }
+
+  /// A read either came to something, which goes out as the result, or was refused, which goes
+  /// out as the named failure it was refused with.
+  private func answering<Found>(
+    _ read: Result<Found, NamedFailure>, as fields: (Found) -> [String: Any]
+  ) -> [String: Any] {
+    switch read {
+    case .success(let found): ["result": fields(found)]
+    case .failure(let failure): ["failure": failure.asFields]
     }
   }
 }
@@ -78,7 +92,10 @@ extension Event {
 
 extension Calendar {
   var asFields: [String: Any] {
-    ["identifier": identifier, "title": title, "account": account.asFields]
+    [
+      "identifier": identifier, "title": title, "account": account.asFields,
+      "acceptsNewEvents": acceptsNewEvents,
+    ]
   }
 }
 

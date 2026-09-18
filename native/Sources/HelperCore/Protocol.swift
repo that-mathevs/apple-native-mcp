@@ -12,7 +12,9 @@ struct Request: Equatable {
   enum Kind: Equatable {
     case calendarPermission
     case requestCalendarPermission
+    case calendars
     case eventsInRange(Range)
+    case event(identifier: String, originalStart: Date?)
   }
 }
 
@@ -20,7 +22,9 @@ struct Request: Equatable {
 enum RequestName: String {
   case calendarPermission = "calendar_permission"
   case requestCalendarPermission = "calendar_permission_request"
+  case calendars = "calendars"
   case eventsInRange = "events_in_range"
+  case event = "event"
 }
 
 /// What reading a line produced: a request the helper can answer, or a named failure to report
@@ -66,11 +70,28 @@ extension Request {
       return .request(Request(id: id, kind: .calendarPermission))
     case .requestCalendarPermission:
       return .request(Request(id: id, kind: .requestCalendarPermission))
+    case .calendars:
+      return .request(Request(id: id, kind: .calendars))
     case .eventsInRange:
       guard let range = readRange(fields["range"]) else {
         return .failure(id: id, .requestMalformed(line: line))
       }
       return .request(Request(id: id, kind: .eventsInRange(range)))
+    case .event:
+      guard let identifier = fields["eventIdentifier"] as? String, !identifier.isEmpty else {
+        return .failure(id: id, .requestMalformed(line: line))
+      }
+      // An original start that cannot be read is refused, never dropped: without it the answer
+      // would be the series' first occurrence, which is a different event from the one meant.
+      switch OptionalInstant(fields["originalStart"]) {
+      case .unreadable:
+        return .failure(id: id, .requestMalformed(line: line))
+      case .absent:
+        return .request(Request(id: id, kind: .event(identifier: identifier, originalStart: nil)))
+      case .instant(let originalStart):
+        return .request(
+          Request(id: id, kind: .event(identifier: identifier, originalStart: originalStart)))
+      }
     }
   }
 }
@@ -86,4 +107,24 @@ private func readRange(_ field: Any?) -> Range? {
     let end = Instant.read(endText)
   else { return nil }
   return Range(from: start, to: end)
+}
+
+/// An instant a request may leave out. Leaving it out is one thing and writing something that
+/// is not an instant is another, and only the first may be treated as "none".
+private enum OptionalInstant {
+  case absent
+  case instant(Date)
+  case unreadable
+
+  init(_ field: Any?) {
+    guard let field else {
+      self = .absent
+      return
+    }
+    guard let text = field as? String, let instant = Instant.read(text) else {
+      self = .unreadable
+      return
+    }
+    self = .instant(instant)
+  }
 }

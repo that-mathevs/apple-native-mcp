@@ -1,3 +1,5 @@
+import Foundation
+
 /// The calendar as the helper reaches it. EventKit sits behind this and nothing else does, so the
 /// rules above it are specified against a fake and `swift test` needs neither a permission nor a
 /// single real event.
@@ -15,6 +17,10 @@ public protocol CalendarStore: Sendable {
   /// The occurrences one calendar holds in a range, a series already expanded into them.
   /// Asking one calendar at a time is what lets one bad calendar fail on its own.
   func events(in range: Range, from calendar: Calendar) throws(CalendarUnreadable) -> [Event]
+
+  /// The event an identifier names, or nil when there is none. For a series this is whichever
+  /// occurrence the store thinks of first: telling occurrences apart is the reading's job.
+  func event(identifier: String) -> Event?
 }
 
 /// One calendar would not answer — an offline subscription, a server that refused. It carries what

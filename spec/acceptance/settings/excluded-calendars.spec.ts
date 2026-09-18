@@ -1,18 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { settingsFrom } from "../../../src/domain/settings.js";
-import { buildServer } from "../../../src/mcp/server.js";
-import { connectedTo } from "../../support/connected-client.js";
+import { readingTheCalendar, therapy, work } from "../../support/calendar-server.js";
 import { FakeEventStore } from "../../support/fake-event-store.js";
 
 // What an agent sees of the calendars the user keeps from it. Calendars are addressed by
 // identifier and never by title: Bendix-ai 6e5ff6c hard-coded holiday titles in one language
 // and ANierbeck 3005df4 matched display names, which repeat across accounts and change.
-
-const noon = new Date("2026-09-18T16:00:00Z");
-
-const work = { identifier: "cal-work", title: "Work", account: "iCloud" } as const;
-const therapy = { identifier: "cal-therapy", title: "Therapy", account: "iCloud" } as const;
 
 const standUp = {
   identifier: "event-1",
@@ -41,14 +34,7 @@ const listingEventsWith = async (
   eventStore.holds(standUp, session);
   eventStore.cannotRead(...unreadable);
 
-  const client = await connectedTo(
-    buildServer({
-      eventStore,
-      now: () => noon,
-      timeZone: "America/New_York",
-      settings: settingsFrom(configuration),
-    }),
-  );
+  const client = await readingTheCalendar(eventStore, configuration);
 
   const result = await client.callTool({ name: "list_events", arguments: { ...sending } });
 

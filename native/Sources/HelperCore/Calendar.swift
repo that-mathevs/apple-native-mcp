@@ -17,11 +17,16 @@ public struct Calendar: Equatable, Hashable, Sendable {
   public let identifier: String
   public let title: String
   public let account: CalendarAccount
+  /// Whether new events may be put in it. A subscription or the birthdays calendar refuses them.
+  public let acceptsNewEvents: Bool
 
-  public init(identifier: String, title: String, account: CalendarAccount) {
+  public init(
+    identifier: String, title: String, account: CalendarAccount, acceptsNewEvents: Bool
+  ) {
     self.identifier = identifier
     self.title = title
     self.account = account
+    self.acceptsNewEvents = acceptsNewEvents
   }
 }
 
@@ -76,7 +81,22 @@ public struct Range: Equatable, Sendable {
   }
 }
 
+let day: TimeInterval = 24 * 60 * 60
+
+extension Range {
+  /// The longest range the event store reads in one go. EventKit shortens anything longer than
+  /// four years to its first four, and says nothing about it.
+  static let longest: TimeInterval = 4 * 365 * day
+}
+
 extension Event {
+  /// Whether this is the occurrence with that original start. The protocol writes an instant to
+  /// the second, so a fraction of a second either way is the same instant.
+  func began(at originalStart: Date) -> Bool {
+    guard let mine = self.originalStart else { return false }
+    return abs(mine.timeIntervalSince(originalStart)) < 1
+  }
+
   /// An event is in a range when the two overlap, not when the range contains it: a meeting that
   /// started before the range began is still on when the range begins.
   func falls(in range: Range) -> Bool {

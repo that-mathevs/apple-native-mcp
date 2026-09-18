@@ -25,6 +25,8 @@ public enum FailureCode: String, Equatable, Sendable {
   case calendarPermissionMissing = "calendar_permission_missing"
   /// One calendar could not be read, so its events are missing from the answer.
   case calendarUnreadable = "calendar_unreadable"
+  /// The range is longer than the event store will read in one go.
+  case rangeTooLong = "range_too_long"
 }
 
 extension NamedFailure {
@@ -65,5 +67,12 @@ extension NamedFailure {
       code: .calendarUnreadable,
       sentence: "The calendar \"\(title)\" could not be read, so its events are missing from this range.",
       evidence: evidence)
+  }
+
+  static func rangeTooLong(_ range: Range) -> NamedFailure {
+    NamedFailure(
+      code: .rangeTooLong,
+      sentence: "A range can cover four years at most. Nothing was read: ask for a shorter one.",
+      evidence: "\(Instant.written(range.start)) to \(Instant.written(range.end))")
   }
 }

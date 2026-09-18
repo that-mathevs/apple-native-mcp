@@ -158,4 +158,15 @@ struct ReadingTheEventsInARangeSpec {
 
     #expect(reading.events(in: tuesday).answer.calendars == [work, personal])
   }
+
+  // EventKit shortens a range longer than four years to its first four, and says nothing. A read
+  // that reported the range it was asked for would then be reporting one it never covered.
+  @Test("given a range longer than four years, refuses it rather than quietly reading only the first four")
+  func refusesARangeEventKitWouldShorten() {
+    let reading = readingACalendar(aCalendarStore())
+
+    let answer = reading.events(in: aRange(from: "2026-01-01T00:00:00Z", to: "2030-06-01T00:00:00Z"))
+
+    #expect(answer.failure?.code == .rangeTooLong)
+  }
 }

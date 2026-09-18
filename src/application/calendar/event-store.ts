@@ -1,4 +1,4 @@
-import type { Calendar, Occurrence } from "../../domain/calendar/event.js";
+import type { Calendar, EventReference, Occurrence } from "../../domain/calendar/event.js";
 import type { Range } from "../../domain/calendar/range.js";
 import type { Outcome } from "../../domain/failure.js";
 
@@ -16,5 +16,12 @@ export type EventsInRange = {
 
 /** The store events are read from. The helper implements it; a fake stands in for specs. */
 export type EventStore = {
+  /** Every calendar the store has, whatever it holds. */
+  calendars: () => Promise<Outcome<readonly Calendar[]>>;
+  /**
+   * The one event a reference names, or nothing when the store has no such event. A reference
+   * with no original start names the event itself, or a series' first occurrence.
+   */
+  event: (reference: EventReference) => Promise<Outcome<Occurrence | undefined>>;
   occurrencesIn: (range: Range) => Promise<Outcome<EventsInRange>>;
 };

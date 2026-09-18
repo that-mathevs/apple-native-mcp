@@ -14,10 +14,13 @@ func aRange(from start: String, to end: String) -> HelperCore.Range {
 let iCloud = CalendarAccount(identifier: "account-icloud", title: "iCloud")
 let subscriptions = CalendarAccount(identifier: "account-subscriptions", title: "Subscriptions")
 
-let work = HelperCore.Calendar(identifier: "calendar-work", title: "Work", account: iCloud)
-let personal = HelperCore.Calendar(identifier: "calendar-personal", title: "Personal", account: iCloud)
+let work = HelperCore.Calendar(
+  identifier: "calendar-work", title: "Work", account: iCloud, acceptsNewEvents: true)
+let personal = HelperCore.Calendar(
+  identifier: "calendar-personal", title: "Personal", account: iCloud, acceptsNewEvents: true)
 let teamFeed = HelperCore.Calendar(
-  identifier: "calendar-team-feed", title: "Team feed", account: subscriptions)
+  identifier: "calendar-team-feed", title: "Team feed", account: subscriptions,
+  acceptsNewEvents: false)
 
 func anEvent(
   _ title: String,
@@ -69,11 +72,18 @@ struct FakeCalendarStore: CalendarStore {
     var times = 0
   }
 
+  /// What was read, so a scenario can say how little the helper had to look at.
+  final class Reads: @unchecked Sendable {
+    var ranges: [HelperCore.Range] = []
+    var calendars: [HelperCore.Calendar] = []
+  }
+
   var permissionHeld: CalendarPermission = .granted
   var held: [Event] = []
   var refusing: [HelperCore.Calendar: String] = [:]
   var answersWhenAsked: CalendarPermission = .refused
   let asking = Asking()
+  let reads = Reads()
 
   func permission() -> CalendarPermission { permissionHeld }
 
@@ -95,8 +105,17 @@ struct FakeCalendarStore: CalendarStore {
   func events(in range: HelperCore.Range, from calendar: HelperCore.Calendar) throws(
     CalendarUnreadable
   ) -> [Event] {
+    reads.ranges.append(range)
+    reads.calendars.append(calendar)
     if let said = refusing[calendar] { throw CalendarUnreadable(evidence: said) }
-    return held.filter { $0.calendar == calendar }
+    // EventKit answers with what overlaps the range, as this does.
+    return held.filter {
+      $0.calendar == calendar && $0.start < range.end && $0.end > range.start
+    }
+  }
+
+  func event(identifier: String) -> Event? {
+    held.filter { $0.eventIdentifier == identifier }.min { $0.start < $1.start }
   }
 
   // MARK: builders
@@ -134,6 +153,19 @@ func aCalendarStore() -> FakeCalendarStore { FakeCalendarStore() }
 func helperReading(_ store: FakeCalendarStore) -> Helper { Helper(calendarStore: store) }
 
 func readingACalendar(_ store: FakeCalendarStore) -> CalendarReading { CalendarReading(store: store) }
+
+extension Result where Failure == NamedFailure {
+  /// Why a read was refused, for scenarios about a read that fails.
+  var failure: NamedFailure? {
+    if case .failure(let failure) = self { return failure }
+    return nil
+  }
+}
+
+extension Result where Success == Event?, Failure == NamedFailure {
+  /// The event a read found, or nil when it found none.
+  var found: Event? { (try? get()) ?? nil }
+}
 
 extension Result where Success == EventsInRange, Failure == NamedFailure {
   /// What a read answered, for scenarios about a read that succeeds.

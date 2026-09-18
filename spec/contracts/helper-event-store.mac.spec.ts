@@ -4,7 +4,7 @@ import { afterAll } from "vitest";
 
 import { calendarEventStore } from "../../src/adapters/native/calendar-event-store.js";
 import { Helper } from "../../src/adapters/native/helper.js";
-import { anEventStore } from "./event-store.contract.js";
+import { anEventStore, anEventStoreThatListsCalendars } from "./event-store.contract.js";
 
 /**
  * The same contract, against the real helper and the real calendar on this Mac.
@@ -24,6 +24,11 @@ afterAll(() => {
 });
 
 anEventStore({
+  name: "the helper-backed event store",
+  build: () => Promise.resolve({ eventStore: calendarEventStore(helper) }),
+});
+
+anEventStoreThatListsCalendars({
   name: "the helper-backed event store",
   build: () => Promise.resolve({ eventStore: calendarEventStore(helper) }),
 });

@@ -33,8 +33,24 @@ type ToolDefinition<Input extends z.ZodRawShape> = {
   readonly call: (request: z.infer<z.ZodObject<Input>>) => Promise<ToolResult>;
 };
 
-const asJsonSchema = (shape: z.ZodRawShape, io: "input" | "output"): JsonSchema =>
-  z.toJSONSchema(z.object(shape), { io }) as JsonSchema;
+const failure = z.object({
+  code: z.string(),
+  sentence: z.string(),
+  setting: z.string().optional(),
+  evidence: z.string().optional(),
+});
+
+const asJsonSchema = (schema: z.ZodType, io: "input" | "output"): JsonSchema =>
+  z.toJSONSchema(schema, { io }) as JsonSchema;
+
+/**
+ * What a client is told to expect: either the tool's record or a named failure. A refusal is
+ * a result, not a protocol error, and clients check every result against this one schema, so
+ * the record's fields are published as optional beside `failure`. The tool's own record is
+ * still checked in full before it leaves.
+ */
+const published = (output: z.ZodObject): JsonSchema =>
+  asJsonSchema(output.partial().extend({ failure: failure.optional() }), "output");
 
 /** A tool from its schemas, so what it accepts is written once and is what it is called with. */
 export const tool = <Input extends z.ZodRawShape>(definition: ToolDefinition<Input>): Tool => {
@@ -45,8 +61,8 @@ export const tool = <Input extends z.ZodRawShape>(definition: ToolDefinition<Inp
     name: definition.name,
     title: definition.title,
     description: definition.description,
-    inputSchema: asJsonSchema(definition.input, "input"),
-    outputSchema: asJsonSchema(definition.output, "output"),
+    inputSchema: asJsonSchema(input, "input"),
+    outputSchema: published(output),
     annotations: definition.annotations,
     capability: definition.capability,
     call: async (args) => {

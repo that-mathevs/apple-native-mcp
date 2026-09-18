@@ -30,14 +30,7 @@ final class EventKitCalendarStore: CalendarStore, @unchecked Sendable {
   }
 
   func calendars() -> [HelperCore.Calendar] {
-    events.calendars(for: .event).map { calendar in
-      let source = calendar.source
-      return HelperCore.Calendar(
-        identifier: calendar.calendarIdentifier,
-        title: calendar.title,
-        account: CalendarAccount(
-          identifier: source?.sourceIdentifier ?? "", title: source?.title ?? ""))
-    }
+    events.calendars(for: .event).map(asCalendar)
   }
 
   func events(in range: HelperCore.Range, from calendar: HelperCore.Calendar) throws(
@@ -52,18 +45,37 @@ final class EventKitCalendarStore: CalendarStore, @unchecked Sendable {
     // EventKit expands a series into its occurrences for us; the rules above decide what to keep.
     let matching = events.predicateForEvents(
       withStart: range.start, end: range.end, calendars: [found])
-    return events.events(matching: matching).compactMap { event in
-      guard let start = event.startDate, let end = event.endDate else { return nil }
-      return Event(
-        eventIdentifier: event.eventIdentifier ?? event.calendarItemIdentifier,
-        title: event.title ?? "",
-        start: start,
-        end: end,
-        isAllDay: event.isAllDay,
-        location: event.location,
-        notes: event.notes,
-        originalStart: event.hasRecurrenceRules ? event.occurrenceDate : nil,
-        calendar: calendar)
-    }
+    return events.events(matching: matching).compactMap { asEvent($0, in: calendar) }
+  }
+
+  func event(identifier: String) -> Event? {
+    events.event(withIdentifier: identifier).flatMap { asEvent($0) }
+  }
+
+  private func asCalendar(_ calendar: EKCalendar) -> HelperCore.Calendar {
+    let source = calendar.source
+    return HelperCore.Calendar(
+      identifier: calendar.calendarIdentifier,
+      title: calendar.title,
+      account: CalendarAccount(
+        identifier: source?.sourceIdentifier ?? "", title: source?.title ?? ""),
+      acceptsNewEvents: calendar.allowsContentModifications)
+  }
+
+  private func asEvent(_ event: EKEvent, in calendar: HelperCore.Calendar? = nil) -> Event? {
+    guard let start = event.startDate, let end = event.endDate else { return nil }
+    guard let calendar = calendar ?? event.calendar.map(asCalendar) else { return nil }
+    return Event(
+      eventIdentifier: event.eventIdentifier ?? event.calendarItemIdentifier,
+      title: event.title ?? "",
+      start: start,
+      end: end,
+      isAllDay: event.isAllDay,
+      location: event.location,
+      notes: event.notes,
+      // An occurrence the user moved or edited is detached from its series and reports no
+      // recurrence rules of its own, but it still has the original start that addresses it.
+      originalStart: event.hasRecurrenceRules || event.isDetached ? event.occurrenceDate : nil,
+      calendar: calendar)
   }
 }

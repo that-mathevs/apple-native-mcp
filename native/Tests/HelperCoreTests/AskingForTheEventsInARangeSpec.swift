@@ -18,7 +18,7 @@ struct AskingForTheEventsInARangeSpec {
     #expect(
       helper.respond(to: tuesday)
         == #"""
-        {"id":"2","protocolVersion":1,"result":{"calendars":[{"account":{"identifier":"account-icloud","title":"iCloud"},"identifier":"calendar-work","title":"Work"}],"events":[{"allDay":false,"calendar":{"account":{"identifier":"account-icloud","title":"iCloud"},"identifier":"calendar-work","title":"Work"},"end":"2026-09-22T09:15:00Z","eventIdentifier":"event:Stand-up","location":"Room 2","notes":"bring the board","originalStart":null,"start":"2026-09-22T09:00:00Z","title":"Stand-up"}],"range":{"end":"2026-09-23T00:00:00Z","start":"2026-09-22T00:00:00Z"},"unreadableCalendars":[]}}
+        {"id":"2","protocolVersion":1,"result":{"calendars":[{"acceptsNewEvents":true,"account":{"identifier":"account-icloud","title":"iCloud"},"identifier":"calendar-work","title":"Work"}],"events":[{"allDay":false,"calendar":{"acceptsNewEvents":true,"account":{"identifier":"account-icloud","title":"iCloud"},"identifier":"calendar-work","title":"Work"},"end":"2026-09-22T09:15:00Z","eventIdentifier":"event:Stand-up","location":"Room 2","notes":"bring the board","originalStart":null,"start":"2026-09-22T09:00:00Z","title":"Stand-up"}],"range":{"end":"2026-09-23T00:00:00Z","start":"2026-09-22T00:00:00Z"},"unreadableCalendars":[]}}
         """#)
   }
 
@@ -107,7 +107,7 @@ struct AskingForTheEventsInARangeSpec {
     #expect(response.contains(#""eventIdentifier":"event:Stand-up""#))
     #expect(
       response.contains(
-        #""unreadableCalendars":[{"calendar":{"account":{"identifier":"account-subscriptions","title":"Subscriptions"},"identifier":"calendar-team-feed","title":"Team feed"},"code":"calendar_unreadable","evidence":"The server responded with status 503","sentence":"The calendar \"Team feed\" could not be read, so its events are missing from this range."}]"#
+        #""unreadableCalendars":[{"calendar":{"acceptsNewEvents":false,"account":{"identifier":"account-subscriptions","title":"Subscriptions"},"identifier":"calendar-team-feed","title":"Team feed"},"code":"calendar_unreadable","evidence":"The server responded with status 503","sentence":"The calendar \"Team feed\" could not be read, so its events are missing from this range."}]"#
       ))
   }
 }

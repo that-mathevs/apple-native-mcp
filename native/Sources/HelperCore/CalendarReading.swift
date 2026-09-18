@@ -1,3 +1,5 @@
+import Foundation
+
 /// What a read of a range came to: the range it covered, the occurrences in it, every calendar it
 /// asked, and the calendars that would not answer. A calendar that could not be read is named rather than silently missing,
 /// so an empty day is never mistaken for a free one.
@@ -31,10 +33,55 @@ struct CalendarReading: Sendable {
     return store.requestPermission()
   }
 
+  /// Every calendar, readable or not: one whose server is down still exists, and the user still
+  /// needs its identifier to exclude it.
+  func calendars() -> Result<[Calendar], NamedFailure> {
+    whenReadable { store.calendars() }
+  }
+
+  /// One event, or nil when no event has that identifier and original start. Not finding it is
+  /// an answer, not a failure: the server decides how to say so.
+  ///
+  /// Every occurrence of a series shares the series' identifier, so an occurrence is looked for
+  /// near its original start, in the one calendar its series belongs to. A miss on the identifier
+  /// answers at once and reads nothing.
+  func event(identifier: String, originalStart: Date?) -> Result<Event?, NamedFailure> {
+    whenReadable {
+      guard let named = store.event(identifier: identifier) else { return nil }
+      guard let originalStart else { return named }
+
+      for reach in Self.reaches {
+        let around = Range(
+          from: originalStart.addingTimeInterval(-reach),
+          to: originalStart.addingTimeInterval(reach))!
+        let occurrence = (try? store.events(in: around, from: named.calendar))?.first {
+          $0.eventIdentifier == identifier && $0.began(at: originalStart)
+        }
+        if let occurrence { return occurrence }
+      }
+      return nil
+    }
+  }
+
+  /// How far either side of its original start an occurrence is looked for: the day it should be
+  /// on, and then, for one the user moved, as far as a four-year range reaches.
+  private static let reaches: [TimeInterval] = [day, Range.longest / 2]
+
+  private func whenReadable<Answer>(_ read: () -> Answer) -> Result<Answer, NamedFailure> {
+    let permission = store.permission()
+    guard permission.allowsReading else {
+      return .failure(.calendarPermissionMissing(permission: permission))
+    }
+    return .success(read())
+  }
+
   func events(in range: Range) -> Result<EventsInRange, NamedFailure> {
     let permission = store.permission()
     guard permission.allowsReading else {
       return .failure(.calendarPermissionMissing(permission: permission))
+    }
+    guard range.end.timeIntervalSince(range.start) <= Range.longest else {
+      return .failure(.rangeTooLong(range))
     }
 
     let calendars = store.calendars()

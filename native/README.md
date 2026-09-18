@@ -75,9 +75,30 @@ the `originalStart` that addresses it within the series; an event belonging to n
 deciding what "this week" means belongs to the server, which knows the user's time zone.
 
 Each entry of `unreadableCalendars` is a named failure carrying the `calendar` that would not
-answer. `calendars` is every calendar that was asked, including one holding nothing in the range. The
+answer. A range longer than four years is refused as `range_too_long`: EventKit would read only its first
+four years and say nothing. `calendars` is every calendar that was asked, including one holding nothing in the range. The
 server counts the calendars the user's settings keep from an agent, and it counts calendars rather
 than events so that the count says nothing about when an excluded calendar is busy.
+
+Two more requests read the calendar. `calendars` answers with every calendar, readable or not,
+each with `acceptsNewEvents`, which a subscription or the birthdays calendar lacks:
+
+```json
+{"protocolVersion":1,"id":"3","request":"calendars"}
+```
+
+`event` answers with the one event an identifier names, or `"event":null` when there is none:
+not finding it is an answer, and the server decides how to say so. Every occurrence of a series
+shares the series' identifier, so `originalStart` says which occurrence is meant, and the answer
+carries that occurrence's own start and end. It is looked for in the one calendar its series
+belongs to: on the day it should be, and then, for one the user moved, two years either side. An
+identifier no event has answers at once and reads nothing. Without `originalStart` the answer is
+the event itself, or whichever occurrence of a series the store thinks of first. An
+`originalStart` that is not an instant is refused rather than dropped.
+
+```json
+{"protocolVersion":1,"id":"4","request":"event","eventIdentifier":"…","originalStart":"2026-09-22T09:00:00Z"}
+```
 
 ## Building it
 

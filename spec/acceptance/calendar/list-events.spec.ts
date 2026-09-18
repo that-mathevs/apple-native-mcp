@@ -22,7 +22,7 @@ const anEvent = {
   start: new Date("2026-09-18T13:00:00Z"),
   end: new Date("2026-09-18T13:15:00Z"),
   isAllDay: false,
-  calendar: { identifier: "cal-1", title: "Work", account: "iCloud" },
+  calendar: { identifier: "cal-1", title: "Work", account: "iCloud", acceptsNewEvents: true },
 } as const;
 
 const earlier = {
@@ -118,5 +118,24 @@ describe("listing events", () => {
       coverage: { calendarsUnread: 1 },
     });
     expect(result.isError ?? false).toBe(false);
+  });
+
+  // Every occurrence of a series shares one event identifier (arr2036 9097294), so the index
+  // has to hand back what tells them apart or no occurrence could be read on its own.
+  it("given a series, reports each occurrence with the original start that addresses it within the series", async () => {
+    const tomorrow = new Date("2026-09-19T13:00:00Z");
+    eventStore.holds(
+      { ...anEvent, originalStart: anEvent.start },
+      { ...anEvent, start: tomorrow, end: new Date("2026-09-19T13:15:00Z"), originalStart: tomorrow },
+    );
+
+    const result = await listEvents();
+
+    expect(result.structuredContent).toMatchObject({
+      events: [
+        { identifier: "event-1", originalStart: "2026-09-18T13:00:00.000Z" },
+        { identifier: "event-1", originalStart: "2026-09-19T13:00:00.000Z" },
+      ],
+    });
   });
 });

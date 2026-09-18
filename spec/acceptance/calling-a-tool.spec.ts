@@ -72,4 +72,15 @@ describe("calling a tool", () => {
       failure: { code: "result-invalid", evidence: expect.stringContaining("events") as string },
     });
   });
+
+  // A client checks every result against the tool's one output schema, refusals included, and
+  // throws away a result that does not fit. So the schema has to have room for a named failure.
+  it("publishes for every tool an output schema that a refusal fits as well as a record", async () => {
+    const { tools } = await client.listTools();
+
+    for (const published of tools) {
+      expect(published.outputSchema?.properties).toHaveProperty("failure");
+      expect(published.outputSchema?.required ?? []).toStrictEqual([]);
+    }
+  });
 });

@@ -43,7 +43,7 @@ const occurrence = (start: Date, title: string): Occurrence => ({
   start,
   end: new Date(start.getTime() + 30 * 60 * 1000),
   isAllDay: false,
-  calendar: { identifier: "cal-1", title: "Work", account: "iCloud" },
+  calendar: { identifier: "cal-1", title: "Work", account: "iCloud", acceptsNewEvents: true },
 });
 
 export const anEventStore = ({ name, build }: EventStoreUnderTest): void => {
@@ -64,6 +64,16 @@ export const anEventStore = ({ name, build }: EventStoreUnderTest): void => {
       expect(read).toMatchObject({ ok: true, value: { unreadCalendars: expect.any(Array) as unknown[] } });
     });
 
+    // chrischall c1bf44b: upstream scanned every event for an identifier and timed out when
+    // there was no match.
+    it("given a reference that matches no event, answers with nothing rather than a failure", async () => {
+      const { eventStore } = await build();
+
+      const read = await eventStore.event({ identifier: "no-event-has-this-identifier" });
+
+      expect(read).toStrictEqual({ ok: true, value: undefined });
+    });
+
     it("always names the calendars it asked, so the calendars the settings leave out can be counted without counting their events", async () => {
       const { eventStore } = await build();
 
@@ -75,6 +85,26 @@ export const anEventStore = ({ name, build }: EventStoreUnderTest): void => {
       });
     });
 
+  });
+};
+
+export const anEventStoreThatListsCalendars = ({ name, build }: EventStoreUnderTest): void => {
+  describe(`${name}, asked for its calendars`, () => {
+    it("names every calendar with its identifier, its title, its calendar account and whether it accepts new events", async () => {
+      const { eventStore } = await build();
+
+      const read = await eventStore.calendars();
+
+      expect(read.ok).toBe(true);
+      for (const calendar of read.ok ? read.value : []) {
+        expect(calendar).toStrictEqual({
+          identifier: expect.any(String) as string,
+          title: expect.any(String) as string,
+          account: expect.any(String) as string,
+          acceptsNewEvents: expect.any(Boolean) as boolean,
+        });
+      }
+    });
   });
 };
 
@@ -111,6 +141,25 @@ export const anEventStoreThatCanBeLoaded = ({
       const read = await eventStore.occurrencesIn(dayAround(noon));
 
       expect(read).toMatchObject({ ok: true, value: { occurrences: [] } });
+    });
+
+    it("given a reference to one occurrence of a series, answers with that occurrence and its own times", async () => {
+      const { eventStore, holding } = await build();
+      const tomorrow = new Date(noon.getTime() + 24 * 60 * 60 * 1000);
+      await holding(
+        { ...occurrence(noon, "Stand-up"), originalStart: noon },
+        { ...occurrence(tomorrow, "Stand-up"), originalStart: tomorrow },
+      );
+
+      const read = await eventStore.event({
+        identifier: "event-Stand-up",
+        originalStart: tomorrow,
+      });
+
+      expect(read).toMatchObject({
+        ok: true,
+        value: { start: tomorrow, originalStart: tomorrow },
+      });
     });
 
     it("given a calendar holding nothing in the range, still names it among the calendars it asked", async () => {
