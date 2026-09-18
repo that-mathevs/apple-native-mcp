@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -140,5 +140,30 @@ describe("the helper files on disk, installing", () => {
 
     expect(installed).toMatchObject({ ok: false, failure: { code: "helper-install-failed" } });
     expect(await readdir(dirname(fixed))).toStrictEqual(["apple-native-mcp"]);
+  });
+
+  it("given the helper is removed, takes its folder away too, so nothing of it is left behind", async () => {
+    const directory = await aDirectory();
+    const fixed = fixedPathIn(directory);
+    const shipped = await aHelperFileCarrying("1.2.3", directory);
+    const helperFiles = diskHelperFiles({ shipped, fixed });
+    await helperFiles.install({ path: shipped });
+
+    await helperFiles.remove();
+
+    await expect(access(dirname(fixed))).rejects.toThrow("ENOENT");
+  });
+
+  it("given something else was put in its folder, removes the helper and leaves the folder be", async () => {
+    const directory = await aDirectory();
+    const fixed = fixedPathIn(directory);
+    const shipped = await aHelperFileCarrying("1.2.3", directory);
+    const helperFiles = diskHelperFiles({ shipped, fixed });
+    await helperFiles.install({ path: shipped });
+    await writeFile(join(dirname(fixed), "notes.txt"), "the user's own");
+
+    await helperFiles.remove();
+
+    expect(await readdir(dirname(fixed))).toStrictEqual(["notes.txt"]);
   });
 });

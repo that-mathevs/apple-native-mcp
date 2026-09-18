@@ -4,6 +4,7 @@ import type {
   Permissions,
   PermissionState,
 } from "../../application/setup/permissions.js";
+import { permissionStates } from "../../application/setup/permissions.js";
 import type { Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
 import type { Helper } from "./helper.js";
@@ -13,16 +14,8 @@ const requests: Record<Permission, string> = {
   reminders: "reminders_permission_request",
 };
 
-const states: readonly string[] = [
-  "granted",
-  "refused",
-  "undecided",
-  "restricted",
-  "writeOnly",
-] satisfies PermissionState[];
-
 const isState = (state: unknown): state is PermissionState =>
-  typeof state === "string" && states.includes(state);
+  typeof state === "string" && (permissionStates as readonly string[]).includes(state);
 
 /**
  * The permissions as the helper holds them. Asking prompts only while nobody has been asked, and

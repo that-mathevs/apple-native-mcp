@@ -1,5 +1,15 @@
 import { randomUUID } from "node:crypto";
-import { chmod, constants, copyFile, mkdir, readFile, rename, rm, stat } from "node:fs/promises";
+import {
+  chmod,
+  constants,
+  copyFile,
+  mkdir,
+  readFile,
+  rename,
+  rm,
+  rmdir,
+  stat,
+} from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import type { HelperFile, HelperFiles } from "../../application/setup/helper-files.js";
@@ -85,11 +95,14 @@ const removeAt =
 
     try {
       await rm(fixed);
-      return found;
     } catch (error) {
       const sentence = `The helper at ${fixed} could not be removed.`;
       return refusedBecause("helper-not-removed", sentence, error);
     }
+
+    // The folder is setup's own, so it goes too, but only while nothing else was put in it.
+    await rmdir(dirname(fixed)).catch(() => undefined);
+    return found;
   };
 
 /** The helper files as they are on disk. */

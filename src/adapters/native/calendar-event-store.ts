@@ -153,12 +153,3 @@ export const calendarEventStore = (helper: Helper): EventStore => ({
     });
   },
 });
-
-/** Ask the user for calendar access, which prompts only while nobody has been asked. */
-export const askForCalendarAccess = async (helper: Helper): Promise<Outcome<string>> => {
-  const answered = await helper.ask({ request: "calendar_permission_request" });
-  if (!answered.ok) return failed(answered.failure);
-
-  const state = answered.value.state;
-  return succeeded(typeof state === "string" ? state : "unknown");
-};

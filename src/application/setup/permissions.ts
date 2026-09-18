@@ -15,7 +15,15 @@ export const permissionSettings: Readonly<Record<Permission, string>> = {
 };
 
 /** What macOS allows the helper, in the helper's own words (native/README.md). */
-export type PermissionState = "granted" | "refused" | "undecided" | "restricted" | "writeOnly";
+export const permissionStates = [
+  "granted",
+  "refused",
+  "undecided",
+  "restricted",
+  "writeOnly",
+] as const;
+
+export type PermissionState = (typeof permissionStates)[number];
 
 export type PermissionAnswer = {
   readonly state: PermissionState;

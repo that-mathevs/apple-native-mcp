@@ -16,7 +16,8 @@ import { helperPermissions } from "./adapters/native/helper-permissions.js";
 import { helperReminderStore } from "./adapters/native/reminder-store.js";
 import { helperToLaunch } from "./application/setup/helper-to-launch.js";
 import { installHelper } from "./application/setup/install-helper.js";
-import { removeSetup, setup } from "./cli/setup.js";
+import { commandIn } from "./cli/command.js";
+import { removeCommand, setupCommand } from "./cli/setup.js";
 import { helperPathSetting, settingsFrom } from "./domain/settings.js";
 import { buildServer } from "./mcp/server.js";
 
@@ -57,16 +58,14 @@ const helperChecked = (client: () => string): Helper =>
   );
 
 /** `apple-native-mcp setup`, run by the user in a terminal, where stdout is theirs to read. */
-const runSetup = async (): Promise<void> => {
+const runSetup = async (): Promise<number> => {
   const helper = helperChecked(() => "the install you ran setup from");
   const permissions = helperPermissions(helper);
 
-  const status = await setup({ helperFiles, codeRequirement, permissions }, (line) => {
-    console.log(line);
-  });
+  const status = await setupCommand({ helperFiles, codeRequirement, permissions }, console.log);
 
   helper.stop();
-  process.exit(status);
+  return status;
 };
 
 /** The MCP server, started by a client, which owns stdout for the protocol. */
@@ -116,17 +115,19 @@ const serve = async (): Promise<void> => {
   await server.connect(new StdioServerTransport());
 };
 
-/** `apple-native-mcp setup --remove`: takes the helper away and says what to turn off. */
-const runRemoval = async (): Promise<void> => {
-  const status = await removeSetup({ helperFiles }, (line) => {
-    console.log(line);
-  });
+const chosen = commandIn(process.argv.slice(2));
 
-  process.exit(status);
-};
-
-const [command, option] = process.argv.slice(2);
-
-if (command === "setup" && option === "--remove") await runRemoval();
-else if (command === "setup") await runSetup();
-else await serve();
+switch (chosen.command) {
+  case "serve":
+    await serve();
+    break;
+  case "setup":
+    process.exit(await runSetup());
+    break;
+  case "remove":
+    process.exit(await removeCommand({ helperFiles }, console.log));
+    break;
+  case "unknown":
+    console.error(chosen.usage);
+    process.exit(2);
+}

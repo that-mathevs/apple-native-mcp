@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { removeSetup } from "../../../src/cli/setup.js";
+import { removeCommand } from "../../../src/cli/setup.js";
 import { FakeHelperFiles, fixedPath } from "../../support/fake-helper-files.js";
 
-// What `npx apple-native-mcp setup --remove` does and says. Nothing may be left holding access
-// to the user's data (user story 53), but only the user can take back a macOS permission, so
-// setup removes the helper and says exactly which settings to turn off, and where.
+// What `npx apple-native-mcp setup --remove` does and says. Nothing may be left holding a
+// permission to the user's data (user story 53), but only the user can take one back, so setup
+// removes the helper and says exactly which settings to turn off, and where.
 
 const revoking = [
   "To take back what it was allowed, turn off:",
@@ -19,7 +19,7 @@ describe("removing the helper", () => {
   /** What setup --remove printed, and the exit status it ended with. */
   const removing = async (): Promise<{ printed: string[]; status: number }> => {
     const printed: string[] = [];
-    const status = await removeSetup({ helperFiles }, (line) => {
+    const status = await removeCommand({ helperFiles }, (line) => {
       printed.push(line);
     });
     return { printed, status };

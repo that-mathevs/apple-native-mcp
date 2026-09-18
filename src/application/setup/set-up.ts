@@ -19,11 +19,14 @@ export type SetUpReport = {
 
 /**
  * Install the helper, then ask for every permission it holds, one at a time so the user meets
- * one prompt at once. A helper that could not be installed is asked for nothing.
+ * one prompt at once. A helper that could not be installed is asked for nothing, and neither is
+ * a newer one this setup kept: the server starts no helper newer than itself.
  */
 export const setUp = async (dependencies: SetUpDependencies): Promise<SetUpReport> => {
   const installation = await installHelper(dependencies);
-  if (!installation.ok) return { installation, permissions: [] };
+  if (!installation.ok || installation.value.change === "kept") {
+    return { installation, permissions: [] };
+  }
 
   const permissions: SetUpReport["permissions"][number][] = [];
   for (const permission of permissionsAskedBySetup) {
