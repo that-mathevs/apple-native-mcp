@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key><string>io.github.that-mathevs.apple-native-mcp</string>
+  <key>CFBundleName</key><string>apple-native-mcp</string>
+  <key>CFBundleExecutable</key><string>apple-native-mcp</string>
+  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleVersion</key><string>0.1.0</string>
+  <key>NSCalendarsFullAccessUsageDescription</key><string>apple-native-mcp reads your events so an agent can answer questions about your calendar.</string>
+  <key>NSRemindersFullAccessUsageDescription</key><string>apple-native-mcp reads your reminders so an agent can answer questions about them.</string>
+  <key>NSContactsUsageDescription</key><string>apple-native-mcp reads your contacts so an agent can address people by name.</string>
+</dict>
+</plist>
