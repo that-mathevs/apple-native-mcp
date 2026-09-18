@@ -76,12 +76,14 @@ export default {
       to: { path: "(?:^|/)src/main\\.ts$" },
     },
     {
-      name: "only-the-helper-launcher-starts-a-process",
+      name: "only-native-adapters-start-a-process",
       comment:
-        "Hostile tool input must never reach a shell. The server starts exactly one " +
-        "process, the signed Swift helper, launched by path with an argument list " +
-        "(ADR-0002, ADR-0003). Only the adapter that owns that launch may import " +
-        "child_process; anywhere else it is a way to run a command line.",
+        "Hostile tool input must never reach a shell. The server starts exactly two " +
+        "processes, each by absolute path with an argument list: the signed Swift " +
+        "helper (ADR-0002, ADR-0003) and /usr/bin/codesign, which checks the helper " +
+        "before it is copied or launched (ADR-0008). Only the native adapters that " +
+        "own those launches may import child_process; anywhere else it is a way to " +
+        "run a command line.",
       severity: "error",
       from: { path: "(?:^|/)src/", pathNot: "(?:^|/)src/adapters/native/" },
       to: { path: "^(?:node:)?child_process$" },
@@ -91,7 +93,7 @@ export default {
       comment:
         "The packages that build a command line out of strings, or run AppleScript " +
         "by handing text to osascript, are how upstream's injection hole was reached. " +
-        "Not even the helper launcher may import one.",
+        "Not even the native adapters may import one.",
       severity: "error",
       from: { path: "(?:^|/)src/" },
       to: {

@@ -5,7 +5,7 @@ import type { NamedFailure, Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
 
 /**
- * The one process this server starts: the signed Swift helper (ADR-0002, ADR-0003).
+ * The signed Swift helper, one of the two processes this server starts (ADR-0002, ADR-0008).
  *
  * It is launched by path with an argument list, never through a shell, and it is spoken to in
  * JSON lines: one request per line, one response per line, matched by identifier. Everything it

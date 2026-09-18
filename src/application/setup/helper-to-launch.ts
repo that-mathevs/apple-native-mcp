@@ -71,7 +71,10 @@ export const helperToLaunch = async ({
   const verified = await codeRequirement.verify(installed.value);
   if (!verified.ok) return failed(failsCodeRequirement(verified.failure));
 
-  const { path, version } = verified.value;
+  const read = await helperFiles.versionOf(verified.value);
+  if (!read.ok) return read;
+
+  const version = read.value;
   if (isNewer(version, serverVersion)) {
     return failed(serverOlderThanHelper(version, serverVersion, client));
   }
@@ -79,5 +82,5 @@ export const helperToLaunch = async ({
     return failed(helperOlderThanServer(version, serverVersion));
   }
 
-  return succeeded(path);
+  return succeeded(verified.value.path);
 };

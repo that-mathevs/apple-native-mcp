@@ -26,44 +26,61 @@ const shippedFailsCodeRequirement = (refusal: NamedFailure): NamedFailure => ({
   ...(refusal.evidence === undefined ? {} : { evidence: refusal.evidence }),
 });
 
-/** What the shipped helper does to the installed one, and which of the two stays. */
+/** What the shipped helper, at this version, does to the installed one. */
 const changeTo = async (
-  codeRequirement: CodeRequirement,
-  shipped: HelperFile,
+  { helperFiles, codeRequirement }: InstallHelperDependencies,
+  shippedVersion: string,
   installed: HelperFile | undefined,
-): Promise<{ readonly change: Change; readonly staying: HelperFile }> => {
-  if (installed === undefined) return { change: "installed", staying: shipped };
+): Promise<Outcome<HelperInstallation>> => {
+  if (installed === undefined) return succeeded({ change: "installed", version: shippedVersion });
+
   if (!(await codeRequirement.verify(installed)).ok) {
-    return { change: "replaced", staying: shipped };
+    return succeeded({ change: "replaced", version: shippedVersion });
   }
-  if (isNewer(installed.version, shipped.version)) return { change: "kept", staying: installed };
-  if (isNewer(shipped.version, installed.version)) return { change: "updated", staying: shipped };
-  return { change: "unchanged", staying: installed };
+
+  const installedVersion = await helperFiles.versionOf(installed);
+  if (!installedVersion.ok) return installedVersion;
+
+  if (isNewer(installedVersion.value, shippedVersion)) {
+    return succeeded({ change: "kept", version: installedVersion.value });
+  }
+  if (isNewer(shippedVersion, installedVersion.value)) {
+    return succeeded({ change: "updated", version: shippedVersion });
+  }
+  return succeeded({ change: "unchanged", version: installedVersion.value });
 };
 
 /**
  * Put the shipped helper at the fixed path, unless a newer one of ours is already there.
  *
- * Nothing that fails the code requirement is ever copied.
+ * Nothing that fails the code requirement is ever copied, and no version is believed before
+ * the helper file carrying it has met the code requirement.
  */
-export const installHelper = async ({
-  helperFiles,
-  codeRequirement,
-}: InstallHelperDependencies): Promise<Outcome<HelperInstallation>> => {
+export const installHelper = async (
+  dependencies: InstallHelperDependencies,
+): Promise<Outcome<HelperInstallation>> => {
+  const { helperFiles, codeRequirement } = dependencies;
+
   const shipped = await helperFiles.shipped();
   if (!shipped.ok) return shipped;
 
   const verified = await codeRequirement.verify(shipped.value);
   if (!verified.ok) return failed(shippedFailsCodeRequirement(verified.failure));
 
+  const shippedVersion = await helperFiles.versionOf(verified.value);
+  if (!shippedVersion.ok) return shippedVersion;
+
   const installed = await helperFiles.installed();
   if (!installed.ok) return installed;
 
-  const { change, staying } = await changeTo(codeRequirement, verified.value, installed.value);
-  if (staying !== verified.value) return succeeded({ change, version: staying.version });
+  const installation = await changeTo(dependencies, shippedVersion.value, installed.value);
+  if (!installation.ok) return installation;
 
-  const copied = await helperFiles.install(staying);
+  const { change } = installation.value;
+  if (change === "kept" || change === "unchanged") return installation;
+
+  const copied = await helperFiles.install(verified.value);
   if (!copied.ok) return copied;
 
-  return succeeded({ change, version: copied.value.version });
+  return installation;
 };

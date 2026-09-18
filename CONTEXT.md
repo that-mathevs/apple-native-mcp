@@ -98,7 +98,8 @@ channel, so every update keeps the user's grants.
 _Avoid_: install location, helper dir
 
 **Helper file**:
-One helper as it sits on disk, its path and its version, read before anything launches it.
+One helper as it sits on disk, addressed by its path. The version it carries is believed only once
+it meets the code requirement.
 _Avoid_: binary, executable, copy
 
 **Code requirement**:

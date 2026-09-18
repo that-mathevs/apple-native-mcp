@@ -1,9 +1,8 @@
 import type { Outcome } from "../../domain/failure.js";
 
-/** One helper on disk, as found before anything launches it. */
+/** One helper as it sits on disk, before anything launches it. */
 export type HelperFile = {
   readonly path: string;
-  readonly version: string;
 };
 
 /**
@@ -16,6 +15,11 @@ export type HelperFiles = {
   readonly shipped: () => Promise<Outcome<HelperFile>>;
   /** Nothing, until setup has installed a helper. */
   readonly installed: () => Promise<Outcome<HelperFile | undefined>>;
+  /**
+   * The version the helper file carries. Ask it only of a helper file that meets the code
+   * requirement: a file someone else put at the fixed path may carry any version, or none.
+   */
+  readonly versionOf: (helper: HelperFile) => Promise<Outcome<string>>;
   /** Put this helper at the fixed path, replacing what is there in place. */
   readonly install: (helper: HelperFile) => Promise<Outcome<HelperFile>>;
 };

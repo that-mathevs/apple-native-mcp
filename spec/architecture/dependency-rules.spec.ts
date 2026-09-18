@@ -86,15 +86,15 @@ describe("the dependency rules", () => {
   // and AppleScript can run shell commands. This is the rule that makes that unwritable.
   it("given a use case that spawns osascript, refuses: input never reaches a shell", async () => {
     expect(
-      await brokenRulesIn(fixture("only-the-helper-launcher-starts-a-process")),
-    ).toStrictEqual(["only-the-helper-launcher-starts-a-process"]);
+      await brokenRulesIn(fixture("only-native-adapters-start-a-process")),
+    ).toStrictEqual(["only-native-adapters-start-a-process"]);
   });
 
-  it("given the helper launcher starting the helper, permits the one process it owns", async () => {
-    expect(await brokenRulesIn(fixture("the-helper-launcher"))).toStrictEqual([]);
+  it("given the native adapters starting the helper and codesign, permits the two processes they own", async () => {
+    expect(await brokenRulesIn(fixture("the-native-adapters"))).toStrictEqual([]);
   });
 
-  it("given a package that builds command lines, refuses it even to that launcher", async () => {
+  it("given a package that builds command lines, refuses it even to the native adapters", async () => {
     expect(await brokenRulesIn(fixture("nothing-runs-a-command-line"))).toStrictEqual([
       "nothing-runs-a-command-line",
     ]);

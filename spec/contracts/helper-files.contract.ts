@@ -37,9 +37,20 @@ export const helperFilesContract = ({ name, build }: HelperFilesUnderTest): void
 
       const installed = value(await helperFiles.install(shipped));
 
-      expect(installed.version).toBe(shipped.version);
       expect(installed.path).not.toBe(shipped.path);
       expect(await helperFiles.installed()).toStrictEqual({ ok: true, value: installed });
+      expect(await helperFiles.versionOf(installed)).toStrictEqual(
+        await helperFiles.versionOf(shipped),
+      );
+    });
+
+    it("given the shipped helper, reads the version it carries", async () => {
+      const { helperFiles } = await build();
+
+      expect(await helperFiles.versionOf(await shippedFrom(helperFiles))).toMatchObject({
+        ok: true,
+        value: expect.stringMatching(/^\d+\.\d+\.\d+$/u) as string,
+      });
     });
 
     it("given a helper is installed twice, keeps it at the same path, so a grant tied to the path survives", async () => {
