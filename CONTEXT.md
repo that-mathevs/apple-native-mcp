@@ -339,10 +339,11 @@ mailboxes. Display names aren't unique.
 _Avoid_: account (unqualified), provider, mail source
 
 **Mailbox**:
-A folder of emails inside one mail account, identified by its account and its path. Mailboxes nest,
-and names repeat across accounts. A **role mailbox** is one Mail knows by its job: Inbox, Drafts,
-Sent, Junk or Trash, whose displayed names vary by provider and language. Mail knows no such job
-for an archive, so an archive mailbox is a mailbox like any other, with no role.
+A folder of emails inside one mail account, identified by its account and its path, which together
+are its **mailbox address**. Mailboxes nest, and names repeat across accounts. A **role mailbox** is
+one Mail knows by its job: Inbox, Drafts, Sent, Junk or Trash, whose displayed names vary by
+provider and language. Mail knows no such job for an archive, so an archive mailbox is a mailbox
+like any other, with no role.
 _Avoid_: folder, label, INBOX as a name
 
 **Email**:
@@ -353,6 +354,8 @@ _Avoid_: message, mail item, letter
 **Email reference**:
 What a read returns so a later operation can act on exactly that email: its Message-ID, its account
 and its mailbox path. Emails are never addressed by subject.
+The number Mail knows an email by while it runs is a **store identifier**: the server uses it to
+ask the mail store about the same email again, and it never appears in a result.
 _Avoid_: email id, handle (that word is Messages')
 
 **Draft**:

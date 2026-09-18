@@ -2261,33 +2261,33 @@ outcome is marked `(after #7)`.
 
 #### listing the latest mail
 
-- [ ] **MAIL-20** [acceptance] given no account named, reports the most recently received emails across every account, newest first · — · brightline `0833904`, `ba218e6`, `d2eef83`; gene-jelly `bb07be5`; morquis `d76f3ec`
-- [ ] **MAIL-21** [acceptance] given an account and no search text, reports that account's newest emails · — · upstream #30
+- [x] **MAIL-20** [acceptance] given no account named, reports the most recently received emails across every account, newest first · — · brightline `0833904`, `ba218e6`, `d2eef83`; gene-jelly `bb07be5`; morquis `d76f3ec`
+- [x] **MAIL-21** [acceptance] given an account and no search text, reports that account's newest emails · — · upstream #30
 - [ ] **MAIL-22** [acceptance] given emails in several mailboxes of an account, reports the most recently received first (see MAIL-C2) · — · nivra `2860fb6`
-- [ ] **MAIL-23** [acceptance] given newer mail in an account's inbox than in its archive, reports the inbox mail first · — · felkru `c769cc0`
-- [ ] **MAIL-24** [acceptance] given read and unread emails, reports each one's real read state · NN3 · felkru `c769cc0`
+- [x] **MAIL-23** [acceptance] given newer mail in an account's inbox than in its archive, reports the inbox mail first · — · felkru `c769cc0`
+- [x] **MAIL-24** [acceptance] given read and unread emails, reports each one's real read state · NN3 · felkru `c769cc0`
 
 #### listing mail in a mailbox
 
-- [ ] **MAIL-25** [acceptance] given a mailbox, reports its newest emails first · — · upstream #58
-- [ ] **MAIL-26** [acceptance] returns no email bodies unless asked: bodies are untrusted text · — · morquis `0d6918a`, `47cab04`, `51e80da`, `5a2ae64`, `7212c6d`, `9121ab3`, `cc303ee`
+- [x] **MAIL-25** [acceptance] given a mailbox, reports its newest emails first · — · upstream #58
+- [x] **MAIL-26** [acceptance] returns no email bodies unless asked: bodies are untrusted text · — · morquis `0d6918a`, `47cab04`, `51e80da`, `5a2ae64`, `7212c6d`, `9121ab3`, `cc303ee`
 - [ ] **MAIL-27** [acceptance] given a next-page cursor, continues after the last email without repeats or gaps · — · morquis `0d6918a`, `47cab04`, `51e80da`, `5a2ae64`, `7212c6d`, `9121ab3`, `cc303ee`
 
 #### searching mail
 
-- [ ] **MAIL-28** [acceptance] given text that appears in an email's subject or sender, finds that email · — · upstream #69
-- [ ] **MAIL-29** [acceptance] given text that appears only in an email's body, finds the email only when the caller asked for bodies to be searched, and states its coverage (after #7) · — · felkru `22aa354`; #24
-- [ ] **MAIL-30** [acceptance] reports which parts of an email it searched: subject only, or subject and body · NN3 · brightline `0833904`, `ba218e6`, `d2eef83`
+- [x] **MAIL-28** [acceptance] given text that appears in an email's subject or sender, finds that email · — · upstream #69
+- [x] **MAIL-29** [acceptance] given text that appears only in an email's body, finds the email only when the caller asked for bodies to be searched, and states its coverage (after #7) · — · felkru `22aa354`; #24
+- [x] **MAIL-30** [acceptance] reports which parts of an email it searched: subject only, or subject and body · NN3 · brightline `0833904`, `ba218e6`, `d2eef83`
 - [ ] **MAIL-31** [acceptance] given a term that appears only in an attachment name, finds the email when attachment names are searched · — · morquis `5ce2351`
-- [ ] **MAIL-32** [acceptance] given an account, a mailbox and a date range, returns only emails inside all three · — · brightline `0833904`, `ba218e6`, `d2eef83`; upstream PR #37
-- [ ] **MAIL-33** [acceptance] given no account named, searches every account and names the account of each result · — · chrischall `0860cf8`, `18660e4`, `88b58d0`
-- [ ] **MAIL-34** [acceptance] given a matching email outside the inbox, finds it · — · long-tail/zaclohrenz `277aac7`
-- [ ] **MAIL-35** [acceptance] given a match older than the most recent emails, still finds it · — · chrischall `0860cf8`, `18660e4`, `88b58d0`
-- [ ] **MAIL-36** [acceptance] given more matches than the limit, returns the newest ones across every mailbox searched · — · upstream PR #37
-- [ ] **MAIL-37** [acceptance] given no range, searches the last 30 days and says in the result which range it used and how far back it reached · NN3 · chrischall `e23e11e`; #24
+- [x] **MAIL-32** [acceptance] given an account, a mailbox and a date range, returns only emails inside all three · — · brightline `0833904`, `ba218e6`, `d2eef83`; upstream PR #37
+- [x] **MAIL-33** [acceptance] given no account named, searches every account and names the account of each result · — · chrischall `0860cf8`, `18660e4`, `88b58d0`
+- [x] **MAIL-34** [acceptance] given a matching email outside the inbox, finds it · — · long-tail/zaclohrenz `277aac7`
+- [x] **MAIL-35** [acceptance] given a match older than the most recent emails, still finds it · — · chrischall `0860cf8`, `18660e4`, `88b58d0`
+- [x] **MAIL-36** [acceptance] given more matches than the limit, returns the newest ones across every mailbox searched · — · upstream PR #37
+- [x] **MAIL-37** [acceptance] given no range, searches the last 30 days and says in the result which range it used and how far back it reached · NN3 · chrischall `e23e11e`; #24
 - **MAIL-38** [acceptance] given no date window, refuses: an unbounded search never finishes on large accounts · **rejected by #24**: MAIL-37 ships and MAIL-38 doesn't — an agent refused until it names both dates has to guess them, and every ordinary search costs a round trip · morquis `5ce2351`
-- [ ] **MAIL-39** [acceptance] given a search date that cannot be read as a date, refuses: a silent empty result looks like no mail · NN3 · chrischall `25d47cc`
-- [ ] **MAIL-40** [acceptance] given an email deleted since the last search, does not report it · NN3 · felkru `22aa354`
+- [x] **MAIL-39** [acceptance] given a search date that cannot be read as a date, refuses: a silent empty result looks like no mail · NN3 · chrischall `25d47cc`
+- [x] **MAIL-40** [acceptance] given an email deleted since the last search, does not report it · NN3 · felkru `22aa354`
 - [ ] **MAIL-41** [acceptance] never stores email contents outside Mail's own storage · — · felkru `22aa354`
 
 #### opening an email
@@ -2390,11 +2390,11 @@ _No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18
 
 #### a mailbox path
 
-- [ ] **MAIL-70** [domain] given the same name in decomposed and composed Unicode, treats them as one path · — · morquis `5bee2f6`, `5c01104`, `6361803`, `8a9b013`
+- [x] **MAIL-70** [domain] given the same name in decomposed and composed Unicode, treats them as one path · — · morquis `5bee2f6`, `5c01104`, `6361803`, `8a9b013`
 
 #### a mail search query
 
-- [ ] **MAIL-71** [domain] given characters such as an asterisk, matches them literally rather than as a wildcard: Mail and Messages parse one grammar in one domain module (MSG-80 to MSG-85) · — · upstream #30; #24
+- [x] **MAIL-71** [domain] given characters such as an asterisk, matches them literally rather than as a wildcard: Mail and Messages parse one grammar in one domain module (MSG-80 to MSG-85) · — · upstream #30; #24
 
 #### a date range
 
