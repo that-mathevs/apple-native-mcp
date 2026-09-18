@@ -78,12 +78,22 @@ struct FakeCalendarStore: CalendarStore {
     var calendars: [HelperCore.Calendar] = []
   }
 
+  /// What the store was asked to save, so a scenario can say exactly what reached it.
+  final class Saved: @unchecked Sendable {
+    var events: [NewEvent] = []
+  }
+
   var permissionHeld: Permission = .granted
   var held: [Event] = []
   var refusing: [HelperCore.Calendar: String] = [:]
   var answersWhenAsked: Permission = .refused
   let asking = Asking()
   let reads = Reads()
+  let saved = Saved()
+  var ownCalendars: [HelperCore.Calendar] = []
+  var defaultCalendarHeld: HelperCore.Calendar?
+  var refusesToSave: String?
+  var losesSight = false
 
   func permission() -> Permission { permissionHeld }
 
@@ -93,7 +103,7 @@ struct FakeCalendarStore: CalendarStore {
   }
 
   func calendars() -> [HelperCore.Calendar] {
-    var seen: [HelperCore.Calendar] = []
+    var seen: [HelperCore.Calendar] = ownCalendars
     for calendar in held.map(\.calendar) where !seen.contains(calendar) { seen.append(calendar) }
     for calendar in refusing.keys.sorted(by: { $0.identifier < $1.identifier })
     where !seen.contains(calendar) {
@@ -115,7 +125,44 @@ struct FakeCalendarStore: CalendarStore {
   }
 
   func event(identifier: String) -> Event? {
-    held.filter { $0.eventIdentifier == identifier }.min { $0.start < $1.start }
+    if losesSight { return nil }
+    return (held + savedAsEvents()).filter { $0.eventIdentifier == identifier }
+      .min { $0.start < $1.start }
+  }
+
+  func defaultCalendar() -> HelperCore.Calendar? { defaultCalendarHeld }
+
+  func save(_ event: NewEvent, in calendar: HelperCore.Calendar) throws(EventNotSaved) -> Event {
+    if let said = refusesToSave { throw EventNotSaved(evidence: said) }
+    saved.events.append(event)
+    return asEvent(event, in: calendar)
+  }
+
+  /// This Mac is in UTC: an all-day event runs from its first midnight to its last day's end.
+  private func asEvent(_ event: NewEvent, in calendar: HelperCore.Calendar) -> Event {
+    let (start, end): (Date, Date) =
+      switch event.time {
+      case .timed(let range): (range.start, range.end)
+      case .allDay(let firstDay, let lastDay):
+        (midnight(firstDay), midnight(lastDay).addingTimeInterval(86399))
+      }
+    return Event(
+      eventIdentifier: "saved:\(event.title)", title: event.title, start: start, end: end,
+      isAllDay: event.time.isAllDay,
+      location: event.location, notes: event.notes, originalStart: nil, calendar: calendar)
+  }
+
+  private func midnight(_ day: Day) -> Date {
+    var utc = Foundation.Calendar(identifier: .gregorian)
+    utc.timeZone = TimeZone(identifier: "UTC")!
+    return utc.date(from: DateComponents(year: day.year, month: day.month, day: day.day))!
+  }
+
+  private func savedAsEvents() -> [Event] {
+    saved.events.compactMap { event in
+      calendars().first { $0.identifier == event.calendarIdentifier }
+        .map { asEvent(event, in: $0) }
+    }
   }
 
   // MARK: builders
@@ -123,6 +170,33 @@ struct FakeCalendarStore: CalendarStore {
   func permission(_ permission: Permission) -> FakeCalendarStore {
     var store = self
     store.permissionHeld = permission
+    return store
+  }
+
+  /// Calendars the store has whether or not anything is held in them.
+  func having(_ calendars: HelperCore.Calendar...) -> FakeCalendarStore {
+    var store = self
+    store.ownCalendars += calendars
+    return store
+  }
+
+  /// The calendar the user set in Calendar for new events.
+  func defaultingTo(_ calendar: HelperCore.Calendar) -> FakeCalendarStore {
+    var store = self
+    store.defaultCalendarHeld = calendar
+    return store
+  }
+
+  func refusingToSave(saying evidence: String) -> FakeCalendarStore {
+    var store = self
+    store.refusesToSave = evidence
+    return store
+  }
+
+  /// The store takes an event and then cannot find it: a sync that has not landed yet.
+  func losingSightOfWhatItSaves() -> FakeCalendarStore {
+    var store = self
+    store.losesSight = true
     return store
   }
 

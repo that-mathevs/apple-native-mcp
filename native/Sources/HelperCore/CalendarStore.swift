@@ -21,6 +21,13 @@ public protocol CalendarStore: Sendable {
   /// The event an identifier names, or nil when there is none. For a series this is whichever
   /// occurrence the store thinks of first: telling occurrences apart is the reading's job.
   func event(identifier: String) -> Event?
+
+  /// The calendar the user set in Calendar for new events, or nil when there is none.
+  func defaultCalendar() -> Calendar?
+
+  /// Save a new event in a calendar, and answer with the event as the store now believes it to
+  /// be. An all-day event arrives as days, and the store alone decides which instants those are.
+  func save(_ event: NewEvent, in calendar: Calendar) throws(EventNotSaved) -> Event
 }
 
 /// One calendar would not answer — an offline subscription, a server that refused. It carries what
@@ -30,5 +37,19 @@ public struct CalendarUnreadable: Error, Equatable, Sendable {
 
   public init(evidence: String) {
     self.evidence = evidence
+  }
+}
+
+extension CalendarStore {
+  /// Do the work only while macOS allows it, and otherwise refuse with the setting to change.
+  /// Reading and writing ask for different things: a write-only grant allows adding and no more.
+  func whenPermitted<Answer>(
+    _ allows: KeyPath<Permission, Bool>, _ work: () -> Result<Answer, NamedFailure>
+  ) -> Result<Answer, NamedFailure> {
+    let held = permission()
+    guard held[keyPath: allows] else {
+      return .failure(.calendarPermissionMissing(permission: held))
+    }
+    return work()
   }
 }

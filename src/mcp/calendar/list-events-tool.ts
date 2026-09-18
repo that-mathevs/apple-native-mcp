@@ -14,5 +14,6 @@ export const listEventsTool = (dependencies: ListEventsDependencies): Tool =>
     output: eventIndexOutput,
     annotations: { readOnlyHint: true, openWorldHint: false },
     capability: undefined,
-    call: async (request) => reportingEvents(await listEvents(dependencies, asRequest(request))),
+    call: async (request) =>
+      reportingEvents(await listEvents(dependencies, asRequest(request)), dependencies.timeZone),
   });

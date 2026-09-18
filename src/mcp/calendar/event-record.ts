@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { Occurrence } from "../../domain/calendar/event.js";
+import { dayIn, writtenDay } from "../../domain/time-zone.js";
 
 const calendar = z.object({
   identifier: z.string(),
@@ -15,6 +16,11 @@ export const eventRecord = z.object({
   start: z.iso.datetime(),
   end: z.iso.datetime(),
   isAllDay: z.boolean(),
+  firstDay: z.iso
+    .date()
+    .optional()
+    .describe("Set on an all-day event: its day, or its first, in the user's time zone."),
+  lastDay: z.iso.date().optional().describe("Set on an all-day event: its last day."),
   originalStart: z.iso
     .datetime()
     .optional()
@@ -22,12 +28,25 @@ export const eventRecord = z.object({
   calendar,
 });
 
-export const asEventRecord = (occurrence: Occurrence): Record<string, unknown> => ({
+/**
+ * An all-day event occupies days, not instants, and its instants read as the wrong day to
+ * anyone east or west of where they were written. So its days are said outright.
+ */
+const daysOf = ({ start, end }: Occurrence, timeZone: string): Record<string, string> => ({
+  firstDay: writtenDay(dayIn(timeZone, start)),
+  lastDay: writtenDay(dayIn(timeZone, new Date(end.getTime() - 1))),
+});
+
+export const asEventRecord = (
+  occurrence: Occurrence,
+  timeZone: string,
+): Record<string, unknown> => ({
   identifier: occurrence.identifier,
   title: occurrence.title,
   start: occurrence.start.toISOString(),
   end: occurrence.end.toISOString(),
   isAllDay: occurrence.isAllDay,
+  ...(occurrence.isAllDay ? daysOf(occurrence, timeZone) : {}),
   ...(occurrence.originalStart === undefined
     ? {}
     : { originalStart: occurrence.originalStart.toISOString() }),

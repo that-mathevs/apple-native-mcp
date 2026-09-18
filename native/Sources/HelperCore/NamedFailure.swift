@@ -27,6 +27,12 @@ public enum FailureCode: String, Equatable, Sendable {
   case calendarUnreadable = "calendar_unreadable"
   /// The range is longer than the event store will read in one go.
   case rangeTooLong = "range_too_long"
+  /// No calendar has the identifier a new event was to be created in.
+  case calendarNotFound = "calendar_not_found"
+  /// The calendar a new event was to be created in does not accept new events.
+  case calendarNotWritable = "calendar_not_writable"
+  /// The event store would not save the event.
+  case eventNotSaved = "event_not_saved"
   /// macOS has not allowed the helper to read the reminders.
   case remindersPermissionMissing = "reminders_permission_missing"
   /// A request named a reminder list the helper cannot find.
@@ -93,5 +99,26 @@ extension NamedFailure {
       code: .reminderListUnknown,
       sentence: "No reminder list has that identifier, so nothing was read.",
       evidence: identifier)
+  }
+
+  static func calendarNotFound(identifier: String) -> NamedFailure {
+    NamedFailure(
+      code: .calendarNotFound,
+      sentence: "No calendar has that identifier. Nothing was created.",
+      evidence: identifier)
+  }
+
+  static func calendarNotWritable(title: String) -> NamedFailure {
+    NamedFailure(
+      code: .calendarNotWritable,
+      sentence: "That calendar does not accept new events. Nothing was created.",
+      evidence: title)
+  }
+
+  static func eventNotSaved(evidence: String) -> NamedFailure {
+    NamedFailure(
+      code: .eventNotSaved,
+      sentence: "The event store would not save the event. Nothing was created.",
+      evidence: evidence)
   }
 }

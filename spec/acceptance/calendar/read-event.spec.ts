@@ -2,7 +2,7 @@ import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Occurrence } from "../../../src/domain/calendar/event.js";
-import { readingTheCalendar, therapy, work } from "../../support/calendar-server.js";
+import { aClientOfTheCalendar, therapy, work } from "../../support/calendar-server.js";
 import { FakeEventStore } from "../../support/fake-event-store.js";
 
 // What an agent gets when it reads one event in full. Every occurrence of a series shares the
@@ -38,7 +38,7 @@ describe("reading an event", () => {
   let client: Client;
 
   const readingWith = async (configuration: Record<string, string>): Promise<void> => {
-    client = await readingTheCalendar(eventStore, configuration);
+    client = await aClientOfTheCalendar(eventStore, configuration);
   };
 
   const readEvent = async (args: Record<string, unknown>): ReturnType<Client["callTool"]> =>

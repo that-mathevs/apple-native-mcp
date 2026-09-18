@@ -1,5 +1,14 @@
-import type { EventStore, EventsInRange } from "../../src/application/calendar/event-store.js";
-import type { Calendar, EventReference, Occurrence } from "../../src/domain/calendar/event.js";
+import type {
+  CreatedEvent,
+  EventStore,
+  EventsInRange,
+} from "../../src/application/calendar/event-store.js";
+import type {
+  Calendar,
+  EventReference,
+  Occurrence,
+} from "../../src/domain/calendar/event.js";
+import { rangeOf, type NewEvent } from "../../src/domain/calendar/new-event.js";
 import type { Range } from "../../src/domain/calendar/range.js";
 import type { NamedFailure, Outcome } from "../../src/domain/failure.js";
 import { failed, succeeded } from "../../src/domain/failure.js";
@@ -23,6 +32,12 @@ export class FakeEventStore implements EventStore {
 
   #occurrences: readonly Occurrence[] = [];
   #ownCalendars: readonly Calendar[] = [];
+  #default: Calendar | undefined;
+  #confirms = true;
+  #answers = true;
+
+  /** Every event the store was asked to create, as it was asked. */
+  readonly created: NewEvent[] = [];
   #unreadCalendars: readonly string[] = [];
   #failure: NamedFailure | undefined;
 
@@ -35,6 +50,21 @@ export class FakeEventStore implements EventStore {
     this.#ownCalendars = calendars;
   }
 
+  /** The store takes what it is given and then cannot find it again: a sync that has not landed. */
+  losesSightOfWhatItSaves(): void {
+    this.#confirms = false;
+  }
+
+  /** The store is given the event and never says what became of it: a helper that died. */
+  neverSaysWhatBecameOfAnEvent(): void {
+    this.#answers = false;
+  }
+
+  /** The calendar the user set in Calendar for new events. */
+  defaultsTo(calendar: Calendar): void {
+    this.#default = calendar;
+  }
+
   /** A calendar that won't answer: a subscribed calendar whose server is unreachable. */
   cannotRead(...calendarIdentifiers: readonly string[]): void {
     this.#unreadCalendars = calendarIdentifiers;
@@ -42,6 +72,47 @@ export class FakeEventStore implements EventStore {
 
   refuses(code: keyof typeof failures): void {
     this.#failure = failures[code];
+  }
+
+  defaultCalendar(): Promise<Outcome<Calendar | undefined>> {
+    if (this.#failure) return Promise.resolve(failed(this.#failure));
+
+    return Promise.resolve(succeeded(this.#default));
+  }
+
+  create(event: NewEvent): Promise<Outcome<CreatedEvent>> {
+    if (this.#failure) return Promise.resolve(failed(this.#failure));
+
+    this.created.push(event);
+
+    if (!this.#answers) return Promise.resolve(succeeded({ confirmed: false }));
+
+    const calendar = this.#calendars().find(
+      ({ identifier }) => identifier === event.calendarIdentifier,
+    );
+    if (calendar === undefined) {
+      return Promise.resolve(
+        failed({ code: "calendar-not-found", sentence: "The store has no such calendar." }),
+      );
+    }
+
+    // A real store holds an all-day event from the user's own midnight, and this user is in
+    // New York, as every calendar scenario's is.
+    const { from: start, to: end } = rangeOf(event.time, "America/New_York");
+
+    const saved: Occurrence = {
+      identifier: `event-${String(this.created.length)}`,
+      title: event.title,
+      start,
+      end,
+      isAllDay: event.time.kind === "allDay",
+      calendar,
+      ...(event.location === undefined ? {} : { location: event.location }),
+      ...(event.notes === undefined ? {} : { notes: event.notes }),
+    };
+    this.#occurrences = [...this.#occurrences, saved];
+
+    return Promise.resolve(succeeded({ event: saved, confirmed: this.#confirms }));
   }
 
   calendars(): Promise<Outcome<readonly Calendar[]>> {

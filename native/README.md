@@ -138,6 +138,25 @@ No reminder lists means no reminders, never those of every one, which is how Eve
 empty set. `due` is `null`, a due date as `{"date":"2026-09-25"}` with no time of day, or a due time
 as `{"time":"2026-09-25T21:00:00Z"}`, an instant the server shows in the user's time zone.
 
+Two requests write. `default_calendar` answers with the calendar the user set in Calendar for new
+events, or `"calendar":null`: the helper never picks one for them. `create_event` names its
+calendar and its title and says when the event is in exactly one way, a `start` and an `end` or a
+`firstDay` and a `lastDay`. An all-day event's days stay days until EventKit is handed them, in
+this Mac's own time zone, so it cannot slide onto the day before. Every piece of text becomes a
+property of the event and nothing is assembled into a script.
+
+```json
+{"protocolVersion":1,"id":"5","request":"create_event","calendarIdentifier":"…","title":"Lunch","start":"2026-09-22T12:30:00Z","end":"2026-09-22T13:30:00Z","location":"…","notes":"…"}
+```
+
+The answer is the event as the store holds it and `confirmed`, which is false when the store took
+the event and then could not show it. That is an answer and not a failure, because a failure would
+have the caller create it again. For the same reason the server sends a write exactly once: a
+helper that dies with a write in hand may have done it first, so the server reports that outcome
+as unconfirmed too, where a read would simply be asked again. A calendar the store lacks is `calendar_not_found`, one that
+refuses new events is `calendar_not_writable`, and a save EventKit refused is `event_not_saved`
+with what it said. Writing needs a full or a write-only calendar permission.
+
 ## Building it
 
 ```sh

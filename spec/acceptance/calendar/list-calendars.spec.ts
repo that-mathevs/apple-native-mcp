@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { readingTheCalendar } from "../../support/calendar-server.js";
+import { aClientOfTheCalendar } from "../../support/calendar-server.js";
 import { FakeEventStore } from "../../support/fake-event-store.js";
 
 // What an agent learns about the calendars themselves. Upstream named a calendar by its
@@ -23,7 +23,7 @@ const listingCalendars = async (
 ): Promise<{ structuredContent?: unknown; isError?: unknown; text: string }> => {
   eventStore.hasCalendars(home, otherHome, holidays);
 
-  const client = await readingTheCalendar(eventStore, configuration);
+  const client = await aClientOfTheCalendar(eventStore, configuration);
   const result = await client.callTool({ name: "list_calendars", arguments: {} });
 
   return { ...result, text: JSON.stringify(result) };

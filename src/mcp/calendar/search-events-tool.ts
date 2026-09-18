@@ -23,5 +23,8 @@ export const searchEventsTool = (dependencies: ListEventsDependencies): Tool =>
     annotations: { readOnlyHint: true, openWorldHint: false },
     capability: undefined,
     call: async ({ text, ...index }) =>
-      reportingEvents(await searchEvents(dependencies, { text, ...asRequest(index) })),
+      reportingEvents(
+        await searchEvents(dependencies, { text, ...asRequest(index) }),
+        dependencies.timeZone,
+      ),
   });

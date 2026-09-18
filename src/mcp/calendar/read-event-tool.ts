@@ -16,7 +16,9 @@ const readEventOutput = {
   }),
 };
 
-export const readEventTool = (dependencies: ReadEventDependencies): Tool =>
+export const readEventTool = (
+  dependencies: ReadEventDependencies & { readonly timeZone: string },
+): Tool =>
   tool({
     name: "read_event",
     title: "Read one calendar event",
@@ -43,7 +45,7 @@ export const readEventTool = (dependencies: ReadEventDependencies): Tool =>
 
       return reporting({
         event: {
-          ...asEventRecord(read.value),
+          ...asEventRecord(read.value, dependencies.timeZone),
           ...(read.value.location === undefined ? {} : { location: read.value.location }),
           ...(read.value.notes === undefined ? {} : { notes: read.value.notes }),
         },

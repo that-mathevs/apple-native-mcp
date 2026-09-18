@@ -1,4 +1,4 @@
-import { dayIn, startOfDay } from "../time-zone.js";
+import { dayIn, startOfDay, type LocalDay } from "../time-zone.js";
 
 /** The start and end instants a read covers. Date-only bounds mean whole days locally. */
 export type Range = {
@@ -27,6 +27,12 @@ export const wholeDaysFrom = (timeZone: string, instant: Date, days: number): Ra
     to: startOfDay(timeZone, { ...first, day: first.day + days }),
   };
 };
+
+/** The instants a run of whole days covers in a time zone, from a first day to a last one. */
+export const wholeDays = (timeZone: string, firstDay: LocalDay, lastDay: LocalDay): Range => ({
+  from: startOfDay(timeZone, firstDay),
+  to: startOfDay(timeZone, { ...lastDay, day: lastDay.day + 1 }),
+});
 
 /** The range a read covers when the caller gave neither bound: today, for a week. */
 export const defaultRange = (timeZone: string, now: Date): Range =>

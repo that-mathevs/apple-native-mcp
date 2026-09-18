@@ -7,10 +7,12 @@ import Foundation
 /// single real event.
 public struct Helper: Sendable {
   private let calendar: CalendarReading
+  private let calendarWriting: CalendarWriting
   private let reminders: RemindersReading
 
   public init(calendarStore: CalendarStore, reminderStore: ReminderStore) {
     self.calendar = CalendarReading(store: calendarStore)
+    self.calendarWriting = CalendarWriting(store: calendarStore)
     self.reminders = RemindersReading(store: reminderStore)
   }
 
@@ -38,6 +40,14 @@ public struct Helper: Sendable {
       }
     case .eventsInRange(let range):
       return answering(calendar.events(in: range)) { $0.asFields }
+    case .defaultCalendar:
+      return answering(calendarWriting.defaultCalendar()) {
+        ["calendar": $0.map { $0.asFields as Any } ?? NSNull()]
+      }
+    case .createEvent(let event):
+      return answering(calendarWriting.create(event)) {
+        ["event": $0.event.asFields, "confirmed": $0.confirmed]
+      }
     case .remindersPermission:
       return ["result": reminders.permission().asFields(setting: remindersPermissionSetting)]
     case .requestRemindersPermission:

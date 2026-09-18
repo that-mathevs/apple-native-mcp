@@ -1,8 +1,18 @@
-import type { EventStore, EventsInRange } from "../../application/calendar/event-store.js";
-import type { Calendar, EventReference, Occurrence } from "../../domain/calendar/event.js";
+import type {
+  CreatedEvent,
+  EventStore,
+  EventsInRange,
+} from "../../application/calendar/event-store.js";
+import type {
+  Calendar,
+  EventReference,
+  Occurrence,
+} from "../../domain/calendar/event.js";
+import type { NewEvent } from "../../domain/calendar/new-event.js";
 import type { Range } from "../../domain/calendar/range.js";
 import type { Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
+import { writtenDay } from "../../domain/time-zone.js";
 import type { Helper } from "./helper.js";
 
 /**
@@ -51,7 +61,50 @@ const asOccurrence = (record: EventRecord): Occurrence => ({
   ...(record.notes === null ? {} : { notes: record.notes }),
 });
 
+/** An all-day event goes as its days and a timed one as its instants: see `EventTime`. */
+const asTimeFields = ({ time }: NewEvent): Record<string, string> =>
+  time.kind === "allDay"
+    ? { firstDay: writtenDay(time.firstDay), lastDay: writtenDay(time.lastDay) }
+    : { start: time.start.toISOString(), end: time.end.toISOString() };
+
 export const calendarEventStore = (helper: Helper): EventStore => ({
+  defaultCalendar: async (): Promise<Outcome<Calendar | undefined>> => {
+    const answered = await helper.ask({ request: "default_calendar" });
+
+    if (!answered.ok) return failed(answered.failure);
+
+    const { calendar } = answered.value as { calendar?: CalendarRecord | null };
+
+    return succeeded(
+      calendar === undefined || calendar === null ? undefined : asCalendar(calendar),
+    );
+  },
+
+  create: async (event: NewEvent): Promise<Outcome<CreatedEvent>> => {
+    const answered = await helper.askOnce({
+      request: "create_event",
+      calendarIdentifier: event.calendarIdentifier,
+      title: event.title,
+      ...asTimeFields(event),
+      ...(event.location === undefined ? {} : { location: event.location }),
+      ...(event.notes === undefined ? {} : { notes: event.notes }),
+    });
+
+    // The helper died with the request in hand: it may have saved the event first.
+    if (!answered.ok && answered.failure.code === "helper-stopped") {
+      return succeeded({ confirmed: false });
+    }
+
+    if (!answered.ok) return failed(answered.failure);
+
+    const { event: saved, confirmed } = answered.value as {
+      event: EventRecord;
+      confirmed: boolean;
+    };
+
+    return succeeded({ event: asOccurrence(saved), confirmed });
+  },
+
   calendars: async (): Promise<Outcome<readonly Calendar[]>> => {
     const answered = await helper.ask({ request: "calendars" });
 

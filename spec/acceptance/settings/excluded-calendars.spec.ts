@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { readingTheCalendar, therapy, work } from "../../support/calendar-server.js";
+import { aClientOfTheCalendar, therapy, work } from "../../support/calendar-server.js";
 import { FakeEventStore } from "../../support/fake-event-store.js";
 
 // What an agent sees of the calendars the user keeps from it. Calendars are addressed by
@@ -34,7 +34,7 @@ const listingEventsWith = async (
   eventStore.holds(standUp, session);
   eventStore.cannotRead(...unreadable);
 
-  const client = await readingTheCalendar(eventStore, configuration);
+  const client = await aClientOfTheCalendar(eventStore, configuration);
 
   const result = await client.callTool({ name: "list_events", arguments: { ...sending } });
 

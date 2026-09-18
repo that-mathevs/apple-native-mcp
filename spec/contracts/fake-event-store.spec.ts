@@ -3,6 +3,7 @@ import { FakeEventStore } from "../support/fake-event-store.js";
 import {
   anEventStore,
   anEventStoreThatCanBeLoaded,
+  anEventStoreThatCreatesEvents,
   anEventStoreThatListsCalendars,
 } from "./event-store.contract.js";
 
@@ -44,4 +45,18 @@ anEventStoreThatListsCalendars({
 anEventStoreThatCanBeLoaded({
   name: "the fake event store",
   build: () => Promise.resolve(fake()),
+});
+
+anEventStoreThatCreatesEvents({
+  name: "the fake event store",
+  build: () => {
+    const { eventStore } = fake();
+    eventStore.hasCalendars({
+      identifier: "cal-1",
+      title: "Work",
+      account: "iCloud",
+      acceptsNewEvents: true,
+    });
+    return Promise.resolve({ eventStore, calendar: "cal-1" });
+  },
 });

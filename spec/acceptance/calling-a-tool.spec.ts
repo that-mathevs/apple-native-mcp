@@ -6,7 +6,7 @@ import { settingsFrom } from "../../src/domain/settings.js";
 import { reporting } from "../../src/mcp/result.js";
 import { serverOffering } from "../../src/mcp/server.js";
 import { tool } from "../../src/mcp/tool.js";
-import { aToolThatCreatesAnEvent } from "../support/a-tool-that-creates-an-event.js";
+import { aToolThatCreatesAnEvent } from "../support/a-tool-that-remembers.js";
 import { connectedTo } from "../support/connected-client.js";
 
 // What every call answers with when it cannot be carried out, whichever tool was named. Some

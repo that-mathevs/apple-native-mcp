@@ -32,7 +32,7 @@ struct CalendarReading: Sendable {
   /// Every calendar, readable or not: one whose server is down still exists, and the user still
   /// needs its identifier to exclude it.
   func calendars() -> Result<[Calendar], NamedFailure> {
-    whenReadable { store.calendars() }
+    store.whenPermitted(\.allowsReading) { .success(store.calendars()) }
   }
 
   /// One event, or nil when no event has that identifier and original start. Not finding it is
@@ -42,40 +42,36 @@ struct CalendarReading: Sendable {
   /// near its original start, in the one calendar its series belongs to. A miss on the identifier
   /// answers at once and reads nothing.
   func event(identifier: String, originalStart: Date?) -> Result<Event?, NamedFailure> {
-    whenReadable {
-      guard let named = store.event(identifier: identifier) else { return nil }
-      guard let originalStart else { return named }
-
-      for reach in Self.reaches {
-        let around = Range(
-          from: originalStart.addingTimeInterval(-reach),
-          to: originalStart.addingTimeInterval(reach))!
-        let occurrence = (try? store.events(in: around, from: named.calendar))?.first {
-          $0.eventIdentifier == identifier && $0.began(at: originalStart)
-        }
-        if let occurrence { return occurrence }
-      }
-      return nil
+    store.whenPermitted(\.allowsReading) {
+      .success(occurrence(of: identifier, originallyAt: originalStart))
     }
+  }
+
+  private func occurrence(of identifier: String, originallyAt originalStart: Date?) -> Event? {
+    guard let named = store.event(identifier: identifier) else { return nil }
+    guard let originalStart else { return named }
+
+    for reach in Self.reaches {
+      let around = Range(
+        from: originalStart.addingTimeInterval(-reach),
+        to: originalStart.addingTimeInterval(reach))!
+      let occurrence = (try? store.events(in: around, from: named.calendar))?.first {
+        $0.eventIdentifier == identifier && $0.began(at: originalStart)
+      }
+      if let occurrence { return occurrence }
+    }
+    return nil
   }
 
   /// How far either side of its original start an occurrence is looked for: the day it should be
   /// on, and then, for one the user moved, as far as a four-year range reaches.
   private static let reaches: [TimeInterval] = [day, Range.longest / 2]
 
-  private func whenReadable<Answer>(_ read: () -> Answer) -> Result<Answer, NamedFailure> {
-    let permission = store.permission()
-    guard permission.allowsReading else {
-      return .failure(.calendarPermissionMissing(permission: permission))
-    }
-    return .success(read())
+  func events(in range: Range) -> Result<EventsInRange, NamedFailure> {
+    store.whenPermitted(\.allowsReading) { reading(range) }
   }
 
-  func events(in range: Range) -> Result<EventsInRange, NamedFailure> {
-    let permission = store.permission()
-    guard permission.allowsReading else {
-      return .failure(.calendarPermissionMissing(permission: permission))
-    }
+  private func reading(_ range: Range) -> Result<EventsInRange, NamedFailure> {
     guard range.end.timeIntervalSince(range.start) <= Range.longest else {
       return .failure(.rangeTooLong(range))
     }

@@ -66,6 +66,16 @@ export const startOfDay = (timeZone: string, day: LocalDay): Date => {
 
 const twoDigits = (value: number): string => String(value).padStart(2, "0");
 
+/** The day a written date names. It has to be a real one already: `2026-09-25`. */
+export const dayWritten = (written: string): LocalDay => {
+  const [year, month, day] = written.split("-").map(Number) as [number, number, number];
+  return { year, month, day };
+};
+
+/** Whether one day comes before another on the calendar. */
+export const isBefore = (left: LocalDay, right: LocalDay): boolean =>
+  Date.UTC(left.year, left.month - 1, left.day) < Date.UTC(right.year, right.month - 1, right.day);
+
 /** A day written the way ISO 8601 writes a date: `2026-09-25`. */
 export const writtenDay = ({ year, month, day }: LocalDay): string =>
   `${String(year)}-${twoDigits(month)}-${twoDigits(day)}`;

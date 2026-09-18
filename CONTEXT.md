@@ -131,10 +131,11 @@ unticked in Calendar.
 _Avoid_: blacklisted, disabled, filtered
 
 **Event**:
-An entry in a calendar with a title, a start and end or all-day dates, a location and notes,
-addressed by its event identifier. An **all-day event** occupies whole days in the user's time zone,
-not an instant range.
-_Avoid_: appointment, meeting, entry
+An entry in a calendar with a title, a location and notes, addressed by its event identifier. A
+**timed event** has a start and an end, which are instants. An **all-day event** occupies whole
+days in the user's time zone, from its **first day** to its **last day**, and is never an instant
+range: its days stay days all the way to the store.
+_Avoid_: appointment, meeting, entry, start date and end date for an all-day event
 
 **Series and occurrence**:
 A series is a recurring event as a whole; an occurrence is one dated instance of it. Every occurrence

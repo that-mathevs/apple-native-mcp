@@ -19,8 +19,8 @@ export const work = {
 /** The calendar a user would want kept from an agent. */
 export const therapy = { ...work, identifier: "cal-therapy", title: "Therapy" } as const;
 
-/** An agent's client of the real server, reading this store under these settings. */
-export const readingTheCalendar = async (
+/** An agent's client of the real server, with this store behind it and these settings. */
+export const aClientOfTheCalendar = async (
   eventStore: FakeEventStore,
   configuration: Record<string, string> = {},
 ): Promise<Client> =>

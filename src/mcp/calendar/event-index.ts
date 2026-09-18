@@ -50,14 +50,14 @@ export const eventIndexOutput = {
   }),
 };
 
-export const reportingEvents = (index: Outcome<EventIndex>): ToolResult => {
+export const reportingEvents = (index: Outcome<EventIndex>, timeZone: string): ToolResult => {
   if (!index.ok) return refusing(index.failure);
 
   const { range, occurrences, calendarsUnread, calendarsExcluded, truncated } = index.value;
 
   return reporting({
     range: { from: range.from.toISOString(), to: range.to.toISOString() },
-    events: occurrences.map(asEventRecord),
+    events: occurrences.map((occurrence) => asEventRecord(occurrence, timeZone)),
     coverage: { calendarsUnread, calendarsExcluded, truncated },
   });
 };

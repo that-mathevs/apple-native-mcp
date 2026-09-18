@@ -108,6 +108,82 @@ export const anEventStoreThatListsCalendars = ({ name, build }: EventStoreUnderT
   });
 };
 
+/**
+ * A store a scenario may create events in.
+ *
+ * Only the fake answers this today. Against the real store it would put events into the
+ * maintainer's own calendar, so it waits for a scratch calendar to aim at.
+ */
+export type WritableEventStoreUnderTest = {
+  readonly name: string;
+  readonly build: () => Promise<{ readonly eventStore: EventStore; readonly calendar: string }>;
+};
+
+export const anEventStoreThatCreatesEvents = ({
+  name,
+  build,
+}: WritableEventStoreUnderTest): void => {
+  describe(`${name}, asked to create an event`, () => {
+    it("answers with the event as it now holds it, in the calendar it was sent to, and can show it afterwards", async () => {
+      const { eventStore, calendar } = await build();
+
+      const created = await eventStore.create({
+        title: "Lunch",
+        calendarIdentifier: calendar,
+        time: { kind: "timed", start: noon, end: new Date(noon.getTime() + 60 * 60 * 1000) },
+      });
+
+      expect(created).toMatchObject({
+        ok: true,
+        value: {
+          confirmed: true,
+          event: { title: "Lunch", start: noon, calendar: { identifier: calendar } },
+        },
+      });
+
+      const identifier = (created.ok ? created.value.event?.identifier : undefined) ?? "";
+      expect(await eventStore.event({ identifier })).toMatchObject({
+        ok: true,
+        value: { title: "Lunch" },
+      });
+    });
+
+    it("given an all-day event, holds it as an all-day event", async () => {
+      const { eventStore, calendar } = await build();
+
+      const created = await eventStore.create({
+        title: "Conference",
+        calendarIdentifier: calendar,
+        time: {
+          kind: "allDay",
+          firstDay: { year: 2026, month: 9, day: 22 },
+          lastDay: { year: 2026, month: 9, day: 24 },
+        },
+      });
+
+      expect(created).toMatchObject({ ok: true, value: { event: { isAllDay: true } } });
+    });
+
+    it("given a calendar it does not have, refuses rather than creating the event somewhere else", async () => {
+      const { eventStore } = await build();
+
+      const created = await eventStore.create({
+        title: "Lunch",
+        calendarIdentifier: "no-calendar-has-this-identifier",
+        time: { kind: "timed", start: noon, end: new Date(noon.getTime() + 60 * 60 * 1000) },
+      });
+
+      expect(created.ok).toBe(false);
+    });
+
+    it("names the default calendar, or says there is none, rather than failing", async () => {
+      const { eventStore } = await build();
+
+      expect(await eventStore.defaultCalendar()).toMatchObject({ ok: true });
+    });
+  });
+};
+
 export const anEventStoreThatCanBeLoaded = ({
   name,
   build,

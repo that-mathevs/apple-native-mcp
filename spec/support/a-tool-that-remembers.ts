@@ -30,8 +30,8 @@ const aToolThatRemembers = (name: string, capability: WriteCapability | undefine
 /**
  * A write tool that only remembers what it was asked to create.
  *
- * It stands in for `create_event` in the scenarios about capabilities, which are rules of
- * the server rather than of any one tool, until #36 builds the real one.
+ * The scenarios about calling a tool are rules of the server rather than of any one tool, so
+ * they use this one and stay still when a real tool's arguments change.
  */
 export const aToolThatCreatesAnEvent = (): StandIn =>
   aToolThatRemembers("create_event", "create_event");

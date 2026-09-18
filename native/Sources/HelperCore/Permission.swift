@@ -15,6 +15,9 @@ public enum Permission: String, Equatable, Sendable, CaseIterable {
   /// Only a full grant lets the helper read; writing is not reading.
   public var allowsReading: Bool { self == .granted }
 
+  /// Adding is allowed by a full grant and by one that covers writing only.
+  public var allowsWriting: Bool { self == .granted || self == .writeOnly }
+
   /// Whether changing a setting is what would fix this. Nothing needs fixing once granted, and
   /// while nobody has been asked, asking is the fix.
   public var isFixedInSettings: Bool {

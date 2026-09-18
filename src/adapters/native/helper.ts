@@ -140,6 +140,15 @@ export class Helper {
     this.#path = path;
   }
 
+  /**
+   * Ask for something that changes a store, which is asked exactly once. A helper that died
+   * may have died after doing it, and sending it again would do it twice.
+   */
+  async askOnce(request: HelperRequest): Promise<Outcome<Record<string, unknown>>> {
+    return await this.#running().ask(this.#identifier(), request);
+  }
+
+  /** Ask for a read, which is asked again once if the helper died before answering. */
   async ask(request: HelperRequest): Promise<Outcome<Record<string, unknown>>> {
     const first = await this.#running().ask(this.#identifier(), request);
     if (first.ok || first.failure.code !== "helper-stopped") return first;

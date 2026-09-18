@@ -15,6 +15,8 @@ struct Request: Equatable {
     case calendars
     case eventsInRange(Range)
     case event(identifier: String, originalStart: Date?)
+    case defaultCalendar
+    case createEvent(NewEvent)
     case remindersPermission
     case requestRemindersPermission
     case reminderLists
@@ -29,6 +31,8 @@ enum RequestName: String {
   case calendars = "calendars"
   case eventsInRange = "events_in_range"
   case event = "event"
+  case defaultCalendar = "default_calendar"
+  case createEvent = "create_event"
   case remindersPermission = "reminders_permission"
   case requestRemindersPermission = "reminders_permission_request"
   case reminderLists = "reminder_lists"
@@ -100,6 +104,13 @@ extension Request {
         return .request(
           Request(id: id, kind: .event(identifier: identifier, originalStart: originalStart)))
       }
+    case .defaultCalendar:
+      return .request(Request(id: id, kind: .defaultCalendar))
+    case .createEvent:
+      guard let event = readNewEvent(fields) else {
+        return .failure(id: id, .requestMalformed(line: line))
+      }
+      return .request(Request(id: id, kind: .createEvent(event)))
     case .remindersPermission:
       return .request(Request(id: id, kind: .remindersPermission))
     case .requestRemindersPermission:
@@ -153,4 +164,36 @@ private enum OptionalInstant {
     }
     self = .instant(instant)
   }
+}
+
+/// A new event names its calendar and its title, and says when it is in exactly one way: a start
+/// and an end, or a first and a last day. Anything else is refused rather than completed.
+private func readNewEvent(_ fields: [String: Any]) -> NewEvent? {
+  guard
+    let calendar = fields["calendarIdentifier"] as? String, !calendar.isEmpty,
+    let title = fields["title"] as? String,
+    let time = readEventTime(fields)
+  else { return nil }
+
+  return NewEvent(
+    title: title, calendarIdentifier: calendar, time: time,
+    location: fields["location"] as? String, notes: fields["notes"] as? String)
+}
+
+private func readEventTime(_ fields: [String: Any]) -> EventTime? {
+  let timed = fields["start"] != nil || fields["end"] != nil
+  let allDay = fields["firstDay"] != nil || fields["lastDay"] != nil
+  guard timed != allDay else { return nil }
+
+  if timed {
+    return readRange(["start": fields["start"] as Any, "end": fields["end"] as Any])
+      .map(EventTime.timed)
+  }
+
+  guard
+    let first = (fields["firstDay"] as? String).flatMap(Day.init),
+    let last = (fields["lastDay"] as? String).flatMap(Day.init),
+    last >= first
+  else { return nil }
+  return .allDay(firstDay: first, lastDay: last)
 }

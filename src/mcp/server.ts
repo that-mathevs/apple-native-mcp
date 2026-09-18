@@ -4,6 +4,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 import type { ListEventsDependencies } from "../application/calendar/list-events.js";
 import type { NamedFailure } from "../domain/failure.js";
 import { capabilityOff, isOn, type Settings } from "../domain/settings.js";
+import { createEventTool } from "./calendar/create-event-tool.js";
 import { listCalendarsTool } from "./calendar/list-calendars-tool.js";
 import { listEventsTool } from "./calendar/list-events-tool.js";
 import { readEventTool } from "./calendar/read-event-tool.js";
@@ -97,6 +98,7 @@ export const buildServer = (dependencies: ServerDependencies): McpServer =>
       listEventsTool(dependencies),
       searchEventsTool(dependencies),
       readEventTool(dependencies),
+      createEventTool(dependencies),
       listReminderListsTool(dependencies),
       listRemindersTool(dependencies),
     ],

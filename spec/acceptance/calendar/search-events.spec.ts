@@ -1,7 +1,7 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { readingTheCalendar, therapy, work } from "../../support/calendar-server.js";
+import { aClientOfTheCalendar, therapy, work } from "../../support/calendar-server.js";
 import { FakeEventStore } from "../../support/fake-event-store.js";
 
 // What an agent finds when it searches the calendar. Upstream built its search into an
@@ -33,7 +33,7 @@ describe("searching events", () => {
   let client: Client;
 
   const searchingWith = async (configuration: Record<string, string>): Promise<void> => {
-    client = await readingTheCalendar(eventStore, configuration);
+    client = await aClientOfTheCalendar(eventStore, configuration);
   };
 
   const searchEvents = async (args: Record<string, unknown>): ReturnType<Client["callTool"]> =>
