@@ -80,6 +80,37 @@ The Swift process that holds every macOS permission and reaches every store. See
 [ADR-0002](docs/adr/0002-helper-owns-every-protected-access.md).
 _Avoid_: daemon, bridge, sidecar
 
+**Setup**:
+The command that installs the helper and asks for macOS permissions. Tools never do either.
+_Avoid_: install step, onboarding
+
+**Shipped helper and installed helper**:
+The shipped helper is the one carried inside an install, such as the npm package or the `.mcpb`,
+and is never launched. The installed helper is the one at its fixed per-user path, the only one ever
+launched, at the fixed path, and is replaced only by a newer one. See
+[ADR-0003](docs/adr/0003-signed-helper-at-a-fixed-path.md).
+_Avoid_: bundled helper, embedded helper, the binary
+
+**Fixed path**:
+The one per-user place the installed helper lives,
+`~/Library/Application Support/apple-native-mcp/apple-native-mcp`. It is the same for every install
+channel, so every update keeps the user's grants.
+_Avoid_: install location, helper dir
+
+**Helper file**:
+One helper as it sits on disk, its path and its version, read before anything launches it.
+_Avoid_: binary, executable, copy
+
+**Code requirement**:
+The signing identity, an identifier plus a team, that a helper must meet before it is copied or
+launched.
+_Avoid_: signature check, codesign check
+
+**Developer setting**:
+The setting in the client's configuration that names a development build of the helper to launch in
+place of the installed helper.
+_Avoid_: dev mode, debug flag
+
 ### Calendar
 
 **Calendar account**:

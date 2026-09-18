@@ -12,5 +12,6 @@ and enforced by [`.dependency-cruiser.mjs`](../.dependency-cruiser.mjs).
 | `mcp/` | tool definitions, input schemas, and how a result or a failure is reported | use cases |
 | `main.ts` | the composition root: the one place adapters meet use cases | everything |
 
-The contexts are `calendar`, `reminders`, `contacts`, `messages`, `notes` and `mail`.
+The contexts are `calendar`, `reminders`, `contacts`, `messages`, `notes` and `mail`, plus
+`setup`, which installs the helper and chooses the one to launch (ADR-0003).
 When one context needs another, it asks through a port rather than importing it.
