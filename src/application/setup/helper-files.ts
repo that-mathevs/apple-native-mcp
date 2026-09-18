@@ -22,4 +22,6 @@ export type HelperFiles = {
   readonly versionOf: (helper: HelperFile) => Promise<Outcome<string>>;
   /** Put this helper at the fixed path, replacing what is there in place. */
   readonly install: (helper: HelperFile) => Promise<Outcome<HelperFile>>;
+  /** Take the installed helper away: the one removed, or nothing when none was installed. */
+  readonly remove: () => Promise<Outcome<HelperFile | undefined>>;
 };

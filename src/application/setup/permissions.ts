@@ -5,6 +5,15 @@ export const permissionsAskedBySetup = ["calendar", "reminders"] as const;
 
 export type Permission = (typeof permissionsAskedBySetup)[number];
 
+/**
+ * Where each permission is turned on and off, as the helper names it: setup lists these when it
+ * removes the helper, which can no longer be asked.
+ */
+export const permissionSettings: Readonly<Record<Permission, string>> = {
+  calendar: "System Settings > Privacy & Security > Calendars > apple-native-mcp",
+  reminders: "System Settings > Privacy & Security > Reminders > apple-native-mcp",
+};
+
 /** What macOS allows the helper, in the helper's own words (native/README.md). */
 export type PermissionState = "granted" | "refused" | "undecided" | "restricted" | "writeOnly";
 

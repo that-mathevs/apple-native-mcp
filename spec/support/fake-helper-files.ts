@@ -54,6 +54,11 @@ export class FakeHelperFiles implements HelperFiles {
     );
   }
 
+  remove(): Promise<Outcome<HelperFile | undefined>> {
+    const had = this.#versions.delete(fixedPath);
+    return Promise.resolve(succeeded(had ? { path: fixedPath } : undefined));
+  }
+
   install(helper: HelperFile): Promise<Outcome<HelperFile>> {
     const version = this.#versions.get(helper.path);
     if (version !== undefined) this.#versions.set(fixedPath, version);

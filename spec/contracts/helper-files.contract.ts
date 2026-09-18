@@ -62,5 +62,19 @@ export const helperFilesContract = ({ name, build }: HelperFilesUnderTest): void
 
       expect(second.path).toBe(first.path);
     });
+
+    it("given an installed helper is removed, holds no installed helper and says which it removed", async () => {
+      const { helperFiles } = await build();
+      const installed = value(await helperFiles.install(await shippedFrom(helperFiles)));
+
+      expect(await helperFiles.remove()).toStrictEqual({ ok: true, value: installed });
+      expect(await helperFiles.installed()).toStrictEqual({ ok: true, value: undefined });
+    });
+
+    it("given nothing is installed, removing answers that there was nothing rather than failing", async () => {
+      const { helperFiles } = await build();
+
+      expect(await helperFiles.remove()).toStrictEqual({ ok: true, value: undefined });
+    });
   });
 };

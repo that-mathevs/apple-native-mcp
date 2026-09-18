@@ -77,6 +77,21 @@ const installAt =
     }
   };
 
+const removeAt =
+  (fixed: string) =>
+  async (): Promise<Outcome<HelperFile | undefined>> => {
+    const found = await helperFileAt(fixed);
+    if (!found.ok || found.value === undefined) return found;
+
+    try {
+      await rm(fixed);
+      return found;
+    } catch (error) {
+      const sentence = `The helper at ${fixed} could not be removed.`;
+      return refusedBecause("helper-not-removed", sentence, error);
+    }
+  };
+
 /** The helper files as they are on disk. */
 export const diskHelperFiles = ({ shipped, fixed }: HelperFilePaths): HelperFiles => ({
   shipped: async (): Promise<Outcome<HelperFile>> => {
@@ -92,4 +107,5 @@ export const diskHelperFiles = ({ shipped, fixed }: HelperFilePaths): HelperFile
   installed: async (): Promise<Outcome<HelperFile | undefined>> => await helperFileAt(fixed),
   versionOf,
   install: installAt(fixed),
+  remove: removeAt(fixed),
 });

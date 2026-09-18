@@ -1,5 +1,7 @@
 import type { HelperInstallation } from "../application/setup/install-helper.js";
 import type { Permission, PermissionAnswer } from "../application/setup/permissions.js";
+import type { RemoveHelperDependencies } from "../application/setup/remove-helper.js";
+import { removeHelper } from "../application/setup/remove-helper.js";
 import type { SetUpDependencies } from "../application/setup/set-up.js";
 import { setUp } from "../application/setup/set-up.js";
 import type { Outcome } from "../domain/failure.js";
@@ -52,6 +54,33 @@ export const setup = async (
   for (const { permission, answer } of report.permissions) {
     print(permissionLine(permission, answer));
   }
+
+  return 0;
+};
+
+/** `apple-native-mcp setup --remove`: what it prints, and the status it exits with. */
+export const removeSetup = async (
+  dependencies: RemoveHelperDependencies,
+  print: (line: string) => void,
+): Promise<number> => {
+  const removal = await removeHelper(dependencies);
+
+  if (!removal.ok) {
+    const { sentence, evidence } = removal.failure;
+    print(`Setup stopped. ${sentence}`);
+    if (evidence !== undefined) print(`  ${evidence}`);
+    return 1;
+  }
+
+  const { removed, toTurnOff } = removal.value;
+  print(
+    removed === undefined
+      ? "No helper was installed, so none was removed."
+      : `Removed the helper at ${removed.path}.`,
+  );
+
+  print("To take back what it was allowed, turn off:");
+  for (const { permission, setting } of toTurnOff) print(`  ${named[permission]}: ${setting}`);
 
   return 0;
 };

@@ -16,7 +16,7 @@ import { helperPermissions } from "./adapters/native/helper-permissions.js";
 import { helperReminderStore } from "./adapters/native/reminder-store.js";
 import { helperToLaunch } from "./application/setup/helper-to-launch.js";
 import { installHelper } from "./application/setup/install-helper.js";
-import { setup } from "./cli/setup.js";
+import { removeSetup, setup } from "./cli/setup.js";
 import { helperPathSetting, settingsFrom } from "./domain/settings.js";
 import { buildServer } from "./mcp/server.js";
 
@@ -116,4 +116,17 @@ const serve = async (): Promise<void> => {
   await server.connect(new StdioServerTransport());
 };
 
-await (process.argv[2] === "setup" ? runSetup() : serve());
+/** `apple-native-mcp setup --remove`: takes the helper away and says what to turn off. */
+const runRemoval = async (): Promise<void> => {
+  const status = await removeSetup({ helperFiles }, (line) => {
+    console.log(line);
+  });
+
+  process.exit(status);
+};
+
+const [command, option] = process.argv.slice(2);
+
+if (command === "setup" && option === "--remove") await runRemoval();
+else if (command === "setup") await runSetup();
+else await serve();
