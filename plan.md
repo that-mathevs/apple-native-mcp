@@ -81,7 +81,7 @@ The contexts are `calendar`, `reminders`, `contacts`, `messages`, `notes` and `m
 - Only `main.ts` imports everything.
 - Contexts don't import each other's internals. When Messages needs to resolve a contact, it goes through a port whose adapter calls the contacts use case.
 
-**How each app is reached.** Choices marked *verify* depend on evidence from Phase 1.
+**How each app is reached.** _Final as of 2026-09-18, settled in [#10](https://github.com/that-mathevs/apple-native-mcp/issues/10): Notes and Mail are reached by scripting, Mail with hard bounds; the Envelope Index and NoteStore.sqlite are not used in v1; every access runs inside the helper (ADR-0002)._
 
 | Context | Mechanism | Why |
 |---|---|---|
