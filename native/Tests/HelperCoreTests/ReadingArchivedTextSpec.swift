@@ -92,6 +92,22 @@ struct ReadingArchivedTextSpec {
     #expect(text(of: Data(cyclic)).isUnreadable)
   }
 
+  // Every byte of an archive is a stranger's to choose. Whatever one byte is changed to, the reader
+  // answers or refuses; it never crashes, reads past the end or runs on.
+  @Test("given any one byte of a real archive changed, answers or refuses, and never crashes")
+  func survivesEveryOneByteChange() {
+    let archive = Array(anArchive(of: written("Ben, bring the rope").mentioning(
+      "ben@example.com", at: NSRange(location: 0, length: 3))))
+
+    for position in archive.indices {
+      for value: UInt8 in [0x00, 0x7f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x92, 0xff] {
+        var changed = archive
+        changed[position] = value
+        _ = text(of: Data(changed))
+      }
+    }
+  }
+
   @Test("given something that is not an archive at all, refuses it")
   func refusesAStranger() {
     #expect(text(of: Data("just some text".utf8)).isUnreadable)
