@@ -1,25 +1,14 @@
 import { z } from "zod";
 
 import {
-  type Bound,
   searchMessages,
   type SearchMessagesDependencies,
 } from "../../application/messages/search-messages.js";
 import { longestQuery } from "../../domain/messages/search.js";
-import { dayWritten } from "../../domain/time-zone.js";
+import { asBound, bound } from "../bound.js";
 import { refusing, reporting } from "../result.js";
 import { tool, type Tool } from "../tool.js";
 import { asMessageRecord, messageRecord } from "./records.js";
-
-/** An instant with its offset, or a day alone, which means the whole of it locally. */
-const bound = z.union([z.iso.date(), z.iso.datetime({ offset: true })]);
-
-const asBound = (written: string | undefined): Bound | undefined => {
-  if (written === undefined) return undefined;
-  return /^\d{4}-\d{2}-\d{2}$/u.test(written)
-    ? { day: dayWritten(written) }
-    : { at: new Date(written) };
-};
 
 export const searchMessagesTool = (dependencies: SearchMessagesDependencies): Tool =>
   tool({

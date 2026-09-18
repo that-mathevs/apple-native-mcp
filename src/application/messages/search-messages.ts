@@ -1,9 +1,9 @@
-import type { NamedFailure, Outcome } from "../../domain/failure.js";
+import type { Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
 import type { Message } from "../../domain/messages/message.js";
 import { greatestMatches, searchCeiling, searchDays } from "../../domain/messages/search.js";
 import { rankingBy, searchQueryFrom } from "../../domain/search-query.js";
-import { dayIn, type LocalDay, startOfDay } from "../../domain/time-zone.js";
+import { type Bound, rangeNotForwards, searchRangeOf } from "../../domain/search-range.js";
 import type { MessageStore } from "./message-store.js";
 
 export type SearchMessagesDependencies = {
@@ -11,9 +11,6 @@ export type SearchMessagesDependencies = {
   readonly now: () => Date;
   readonly timeZone: string;
 };
-
-/** One end of a range as written: an instant, or a whole day in the user's time zone. */
-export type Bound = { readonly at: Date } | { readonly day: LocalDay };
 
 export type SearchMessagesRequest = {
   readonly query: string;
@@ -41,44 +38,6 @@ export type MessagesFound = {
   readonly coverage: SearchCoverage;
 };
 
-const rangeNotForwards: NamedFailure = {
-  code: "range-not-forwards",
-  sentence: "Nothing was searched: the range ends at or before it starts.",
-};
-
-const dayAfter = (day: LocalDay): LocalDay => ({ ...day, day: day.day + 1 });
-
-const daysBefore = (instant: Date, days: number): Date =>
-  new Date(instant.getTime() - days * 24 * 60 * 60 * 1000);
-
-/**
- * The range a search covers. A day alone is the whole of that day (MSG-77), from its local
- * midnight (MSG-78). With neither end, it is the last `searchDays` whole days, today included;
- * with only an end, the `searchDays` before it; with only a start, from it until tomorrow.
- */
-const rangeOf = (
-  { from, to }: SearchMessagesRequest,
-  now: Date,
-  timeZone: string,
-): { from: Date; to: Date } => {
-  const today = dayIn(timeZone, now);
-  const end =
-    to === undefined
-      ? startOfDay(timeZone, dayAfter(today))
-      : "at" in to
-        ? to.at
-        : startOfDay(timeZone, dayAfter(to.day));
-  const start =
-    from === undefined
-      ? to === undefined
-        ? startOfDay(timeZone, { ...today, day: today.day - (searchDays - 1) })
-        : daysBefore(end, searchDays)
-      : "at" in from
-        ? from.at
-        : startOfDay(timeZone, from.day);
-  return { from: start, to: end };
-};
-
 const nothingScanned = (range: { from: Date; to: Date }): MessagesFound => ({
   range,
   matches: [],
@@ -89,7 +48,7 @@ export const searchMessages = async (
   { messageStore, now, timeZone }: SearchMessagesDependencies,
   request: SearchMessagesRequest,
 ): Promise<Outcome<MessagesFound>> => {
-  const range = rangeOf(request, now(), timeZone);
+  const range = searchRangeOf(request, now(), timeZone, searchDays);
   if (range.to <= range.from) return failed(rangeNotForwards);
 
   // A query with nothing to find matches nothing (MSG-84), so nothing is read to find it.
