@@ -1,7 +1,9 @@
 import type {
   ChatsRead,
   MessagesRead,
+  MessagesScanned,
   MessageStore,
+  MessagesToSearch,
   MessagesWanted,
 } from "../../src/application/messages/message-store.js";
 import type { NamedFailure, Outcome } from "../../src/domain/failure.js";
@@ -49,6 +51,7 @@ export class FakeMessageStore implements MessageStore {
   #chats: readonly Chat[] = [];
   #messages: readonly Message[] = [];
   #failure: NamedFailure | undefined;
+  #ceiling: number | undefined;
 
   holdsChats(...chats: readonly Chat[]): void {
     this.#chats = chats;
@@ -56,6 +59,11 @@ export class FakeMessageStore implements MessageStore {
 
   holdsMessages(...messages: readonly Message[]): void {
     this.#messages = messages;
+  }
+
+  /** Scan no more than this many, whatever ceiling a search asks for. */
+  scansAtMost(ceiling: number): void {
+    this.#ceiling = ceiling;
   }
 
   refuses(failure: NamedFailure): void {
@@ -75,11 +83,7 @@ export class FakeMessageStore implements MessageStore {
 
   messages({ chat, limit, from, to }: MessagesWanted): Promise<Outcome<MessagesRead>> {
     if (this.#failure) return Promise.resolve(failed(this.#failure));
-
-    const known =
-      this.#chats.some(({ identifier }) => identifier === chat) ||
-      this.#messages.some((message) => message.chat === chat);
-    if (!known) return Promise.resolve(failed({ ...chatUnknown, evidence: chat }));
+    if (!this.#knows(chat)) return Promise.resolve(failed({ ...chatUnknown, evidence: chat }));
 
     const inTimeOrder = this.#messages
       .filter((message) => message.chat === chat)
@@ -91,6 +95,37 @@ export class FakeMessageStore implements MessageStore {
         messages: inTimeOrder.slice(Math.max(0, inTimeOrder.length - limit)),
         truncated: inTimeOrder.length > limit,
       }),
+    );
+  }
+
+  messagesToSearch({
+    from,
+    to,
+    chat,
+    ceiling,
+  }: MessagesToSearch): Promise<Outcome<MessagesScanned>> {
+    if (this.#failure) return Promise.resolve(failed(this.#failure));
+    if (chat !== undefined && !this.#knows(chat)) {
+      return Promise.resolve(failed({ ...chatUnknown, evidence: chat }));
+    }
+
+    const scanning = Math.min(ceiling, this.#ceiling ?? ceiling);
+    const newestFirst = this.#messages
+      .filter((message) => chat === undefined || message.chat === chat)
+      .filter((message) => message.timestamp >= from && message.timestamp < to)
+      .sort((left, right) => right.timestamp.getTime() - left.timestamp.getTime());
+    return Promise.resolve(
+      succeeded({
+        messages: newestFirst.slice(0, scanning),
+        truncated: newestFirst.length > scanning,
+      }),
+    );
+  }
+
+  #knows(chat: string): boolean {
+    return (
+      this.#chats.some(({ identifier }) => identifier === chat) ||
+      this.#messages.some((message) => message.chat === chat)
     );
   }
 }

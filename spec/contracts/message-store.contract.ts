@@ -63,6 +63,36 @@ export const aMessageStore = ({ name, build }: MessageStoreUnderTest): void => {
 
       expect(read).toMatchObject({ ok: false, failure: { code: "chat_unknown" } });
     });
+
+    it("answers messages to search newest first, never more than its ceiling, saying whether it stopped", async () => {
+      const { messageStore } = await build();
+
+      const read = await messageStore.messagesToSearch({
+        from: new Date("2000-01-01T00:00:00Z"),
+        to: new Date("2100-01-01T00:00:00Z"),
+        ceiling: 3,
+      });
+
+      expect(read.ok).toBe(true);
+      if (!read.ok) return;
+      const times = read.value.messages.map(({ timestamp }) => timestamp.getTime());
+      expect(times).toStrictEqual([...times].sort((left, right) => right - left));
+      expect(read.value.messages.length).toBeLessThanOrEqual(3);
+      expect(typeof read.value.truncated).toBe("boolean");
+    });
+
+    it("given a chat to search that no chat has, refuses it as unknown", async () => {
+      const { messageStore } = await build();
+
+      const read = await messageStore.messagesToSearch({
+        from: new Date("2000-01-01T00:00:00Z"),
+        to: new Date("2100-01-01T00:00:00Z"),
+        chat: "iMessage;-;no-such-chat",
+        ceiling: 3,
+      });
+
+      expect(read).toMatchObject({ ok: false, failure: { code: "chat_unknown" } });
+    });
   });
 };
 
@@ -120,6 +150,53 @@ export const aMessageStoreThatCanBeLoaded = ({
       });
 
       expect(read).toMatchObject({ ok: true, value: { messages: [{ identifier: "at-start" }] } });
+    });
+
+    it("given messages in several chats, scans them all newest first within the range, and stops at its ceiling", async () => {
+      const { messageStore, holding } = await build();
+      await holding(
+        [aChat("one", "2026-09-18T12:00:00Z"), aChat("two", "2026-09-18T12:00:00Z")],
+        [
+          aMessage("outside", "one", "2026-09-18T08:00:00Z"),
+          aMessage("oldest", "one", "2026-09-18T10:00:00Z"),
+          aMessage("middle", "two", "2026-09-18T11:00:00Z"),
+          aMessage("newest", "one", "2026-09-18T11:30:00Z"),
+        ],
+      );
+
+      const read = await messageStore.messagesToSearch({
+        from: new Date("2026-09-18T09:00:00Z"),
+        to: new Date("2026-09-18T12:00:00Z"),
+        ceiling: 2,
+      });
+
+      expect(read).toMatchObject({
+        ok: true,
+        value: { messages: [{ identifier: "newest" }, { identifier: "middle" }], truncated: true },
+      });
+    });
+
+    it("given a chat, scans that chat alone", async () => {
+      const { messageStore, holding } = await build();
+      await holding(
+        [aChat("one", "2026-09-18T12:00:00Z"), aChat("two", "2026-09-18T12:00:00Z")],
+        [
+          aMessage("here", "one", "2026-09-18T10:00:00Z"),
+          aMessage("there", "two", "2026-09-18T10:00:00Z"),
+        ],
+      );
+
+      const read = await messageStore.messagesToSearch({
+        from: new Date("2026-09-18T00:00:00Z"),
+        to: new Date("2026-09-19T00:00:00Z"),
+        chat: "two",
+        ceiling: 10,
+      });
+
+      expect(read).toMatchObject({
+        ok: true,
+        value: { messages: [{ identifier: "there" }], truncated: false },
+      });
     });
   });
 };

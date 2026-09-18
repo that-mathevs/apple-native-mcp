@@ -6,6 +6,7 @@ import type { FindContactsDependencies } from "../application/contacts/find-cont
 import type { ListMailAccountsDependencies } from "../application/mail/list-mail-accounts.js";
 import type { ListChatsDependencies } from "../application/messages/list-chats.js";
 import type { ReadChatDependencies } from "../application/messages/read-chat.js";
+import type { SearchMessagesDependencies } from "../application/messages/search-messages.js";
 import type { NotesDependencies } from "../application/notes/note-store.js";
 import type { NamedFailure } from "../domain/failure.js";
 import { capabilityOff, isOn, type Settings } from "../domain/settings.js";
@@ -19,6 +20,7 @@ import { listMailAccountsTool } from "./mail/list-mail-accounts-tool.js";
 import { listMailboxesTool } from "./mail/list-mailboxes-tool.js";
 import { listChatsTool } from "./messages/list-chats-tool.js";
 import { readChatTool } from "./messages/read-chat-tool.js";
+import { searchMessagesTool } from "./messages/search-messages-tool.js";
 import { listNoteFoldersTool } from "./notes/list-note-folders-tool.js";
 import { readNoteTool } from "./notes/read-note-tool.js";
 import { searchNotesTool } from "./notes/search-notes-tool.js";
@@ -37,6 +39,7 @@ export type ServerDependencies = ListEventsDependencies &
   ListMailAccountsDependencies &
   ListChatsDependencies &
   ReadChatDependencies &
+  SearchMessagesDependencies &
   NotesDependencies;
 
 export const serverName = "apple-native-mcp";
@@ -127,6 +130,7 @@ export const buildServer = (dependencies: ServerDependencies): McpServer =>
       listMailboxesTool(dependencies),
       listChatsTool(dependencies),
       readChatTool(dependencies),
+      searchMessagesTool(dependencies),
       listNoteFoldersTool(dependencies),
       searchNotesTool(dependencies),
       readNoteTool(dependencies),

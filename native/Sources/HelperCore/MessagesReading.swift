@@ -18,6 +18,17 @@ struct MessagesReading: Sendable {
         read.map { .success($0) } ?? .failure(.chatUnknown(identifier: identifier))
       }
   }
+
+  /// Messages to search, of one chat or of every chat. A chat the store does not have is refused.
+  func messagesToSearch(within range: MessageRange, inChat identifier: String?, ceiling: Int)
+    -> Result<MessagesScanned, NamedFailure>
+  {
+    store.messagesToSearch(within: range, inChat: identifier, ceiling: ceiling)
+      .mapError(NamedFailure.init(refusal:))
+      .flatMap { scanned in
+        scanned.map { .success($0) } ?? .failure(.chatUnknown(identifier: identifier ?? ""))
+      }
+  }
 }
 
 extension NamedFailure {

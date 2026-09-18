@@ -27,6 +27,7 @@ struct Request: Equatable {
     case contactNote
     case chats(limit: Int)
     case chatMessages(chat: String, range: MessageRange, limit: Int)
+    case messagesToSearch(range: Range, chat: String?, ceiling: Int)
     case notesPermission
     case requestNotesPermission
     case noteFolders
@@ -57,6 +58,7 @@ enum RequestName: String {
   case contacts = "contacts"
   case chats = "chats"
   case chatMessages = "chat_messages"
+  case messagesToSearch = "messages_to_search"
   case notesPermission = "notes_permission"
   case requestNotesPermission = "notes_permission_request"
   case noteFolders = "note_folders"
@@ -194,6 +196,20 @@ extension Request {
         return .failure(id: id, .requestMalformed(line: line))
       }
       return .request(Request(id: id, kind: .chatMessages(chat: chat, range: range, limit: limit)))
+    case .messagesToSearch:
+      // The range is required, as the server's default is its own to choose, and so is the
+      // ceiling. A chat may be left out with null, meaning every chat.
+      let chat = fields["chat"]
+      guard
+        let range = readRange(fields["range"]),
+        let ceiling = fields["ceiling"] as? Int, (1...greatestSearchCeiling).contains(ceiling),
+        chat is NSNull || (chat as? String).map({ !$0.isEmpty }) == true
+      else {
+        return .failure(id: id, .requestMalformed(line: line))
+      }
+      let kind = Request.Kind.messagesToSearch(
+        range: range, chat: chat as? String, ceiling: ceiling)
+      return .request(Request(id: id, kind: kind))
     case .notesPermission:
       return .request(Request(id: id, kind: .notesPermission))
     case .requestNotesPermission:
@@ -258,6 +274,9 @@ private func readMessageRange(_ field: Any?) -> MessageRange? {
   if let start, let end, end <= start { return nil }
   return MessageRange(start: start, end: end)
 }
+
+/// The most messages one search scans, whatever the server asks.
+let greatestSearchCeiling = 20_000
 
 /// The most a read of the message store answers with at once, whatever the server asks.
 let greatestReadLimit = 500

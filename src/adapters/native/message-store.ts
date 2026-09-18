@@ -1,7 +1,9 @@
 import type {
   ChatsRead,
   MessagesRead,
+  MessagesScanned,
   MessageStore,
+  MessagesToSearch,
   MessagesWanted,
 } from "../../application/messages/message-store.js";
 import type { NamedFailure, Outcome } from "../../domain/failure.js";
@@ -80,6 +82,27 @@ export const helperMessageStore = (helper: Helper): MessageStore => ({
       chat,
       limit,
       range: { start: from?.toISOString() ?? null, end: to?.toISOString() ?? null },
+    });
+    if (!answered.ok) return failed(answered.failure);
+
+    const { messages, truncated } = answered.value as {
+      messages?: MessageRecord[];
+      truncated?: boolean;
+    };
+    return succeeded({ messages: (messages ?? []).map(asMessage), truncated: truncated === true });
+  },
+
+  messagesToSearch: async ({
+    from,
+    to,
+    chat,
+    ceiling,
+  }: MessagesToSearch): Promise<Outcome<MessagesScanned>> => {
+    const answered = await helper.ask({
+      request: "messages_to_search",
+      range: { start: from.toISOString(), end: to.toISOString() },
+      chat: chat ?? null,
+      ceiling,
     });
     if (!answered.ok) return failed(answered.failure);
 

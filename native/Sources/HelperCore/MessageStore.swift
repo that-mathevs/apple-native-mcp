@@ -21,6 +21,11 @@ public protocol MessageStore: Sendable {
   func messages(inChat identifier: String, within range: MessageRange, limit: Int) -> Result<
     MessagesRead?, MessageStoreRefusal
   >
+
+  /// The newest messages in a range, of one chat or of every chat, up to a ceiling, reactions and
+  /// group events left out. Nothing when a chat is named that the store does not have.
+  func messagesToSearch(within range: MessageRange, inChat identifier: String?, ceiling: Int)
+    -> Result<MessagesScanned?, MessageStoreRefusal>
 }
 
 /// The user's message store, a SQLite database only ever read read-only, with prepared
@@ -106,45 +111,86 @@ public struct SQLiteMessageStore: MessageStore {
         // A reaction is stored as a message that points at another (associated_message_type),
         // and a group event such as a rename as a message of another item type. Neither is
         // something anyone wrote to the chat.
-        let newest = rows(
-          in: database,
-          """
-          SELECT m.guid, m.text, m.is_from_me, h.id, m.date, m.service, m.is_sent,
-            m.is_delivered, m.error, m.attributedBody
-          FROM chat_message_join j
-          JOIN message m ON m.ROWID = j.message_id
-          LEFT JOIN handle h ON h.ROWID = m.handle_id AND m.is_from_me = 0
-          WHERE j.chat_id = ? AND m.associated_message_type = 0 AND m.item_type = 0
-            AND m.date >= ? AND m.date < ?
-          ORDER BY m.date DESC, m.ROWID DESC
-          LIMIT ?
-          """,
-          binding: [
-            .integer(rowid), .integer(range.start.map(storeDate(from:)) ?? Int64.min),
-            .integer(range.end.map(storeDate(from:)) ?? Int64.max),
-            .integer(Int64(limit) + 1),
-          ]
-        ) { row in
-          let outgoing = row.integer(2) == 1
-          let read = MessageText(
-            plain: row.text(1), archived: row.blob(9, atMost: ArchivedText.greatestSize))
-          return Message(
-            identifier: row.text(0) ?? "", chat: identifier, text: read.text,
-            textUnreadable: read.unreadable,
-            direction: outgoing ? .outgoing : .incoming, handle: row.text(3),
-            timestamp: instant(fromStoreDate: row.integer(4)), service: row.text(5) ?? "",
-            delivery: outgoing
-              ? Delivery(
-                sent: row.integer(6) == 1, delivered: row.integer(7) == 1,
-                error: row.integer(8) == 0 ? nil : Int(row.integer(8)))
-              : nil)
-        }
+        let newest = newestMessages(
+          in: database, chat: rowid, within: range, limit: Int64(limit) + 1)
 
         return newest.map { messages in
           MessagesRead(
             messages: messages.prefix(limit).reversed(), truncated: messages.count > limit)
         }
       }
+    }
+  }
+
+  public func messagesToSearch(
+    within range: MessageRange, inChat identifier: String?, ceiling: Int
+  ) -> Result<MessagesScanned?, MessageStoreRefusal> {
+    opened().flatMap { database in
+      defer { sqlite3_close(database) }
+
+      let chat: Result<Int64??, MessageStoreRefusal>
+      if let identifier {
+        chat = rows(
+          in: database, "SELECT ROWID FROM chat WHERE guid = ?", binding: [.text(identifier)]
+        ) { row in row.integer(0) }.map { found in found.first.map { .some($0) } }
+      } else {
+        chat = .success(.some(nil))
+      }
+
+      return chat.flatMap { found in
+        guard let rowid = found else { return .success(nil) }
+
+        return newestMessages(in: database, chat: rowid, within: range, limit: Int64(ceiling) + 1)
+          .map { messages in
+            MessagesScanned(
+              messages: Array(messages.prefix(ceiling)), truncated: messages.count > ceiling)
+          }
+      }
+    }
+  }
+
+  /// The newest messages in a range, of one chat or of every chat, newest first, each read with
+  /// its text. A reaction is stored as a message that points at another
+  /// (associated_message_type), and a group event such as a rename as a message of another item
+  /// type. Neither is something anyone wrote to the chat.
+  private func newestMessages(
+    in database: OpaquePointer, chat: Int64?, within range: MessageRange, limit: Int64
+  ) -> Result<[Message], MessageStoreRefusal> {
+    rows(
+      in: database,
+      """
+      SELECT m.guid, m.text, m.is_from_me, h.id, m.date, m.service, m.is_sent,
+        m.is_delivered, m.error, m.attributedBody, c.guid
+      FROM chat_message_join j
+      JOIN chat c ON c.ROWID = j.chat_id
+      JOIN message m ON m.ROWID = j.message_id
+      LEFT JOIN handle h ON h.ROWID = m.handle_id AND m.is_from_me = 0
+      WHERE (? IS NULL OR j.chat_id = ?)
+        AND m.associated_message_type = 0 AND m.item_type = 0
+        AND m.date >= ? AND m.date < ?
+      ORDER BY m.date DESC, m.ROWID DESC
+      LIMIT ?
+      """,
+      binding: [
+        chat.map(Bound.integer) ?? .null, chat.map(Bound.integer) ?? .null,
+        .integer(range.start.map(storeDate(from:)) ?? Int64.min),
+        .integer(range.end.map(storeDate(from:)) ?? Int64.max),
+        .integer(limit),
+      ]
+    ) { row in
+      let outgoing = row.integer(2) == 1
+      let read = MessageText(
+        plain: row.text(1), archived: row.blob(9, atMost: ArchivedText.greatestSize))
+      return Message(
+        identifier: row.text(0) ?? "", chat: row.text(10) ?? "", text: read.text,
+        textUnreadable: read.unreadable,
+        direction: outgoing ? .outgoing : .incoming, handle: row.text(3),
+        timestamp: instant(fromStoreDate: row.integer(4)), service: row.text(5) ?? "",
+        delivery: outgoing
+          ? Delivery(
+            sent: row.integer(6) == 1, delivered: row.integer(7) == 1,
+            error: row.integer(8) == 0 ? nil : Int(row.integer(8)))
+          : nil)
     }
   }
 
@@ -203,6 +249,7 @@ func storeDate(from instant: Date) -> Int64 {
 private enum Bound {
   case integer(Int64)
   case text(String)
+  case null
 }
 
 /// One row of an answer, read by column.
@@ -242,6 +289,7 @@ private func rows<Found>(
     switch value {
     case .integer(let number): sqlite3_bind_int64(statement, position, number)
     case .text(let text): sqlite3_bind_text(statement, position, text, -1, transient)
+    case .null: sqlite3_bind_null(statement, position)
     }
   }
 

@@ -93,6 +93,12 @@ public struct Helper: Sendable {
       return answering(messages.messages(inChat: chat, within: range, limit: limit)) {
         ["messages": $0.messages.map(\.asFields), "truncated": $0.truncated]
       }
+    case .messagesToSearch(let range, let chat, let ceiling):
+      let within = MessageRange(start: range.start, end: range.end)
+      let scanned = messages.messagesToSearch(within: within, inChat: chat, ceiling: ceiling)
+      return answering(scanned) {
+        ["messages": $0.messages.map(\.asFields), "truncated": $0.truncated]
+      }
     case .notesPermission:
       return answering(notes.permission()) { $0.asFields(setting: notesPermissionSetting) }
     case .requestNotesPermission:

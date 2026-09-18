@@ -75,3 +75,9 @@ public struct MessageRange: Equatable, Sendable {
 
   public static let unbounded = MessageRange(start: nil, end: nil)
 }
+
+/// The newest messages in a range, newest first, and whether the ceiling stopped the scan.
+public struct MessagesScanned: Equatable, Sendable {
+  public let messages: [Message]
+  public let truncated: Bool
+}

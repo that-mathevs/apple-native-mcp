@@ -1,25 +1,12 @@
 import { z } from "zod";
 
 import { readChat, type ReadChatDependencies } from "../../application/messages/read-chat.js";
-import type { Message } from "../../domain/messages/message.js";
 import { greatestMessageLimit } from "../../domain/messages/message.js";
 import { refusing, reporting } from "../result.js";
-import { failureRecord, tool, type Tool } from "../tool.js";
+import { tool, type Tool } from "../tool.js";
+import { asMessageRecord, messageRecord } from "./records.js";
 
 const instant = z.iso.datetime({ offset: true });
-
-const messageRecord = z.object({
-  identifier: z.string(),
-  text: z.string().nullable(),
-  textUnreadable: failureRecord.optional(),
-  direction: z.enum(["incoming", "outgoing"]),
-  handle: z.string().optional(),
-  timestamp: z.iso.datetime(),
-  service: z.string(),
-  delivery: z
-    .object({ sent: z.boolean(), delivered: z.boolean(), error: z.number().int().optional() })
-    .optional(),
-});
 
 const rangeRecord = z.object({
   from: z.iso.datetime().optional(),
@@ -30,19 +17,6 @@ const rangeRecord = z.object({
 const asRangeRecord = (from?: Date, to?: Date): z.infer<typeof rangeRecord> => ({
   ...(from === undefined ? {} : { from: from.toISOString() }),
   ...(to === undefined ? {} : { to: to.toISOString() }),
-});
-
-const asRecord = (message: Message): z.infer<typeof messageRecord> => ({
-  identifier: message.identifier,
-  text: message.text ?? null,
-  ...(message.textUnreadable === undefined
-    ? {}
-    : { textUnreadable: { ...message.textUnreadable } }),
-  direction: message.direction,
-  ...(message.handle === undefined ? {} : { handle: message.handle }),
-  timestamp: message.timestamp.toISOString(),
-  service: message.service,
-  ...(message.delivery === undefined ? {} : { delivery: { ...message.delivery } }),
 });
 
 export const readChatTool = (dependencies: ReadChatDependencies): Tool =>
@@ -85,7 +59,7 @@ export const readChatTool = (dependencies: ReadChatDependencies): Tool =>
       const bounded = from !== undefined || to !== undefined;
       return reporting({
         chat,
-        messages: messages.map(asRecord),
+        messages: messages.map(asMessageRecord),
         ...(bounded ? { range: asRangeRecord(from, to) } : {}),
         coverage: { truncated },
       });
