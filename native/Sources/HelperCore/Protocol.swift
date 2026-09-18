@@ -27,6 +27,11 @@ struct Request: Equatable {
     case contactNote
     case chats(limit: Int)
     case chatMessages(chat: String, range: MessageRange, limit: Int)
+    case notesPermission
+    case requestNotesPermission
+    case noteFolders
+    case notesMentioning(text: String, noteFolders: [String])
+    case note(identifier: String, noteFolders: [String])
   }
 }
 
@@ -48,6 +53,11 @@ enum RequestName: String {
   case contacts = "contacts"
   case chats = "chats"
   case chatMessages = "chat_messages"
+  case notesPermission = "notes_permission"
+  case requestNotesPermission = "notes_permission_request"
+  case noteFolders = "note_folders"
+  case notesMentioning = "notes_mentioning"
+  case note = "note"
 }
 
 /// What reading a line produced: a request the helper can answer, or a named failure to report
@@ -176,6 +186,34 @@ extension Request {
         return .failure(id: id, .requestMalformed(line: line))
       }
       return .request(Request(id: id, kind: .chatMessages(chat: chat, range: range, limit: limit)))
+    case .notesPermission:
+      return .request(Request(id: id, kind: .notesPermission))
+    case .requestNotesPermission:
+      return .request(Request(id: id, kind: .requestNotesPermission))
+    case .noteFolders:
+      return .request(Request(id: id, kind: .noteFolders))
+    case .notesMentioning:
+      // Both are required: the server says what to look for and in which note folders, and the
+      // helper never chooses either for it. Empty text would mention every note there is.
+      guard
+        let text = fields["text"] as? String, !text.isEmpty,
+        let noteFolders = fields["noteFolders"] as? [String]
+      else {
+        return .failure(id: id, .requestMalformed(line: line))
+      }
+      return .request(
+        Request(id: id, kind: .notesMentioning(text: text, noteFolders: noteFolders)))
+    case .note:
+      // The server says which note folders the note may be read from, so the text of a note
+      // kept anywhere else never leaves Notes. The helper never decides that for it.
+      guard
+        let identifier = fields["identifier"] as? String, !identifier.isEmpty,
+        let noteFolders = fields["noteFolders"] as? [String]
+      else {
+        return .failure(id: id, .requestMalformed(line: line))
+      }
+      return .request(
+        Request(id: id, kind: .note(identifier: identifier, noteFolders: noteFolders)))
     }
   }
 }

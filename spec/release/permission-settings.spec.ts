@@ -24,4 +24,12 @@ describe("the settings setup names", () => {
   it("name the reminders permission's setting exactly as the helper does", async () => {
     expect(permissionSettings.reminders).toBe(await helperSetting("remindersPermissionSetting"));
   });
+
+  it("name the contacts permission's setting exactly as the helper does", async () => {
+    expect(permissionSettings.contacts).toBe(await helperSetting("contactsPermissionSetting"));
+  });
+
+  it("name the setting for controlling Notes exactly as the helper does", async () => {
+    expect(permissionSettings.notes).toBe(await helperSetting("notesPermissionSetting"));
+  });
 });

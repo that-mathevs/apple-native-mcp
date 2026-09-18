@@ -13,6 +13,7 @@ const requests: Record<Permission, string> = {
   calendar: "calendar_permission_request",
   reminders: "reminders_permission_request",
   contacts: "contacts_permission_request",
+  notes: "notes_permission_request",
 };
 
 const isState = (state: unknown): state is PermissionState =>

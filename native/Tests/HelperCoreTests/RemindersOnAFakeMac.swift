@@ -115,7 +115,5 @@ func readingReminders(_ store: FakeReminderStore, at now: Date) -> RemindersRead
 }
 
 func helperReading(_ store: FakeReminderStore) -> Helper {
-  Helper(
-    calendarStore: aCalendarStore(), reminderStore: store, contactStore: aContactStore(),
-    messageStore: noMessageStore)
+  aHelper(reminderStore: store)
 }

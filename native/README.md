@@ -224,6 +224,43 @@ store behind it, since the folder itself is protected, so a missing permission i
 (MSG-V13, unverified). A read waits a second for Messages' write lock, then fails rather than
 holding the session.
 
+Notes has no framework, so it is reached through **static scripts**: JavaScript for Automation
+compiled into the helper, each chosen by name. Whatever varies travels beside a script as one JSON
+argument, never as part of its text, and a script's answer is JSON or is refused. Scripts run
+inside the helper's own process through OSAKit, so the Apple Events are the helper's and so is the
+permission to control the app; nothing is handed to `osascript` and nothing is written to disk.
+One request's scripts share a time budget of eight seconds, each getting what is left of it. A
+script that outlives it is given up on as `-1712`, and because nothing can cancel a script in
+flight, the helper runs nothing more, answers, and stops, and the server starts a fresh one.
+
+`notes_permission` and `notes_permission_request` report and ask for the permission to control
+Notes, starting Notes in the background when it is not running, since macOS can only say for an app
+that is. A Notes that will not start is a failure that says so, never a missing permission. No
+script is ever run while the permission is undecided: the first Apple Event is what makes macOS
+prompt, and only `setup` asks.
+
+```json
+{"protocolVersion":1,"id":"9","request":"note_folders"}
+{"protocolVersion":1,"id":"10","request":"notes_mentioning","text":"boiler","noteFolders":["…"]}
+{"protocolVersion":1,"id":"11","request":"note","identifier":"…","noteFolders":["…"]}
+```
+
+`note_folders` names every note folder with its notes account: every account has one called Notes.
+`notes_mentioning` searches only the note folders it is given, compares the search text and never
+interprets it, and answers with the notes found, each once, with the identifier of the note folder
+it was read from and never its text, so a search hands nobody a library of notes. A note folder
+that will not be read, or that the time budget never reached, is named in `unreadNoteFolders` with
+why, and the rest are searched anyway; `notesUnread` counts the notes whose text would not come
+back, which cannot be said not to mention anything. `note` answers with one note in full, or
+`"note":null` when it is not kept in any of the `noteFolders` it may be read from, which is settled
+before any of its text is read. A locked note is said to be locked and its `text` is null; so is
+the text of a note that would not be read, with `textUnread` true.
+
+A note's folder cannot be asked of the note (its `container` is broken in Notes 4.13), so notes are
+read a note folder at a time. A folder's columns are each one Apple Event, and only position ties
+one to the next, so the identifiers are read before and after and an answer whose columns may have
+slipped is refused rather than pairing one note's title with another's text.
+
 ## Building it
 
 ```sh

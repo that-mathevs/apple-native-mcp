@@ -32,6 +32,7 @@ export type Settings = {
   /** What did not parse, when something did not: every write capability is then off. */
   readonly unparsed?: string;
   readonly calendars: Exclusion;
+  readonly noteFolders: Exclusion;
 };
 
 /** The client's configuration as the server receives it: the `env` block of its entry. */
@@ -41,6 +42,8 @@ const ours = "APPLE_NATIVE_MCP_";
 const capabilitiesSetting = `${ours}CAPABILITIES`;
 const calendarAllowlistSetting = `${ours}CALENDAR_ALLOWLIST`;
 const excludedCalendarsSetting = `${ours}EXCLUDED_CALENDARS`;
+const noteFolderAllowlistSetting = `${ours}NOTE_FOLDER_ALLOWLIST`;
+const excludedNoteFoldersSetting = `${ours}EXCLUDED_NOTE_FOLDERS`;
 
 /** Where a development build of the helper is, which the composition root reads (ADR-0003). */
 export const helperPathSetting = `${ours}HELPER`;
@@ -49,6 +52,8 @@ const knownSettings: readonly string[] = [
   capabilitiesSetting,
   calendarAllowlistSetting,
   excludedCalendarsSetting,
+  noteFolderAllowlistSetting,
+  excludedNoteFoldersSetting,
   helperPathSetting,
 ];
 
@@ -104,12 +109,17 @@ export const settingsFrom = (configuration: ClientConfiguration): Settings => {
     configuration[calendarAllowlistSetting],
     configuration[excludedCalendarsSetting],
   );
+  const noteFolders = exclusionFrom(
+    configuration[noteFolderAllowlistSetting],
+    configuration[excludedNoteFoldersSetting],
+  );
+  const kept = { calendars, noteFolders };
   const unparsed = whatDoesNotParse(configuration);
 
-  if (unparsed !== undefined) return { calendars, capabilities: new Set(), unparsed };
+  if (unparsed !== undefined) return { ...kept, capabilities: new Set(), unparsed };
 
   return {
-    calendars,
+    ...kept,
     capabilities: new Set(listed(configuration[capabilitiesSetting]).filter(isWriteCapability)),
   };
 };

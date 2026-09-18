@@ -135,10 +135,7 @@ let noMessageStore = SQLiteMessageStore(path: "/nonexistent/chat.db")
 func helperReading(
   messagesAt path: String, probing: @escaping @Sendable (String) -> Int32 = openingForReading
 ) -> Helper {
-  Helper(
-    calendarStore: aCalendarStore(), reminderStore: aReminderStore(),
-    contactStore: aContactStore(),
-    messageStore: SQLiteMessageStore(path: path, probing: probing))
+  aHelper(messageStore: SQLiteMessageStore(path: path, probing: probing))
 }
 
 /// The helper, reading a message store a scenario filled.

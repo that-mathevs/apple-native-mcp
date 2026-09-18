@@ -5,6 +5,7 @@ import type { ListEventsDependencies } from "../application/calendar/list-events
 import type { FindContactsDependencies } from "../application/contacts/find-contacts.js";
 import type { ListChatsDependencies } from "../application/messages/list-chats.js";
 import type { ReadChatDependencies } from "../application/messages/read-chat.js";
+import type { NotesDependencies } from "../application/notes/note-store.js";
 import type { NamedFailure } from "../domain/failure.js";
 import { capabilityOff, isOn, type Settings } from "../domain/settings.js";
 import { createEventTool } from "./calendar/create-event-tool.js";
@@ -15,6 +16,9 @@ import { searchEventsTool } from "./calendar/search-events-tool.js";
 import { findContactsTool } from "./contacts/find-contacts-tool.js";
 import { listChatsTool } from "./messages/list-chats-tool.js";
 import { readChatTool } from "./messages/read-chat-tool.js";
+import { listNoteFoldersTool } from "./notes/list-note-folders-tool.js";
+import { readNoteTool } from "./notes/read-note-tool.js";
+import { searchNotesTool } from "./notes/search-notes-tool.js";
 import { listReminderListsTool } from "./reminders/list-reminder-lists-tool.js";
 import {
   listRemindersTool,
@@ -28,7 +32,8 @@ export type ServerDependencies = ListEventsDependencies &
   ListRemindersToolDependencies &
   FindContactsDependencies &
   ListChatsDependencies &
-  ReadChatDependencies;
+  ReadChatDependencies &
+  NotesDependencies;
 
 export const serverName = "apple-native-mcp";
 
@@ -116,6 +121,9 @@ export const buildServer = (dependencies: ServerDependencies): McpServer =>
       findContactsTool(dependencies),
       listChatsTool(dependencies),
       readChatTool(dependencies),
+      listNoteFoldersTool(dependencies),
+      searchNotesTool(dependencies),
+      readNoteTool(dependencies),
     ],
     dependencies.settings,
   );

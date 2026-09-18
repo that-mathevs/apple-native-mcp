@@ -83,3 +83,8 @@ public let contactsPermissionSetting =
 /// can only be turned on here, by hand.
 public let messageStorePermissionSetting =
   "System Settings > Privacy & Security > Full Disk Access > apple-native-mcp"
+
+/// Where the user lets the helper control Notes. Scripting an app is an Automation consent,
+/// separate from every other permission and granted per app.
+public let notesPermissionSetting =
+  "System Settings > Privacy & Security > Automation > apple-native-mcp > Notes"

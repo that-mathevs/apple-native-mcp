@@ -225,9 +225,7 @@ struct FakeCalendarStore: CalendarStore {
 func aCalendarStore() -> FakeCalendarStore { FakeCalendarStore() }
 
 func helperReading(_ store: FakeCalendarStore) -> Helper {
-  Helper(
-    calendarStore: store, reminderStore: aReminderStore(), contactStore: aContactStore(),
-    messageStore: noMessageStore)
+  aHelper(calendarStore: store)
 }
 
 func readingACalendar(_ store: FakeCalendarStore) -> CalendarReading { CalendarReading(store: store) }

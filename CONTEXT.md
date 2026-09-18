@@ -100,6 +100,14 @@ An index lists many items briefly; a detail read returns one item in full. Both 
 prose.
 _Avoid_: summary, preview (except a note preview), listing
 
+**Static script**:
+A script that ships inside the helper and is chosen by name. Whatever a request supplies reaches it
+as JSON arguments, never as script text, and what it answers is JSON or is refused. Notes and Mail
+have no framework, so each is a **scripted app**, reached through static scripts, and controlling
+one is a permission of its own that the user grants per app. A script that outlives its time budget
+is **given up on**: it cannot be stopped, so the helper runs nothing more and is replaced.
+_Avoid_: template, generated script, AppleScript string, osascript, consent, abandoned
+
 **Helper**:
 The Swift process that holds every macOS permission and reaches every store. See
 [ADR-0002](docs/adr/0002-helper-owns-every-protected-access.md).

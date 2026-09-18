@@ -1,6 +1,7 @@
 import Darwin
 import Foundation
 import HelperCore
+import ScriptRunning
 
 // The helper starts twice. The first process exists only to relaunch itself with responsibility
 // disclaimed, so that macOS attributes each permission prompt, and the grant behind it, to
@@ -10,13 +11,16 @@ import HelperCore
 /// that relaunches never opens a store macOS would attribute to whatever started it.
 func servingTheSession() {
   exitingWithTheParent()
+  let scripts = OSAKitScriptRunner()
   serveSession(
     Helper(
       calendarStore: EventKitCalendarStore(), reminderStore: EventKitReminderStore(),
       contactStore: FrameworkContactStore(),
       messageStore: SQLiteMessageStore(
         path: FileManager.default.homeDirectoryForCurrentUser
-          .appendingPathComponent("Library/Messages/chat.db").path)))
+          .appendingPathComponent("Library/Messages/chat.db").path),
+      noteStore: ScriptedNoteStore(runner: scripts)),
+    stoppingWhen: { scripts.hasGivenUpOnAScript })
 }
 
 /// Kept for the life of the process, or the watch would end with the function that started it.

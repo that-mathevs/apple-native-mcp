@@ -55,6 +55,12 @@ public enum FailureCode: String, Equatable, Sendable {
   case messageStoreUnreadable = "message_store_unreadable"
   /// A request named a chat the message store does not have.
   case chatUnknown = "chat_unknown"
+  /// macOS has not allowed the helper to control Notes.
+  case notesPermissionMissing = "notes_permission_missing"
+  /// Notes would not be read at all.
+  case notesUnreadable = "notes_unreadable"
+  /// Notes did not answer within the time budget.
+  case notesTimedOut = "notes_timed_out"
 }
 
 extension NamedFailure {
@@ -210,5 +216,45 @@ extension NamedFailure {
       code: .chatUnknown,
       sentence: "No chat has that identifier, so nothing was read.",
       evidence: identifier)
+  }
+
+  static func notesPermissionMissing(permission: Permission) -> NamedFailure {
+    NamedFailure(
+      code: .notesPermissionMissing,
+      sentence: permission == .undecided
+        ? notAskedYet(for: "control of Notes")
+        : "apple-native-mcp cannot read your notes until it is allowed to control Notes, in "
+          + "\(notesPermissionSetting).",
+      evidence: permission.rawValue)
+  }
+
+  static func notesUnreadable(evidence: String) -> NamedFailure {
+    NamedFailure(
+      code: .notesUnreadable,
+      sentence: "Notes could not be read, so nothing was looked for. Nothing was found or "
+        + "ruled out.",
+      evidence: evidence)
+  }
+
+  static func notesTimedOut(evidence: String) -> NamedFailure {
+    NamedFailure(
+      code: .notesTimedOut,
+      sentence: "Notes did not answer within the time budget, so this was not read. Nothing was "
+        + "found or ruled out.",
+      evidence: evidence)
+  }
+
+  /// A failure of Notes, told apart by the error's number and never by its wording (X-54): a
+  /// refused permission and a timeout each have a number of their own.
+  static func notes(_ failure: NotesUnreadable) -> NamedFailure {
+    switch failure.number {
+    case AppleEventError.notPermitted:
+      var refused = notesPermissionMissing(permission: .refused)
+      refused = NamedFailure(
+        code: refused.code, sentence: refused.sentence, evidence: failure.evidence)
+      return refused
+    case AppleEventError.timedOut: return notesTimedOut(evidence: failure.evidence)
+    default: return notesUnreadable(evidence: failure.evidence)
+    }
   }
 }

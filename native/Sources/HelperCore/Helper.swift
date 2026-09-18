@@ -11,16 +11,18 @@ public struct Helper: Sendable {
   private let reminders: RemindersReading
   private let contacts: ContactsReading
   private let messages: MessagesReading
+  private let notes: NotesReading
 
   public init(
     calendarStore: CalendarStore, reminderStore: ReminderStore, contactStore: ContactStore,
-    messageStore: MessageStore
+    messageStore: MessageStore, noteStore: NoteStore
   ) {
     self.calendar = CalendarReading(store: calendarStore)
     self.calendarWriting = CalendarWriting(store: calendarStore)
     self.reminders = RemindersReading(store: reminderStore)
     self.contacts = ContactsReading(store: contactStore)
     self.messages = MessagesReading(store: messageStore)
+    self.notes = NotesReading(store: noteStore)
   }
 
   /// Answer one line. Always returns exactly one line of JSON, whatever arrives.
@@ -88,6 +90,28 @@ public struct Helper: Sendable {
     case .chatMessages(let chat, let range, let limit):
       return answering(messages.messages(inChat: chat, within: range, limit: limit)) {
         ["messages": $0.messages.map(\.asFields), "truncated": $0.truncated]
+      }
+    case .notesPermission:
+      return answering(notes.permission()) { $0.asFields(setting: notesPermissionSetting) }
+    case .requestNotesPermission:
+      return answering(notes.requestPermission()) {
+        $0.asFields(setting: notesPermissionSetting)
+      }
+    case .noteFolders:
+      return answering(notes.noteFolders()) { ["noteFolders": $0.map(\.asFields)] }
+    case .notesMentioning(let text, let noteFolders):
+      return answering(notes.notesMentioning(text, inNoteFoldersIdentified: noteFolders)) {
+        [
+          "notes": $0.notes.map(\.asFields),
+          "unreadNoteFolders": $0.unreadNoteFolders.map(\.asFields),
+          "notesUnread": $0.notesUnread,
+        ]
+      }
+    case .note(let identifier, let noteFolders):
+      return answering(
+        notes.note(identifier: identifier, inNoteFoldersIdentified: noteFolders)
+      ) {
+        ["note": $0.map { $0.asFields as Any } ?? NSNull()]
       }
     }
   }

@@ -43,11 +43,12 @@ describe("running setup", () => {
 
     const { printed } = await runningSetup();
 
-    expect(permissions.askedFor).toStrictEqual(["calendar", "reminders", "contacts"]);
+    expect(permissions.askedFor).toStrictEqual(["calendar", "reminders", "contacts", "notes"]);
     expect(printed.slice(1)).toStrictEqual([
       "Calendar: granted.",
       "Reminders: granted.",
       "Contacts: granted.",
+      "Notes: granted.",
     ]);
   });
 

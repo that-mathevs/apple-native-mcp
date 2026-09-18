@@ -19,9 +19,13 @@ let package = Package(
   ],
   targets: [
     .target(name: "HelperCore"),
+    // The one place OSAKit is touched. It is a library so that its own suite can hold the real
+    // runner to its contract with scripts that touch no app, which needs no consent and no Mac
+    // of anybody's.
+    .target(name: "ScriptRunning", dependencies: ["HelperCore"]),
     .executableTarget(
       name: "Helper",
-      dependencies: ["HelperCore"],
+      dependencies: ["HelperCore", "ScriptRunning"],
       linkerSettings: [
         .unsafeFlags([
           "-Xlinker", "-sectcreate",
@@ -32,5 +36,6 @@ let package = Package(
       ]
     ),
     .testTarget(name: "HelperCoreTests", dependencies: ["HelperCore"]),
+    .testTarget(name: "ScriptRunningTests", dependencies: ["HelperCore", "ScriptRunning"]),
   ]
 )
