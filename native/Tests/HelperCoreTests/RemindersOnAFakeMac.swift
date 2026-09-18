@@ -15,10 +15,11 @@ func aReminder(
   _ title: String,
   in list: ReminderList,
   completed: Bool = false,
-  due: Due? = nil
+  due: Due? = nil,
+  notes: String? = nil
 ) -> Reminder {
   Reminder(
-    identifier: "reminder:\(title)", title: title, isCompleted: completed, due: due,
+    identifier: "reminder:\(title)", title: title, notes: notes, isCompleted: completed, due: due,
     reminderList: list)
 }
 

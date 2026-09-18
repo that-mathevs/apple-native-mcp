@@ -60,9 +60,10 @@ public struct Helper: Sendable {
       ]
     case .reminderLists:
       return answering(reminders.reminderLists()) { ["reminderLists": $0.map(\.asFields)] }
-    case .reminders(let reminderLists, let includeCompleted):
+    case .reminders(let reminderLists, let includeCompleted, let matching):
       let read = reminders.reminders(
-        inReminderListsNamed: reminderLists, includingCompleted: includeCompleted)
+        inReminderListsNamed: reminderLists, includingCompleted: includeCompleted,
+        matching: matching)
       return answering(read) {
         [
           "reminders": $0.reminders.map(\.asFields),

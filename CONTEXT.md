@@ -78,6 +78,8 @@ _Avoid_: cap, max rows
 What a search is asked for: words, "quoted phrases" and -exclusions. Words are optional and rank
 the results; a phrase matches as consecutive words; an exclusion leaves out anything containing it.
 Case and accents are folded, every other character is literal, and an empty query matches nothing.
+Mail and Messages take one; calendar and reminder searches take plain **search text** for now, one
+phrase matched literally with case folded, until they move onto the same grammar (#63).
 _Avoid_: filter, keyword search, pattern
 
 **Time budget**:

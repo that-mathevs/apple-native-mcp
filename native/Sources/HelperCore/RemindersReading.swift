@@ -18,19 +18,18 @@ struct RemindersReading: Sendable {
   }
 
   func reminderLists() -> Result<[ReminderList], NamedFailure> {
-    let permission = store.permission()
-    guard permission.allowsReading else {
-      return .failure(.remindersPermissionMissing(permission: permission))
-    }
-    return .success(store.reminderLists())
+    store.permission().whenItAllows(
+      \.allowsReading, else: NamedFailure.remindersPermissionMissing
+    ) { .success(store.reminderLists()) }
   }
 
   /// The reminders in the reminder lists with these identifiers. Every identifier has to name a
   /// reminder list: one deleted since it was listed is refused, not skipped, so a short answer is
   /// never presented as the whole of what was asked.
-  func reminders(inReminderListsNamed identifiers: [String], includingCompleted: Bool) -> Result<
-    RemindersRead, NamedFailure
-  > {
+  /// With text to match, only the reminders whose title or notes mention it.
+  func reminders(
+    inReminderListsNamed identifiers: [String], includingCompleted: Bool, matching: String? = nil
+  ) -> Result<RemindersRead, NamedFailure> {
     reminderLists().flatMap { known in
       var wanted: [ReminderList] = []
       for identifier in identifiers {
@@ -56,7 +55,11 @@ struct RemindersReading: Sendable {
       guard read.unreadReminderLists.count < wanted.count else {
         return .failure(.remindersTimedOut(seconds: Self.timeBudget, reminderLists: wanted.count))
       }
-      return .success(read)
+      guard let matching else { return .success(read) }
+      return .success(
+        RemindersRead(
+          reminders: read.reminders.filter { $0.mentions(matching) },
+          unreadReminderLists: read.unreadReminderLists))
     }
   }
 }

@@ -6,6 +6,11 @@ export type RemindersWanted = {
   /** The identifiers of the reminder lists to read. */
   readonly reminderLists: readonly string[];
   readonly includeCompleted: boolean;
+  /**
+   * Text a reminder's title or notes has to mention, ignoring case. The store matches it, since
+   * notes never leave it, and compares it only: it is never a pattern, a query or a script.
+   */
+  readonly matching?: string;
 };
 
 /** What a read found, and the reminder lists that did not answer within the time budget. */

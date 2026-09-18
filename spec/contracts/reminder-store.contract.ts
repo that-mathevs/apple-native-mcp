@@ -87,6 +87,40 @@ export const aReminderStore = ({ name, build }: ReminderStoreUnderTest): void =>
       });
     });
 
+    // Case folding is the helper's to specify, with examples chosen for it; a real title could be
+    // anything, so this one is searched for exactly as written.
+    it("given text from a reminder's title, finds that reminder", async () => {
+      const { reminderStore } = await build();
+      const lists = await listsOf(reminderStore);
+      const reminders = await remindersIn(reminderStore, lists, true);
+      const known = reminders.find(({ title }) => title.trim() !== "");
+      if (!known) throw new Error("the store holds no titled reminder to search for");
+
+      const found = await reminderStore.reminders({
+        reminderLists: lists.map(({ identifier }) => identifier),
+        includeCompleted: true,
+        matching: known.title,
+      });
+
+      expect(found).toMatchObject({ ok: true });
+      expect(found.ok && found.value.reminders.map(({ identifier }) => identifier)).toContain(
+        known.identifier,
+      );
+    });
+
+    it("given text no reminder mentions, finds none rather than every reminder", async () => {
+      const { reminderStore } = await build();
+      const lists = await listsOf(reminderStore);
+
+      const found = await reminderStore.reminders({
+        reminderLists: lists.map(({ identifier }) => identifier),
+        includeCompleted: true,
+        matching: "no reminder says zq-7f3a-%-\\\"",
+      });
+
+      expect(found).toMatchObject({ ok: true, value: { reminders: [] } });
+    });
+
     // EventKit reads "no calendars" as "every calendar", so asking for none has to mean none.
     it("given no reminder lists, answers with no reminders rather than those of every one", async () => {
       const { reminderStore } = await build();

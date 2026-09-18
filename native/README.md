@@ -141,7 +141,9 @@ empty set.
 Every reminder list is fetched at once, and together they have two seconds. A reminder list that
 has not answered by then is cancelled and named in `unreadReminderLists`, so one large list never
 holds up the rest and a short answer never reads as the whole. When none answers in time, the
-answer is `reminders_timed_out`; one deleted since it was listed is `reminder_list_unknown`. A
+answer is `reminders_timed_out`; one deleted since it was listed is `reminder_list_unknown`. With
+`"matching":"text"`, only the reminders whose title or notes mention the text, ignoring case, come
+back; the text is compared and never interpreted, and empty text is refused. A
 reminder's notes are never sent: an index keeps to small fixed fields (ADR-0006). `due` is `null`, a due date as `{"date":"2026-09-25"}` with no time of day, or a due time
 as `{"time":"2026-09-25T21:00:00Z"}`, an instant the server shows in the user's time zone.
 

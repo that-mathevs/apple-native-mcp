@@ -75,6 +75,7 @@ final class EventKitReminderStore: ReminderStore, @unchecked Sendable {
     Reminder(
       identifier: reminder.calendarItemIdentifier,
       title: reminder.title ?? "",
+      notes: reminder.notes,
       isCompleted: reminder.isCompleted,
       due: reminder.dueDateComponents.flatMap(due),
       reminderList: reminderList(reminder.calendar))

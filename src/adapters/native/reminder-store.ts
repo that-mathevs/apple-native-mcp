@@ -64,8 +64,14 @@ export const helperReminderStore = (helper: Helper): ReminderStore => ({
   reminders: async ({
     reminderLists,
     includeCompleted,
+    matching,
   }: RemindersWanted): Promise<Outcome<RemindersRead>> => {
-    const answered = await helper.ask({ request: "reminders", reminderLists, includeCompleted });
+    const answered = await helper.ask({
+      request: "reminders",
+      reminderLists,
+      includeCompleted,
+      ...(matching === undefined ? {} : { matching }),
+    });
     if (!answered.ok) return failed(answered.failure);
 
     const { reminders, unreadReminderLists } = answered.value as {
