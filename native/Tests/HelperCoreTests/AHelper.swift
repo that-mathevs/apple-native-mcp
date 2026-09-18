@@ -7,9 +7,10 @@ func aHelper(
   reminderStore: ReminderStore = aReminderStore(),
   contactStore: ContactStore = aContactStore(),
   messageStore: MessageStore = noMessageStore,
-  noteStore: NoteStore = aNoteStore()
+  noteStore: NoteStore = aNoteStore(),
+  mailStore: MailStore = aMailStore()
 ) -> Helper {
   Helper(
     calendarStore: calendarStore, reminderStore: reminderStore, contactStore: contactStore,
-    messageStore: messageStore, noteStore: noteStore)
+    messageStore: messageStore, noteStore: noteStore, mailStore: mailStore)
 }

@@ -24,7 +24,8 @@ func servingTheSession() -> Never {
     messageStore: SQLiteMessageStore(
       path: FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Messages/chat.db").path),
-    noteStore: ScriptedNoteStore(runner: scripts))
+    noteStore: ScriptedNoteStore(runner: scripts),
+    mailStore: ScriptedMailStore(runner: scripts))
 
   let session = Thread {
     serveSession(helper, stoppingWhen: { scripts.hasGivenUpOnAScript })

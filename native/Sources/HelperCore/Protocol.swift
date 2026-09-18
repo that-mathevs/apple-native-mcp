@@ -32,6 +32,10 @@ struct Request: Equatable {
     case noteFolders
     case notesMentioning(text: String, noteFolders: [String])
     case note(identifier: String, noteFolders: [String])
+    case mailPermission
+    case requestMailPermission
+    case mailAccounts
+    case mailboxes(mailAccount: String)
   }
 }
 
@@ -58,6 +62,10 @@ enum RequestName: String {
   case noteFolders = "note_folders"
   case notesMentioning = "notes_mentioning"
   case note = "note"
+  case mailPermission = "mail_permission"
+  case requestMailPermission = "mail_permission_request"
+  case mailAccounts = "mail_accounts"
+  case mailboxes = "mailboxes"
 }
 
 /// What reading a line produced: a request the helper can answer, or a named failure to report
@@ -214,6 +222,18 @@ extension Request {
       }
       return .request(
         Request(id: id, kind: .note(identifier: identifier, noteFolders: noteFolders)))
+    case .mailPermission:
+      return .request(Request(id: id, kind: .mailPermission))
+    case .requestMailPermission:
+      return .request(Request(id: id, kind: .requestMailPermission))
+    case .mailAccounts:
+      return .request(Request(id: id, kind: .mailAccounts))
+    case .mailboxes:
+      // The mail account is required: the helper has no way to read every account at once.
+      guard let mailAccount = fields["mailAccount"] as? String, !mailAccount.isEmpty else {
+        return .failure(id: id, .requestMalformed(line: line))
+      }
+      return .request(Request(id: id, kind: .mailboxes(mailAccount: mailAccount)))
     }
   }
 }

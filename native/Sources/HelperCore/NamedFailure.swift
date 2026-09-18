@@ -61,6 +61,16 @@ public enum FailureCode: String, Equatable, Sendable {
   case notesUnreadable = "notes_unreadable"
   /// Notes did not answer within the time budget.
   case notesTimedOut = "notes_timed_out"
+  /// macOS has not allowed the helper to read Mail.
+  case mailPermissionMissing = "mail_permission_missing"
+  /// Mail did not start, so nothing could be asked of it, its permission included.
+  case mailDidNotStart = "mail_did_not_start"
+  /// Mail did not answer within its time budget.
+  case mailTimedOut = "mail_timed_out"
+  /// Mail answered with a failure of its own.
+  case mailUnreadable = "mail_unreadable"
+  /// A request named a mail account the helper cannot find.
+  case mailAccountUnknown = "mail_account_unknown"
 }
 
 extension NamedFailure {
@@ -178,6 +188,47 @@ extension NamedFailure {
       code: .contactsUnreadable,
       sentence: "The contacts could not be read, so nobody was looked for. Nothing was found "
         + "or ruled out.",
+      evidence: evidence)
+  }
+
+  static func mailPermissionMissing(permission: Permission) -> NamedFailure {
+    NamedFailure(
+      code: .mailPermissionMissing,
+      sentence: permission == .undecided
+        ? notAskedYet(for: "Mail")
+        : "apple-native-mcp cannot read Mail until it is allowed to, in "
+          + "\(mailPermissionSetting).",
+      evidence: permission.rawValue)
+  }
+
+  // #7: a request Mail is still working on keeps it busy long after the caller gave up, so the
+  // sentence says that asking again straight away will not help.
+  static func mailTimedOut(seconds: Int) -> NamedFailure {
+    NamedFailure(
+      code: .mailTimedOut,
+      sentence: "Mail did not answer within \(seconds) seconds, so nothing was read. "
+        + "Mail can stay busy for minutes: ask again later.",
+      evidence: "\(seconds) seconds")
+  }
+
+  static func mailDidNotStart(evidence: String) -> NamedFailure {
+    NamedFailure(
+      code: .mailDidNotStart,
+      sentence: "Mail did not start, so nothing was read. Open Mail, then ask again.",
+      evidence: evidence)
+  }
+
+  static func mailAccountUnknown(identifier: String) -> NamedFailure {
+    NamedFailure(
+      code: .mailAccountUnknown,
+      sentence: "No mail account has that identifier, so no mailbox was read.",
+      evidence: identifier)
+  }
+
+  static func mailUnreadable(evidence: String) -> NamedFailure {
+    NamedFailure(
+      code: .mailUnreadable,
+      sentence: "Mail could not be read, so nothing was listed or ruled out.",
       evidence: evidence)
   }
 

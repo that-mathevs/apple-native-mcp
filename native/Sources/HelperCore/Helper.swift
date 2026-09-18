@@ -12,10 +12,11 @@ public struct Helper: Sendable {
   private let contacts: ContactsReading
   private let messages: MessagesReading
   private let notes: NotesReading
+  private let mail: MailReading
 
   public init(
     calendarStore: CalendarStore, reminderStore: ReminderStore, contactStore: ContactStore,
-    messageStore: MessageStore, noteStore: NoteStore
+    messageStore: MessageStore, noteStore: NoteStore, mailStore: MailStore
   ) {
     self.calendar = CalendarReading(store: calendarStore)
     self.calendarWriting = CalendarWriting(store: calendarStore)
@@ -23,6 +24,7 @@ public struct Helper: Sendable {
     self.contacts = ContactsReading(store: contactStore)
     self.messages = MessagesReading(store: messageStore)
     self.notes = NotesReading(store: noteStore)
+    self.mail = MailReading(store: mailStore)
   }
 
   /// Answer one line. Always returns exactly one line of JSON, whatever arrives.
@@ -112,6 +114,16 @@ public struct Helper: Sendable {
         notes.note(identifier: identifier, inNoteFoldersIdentified: noteFolders)
       ) {
         ["note": $0.map { $0.asFields as Any } ?? NSNull()]
+      }
+    case .mailPermission:
+      return answering(mail.permission()) { $0.asFields(setting: mailPermissionSetting) }
+    case .requestMailPermission:
+      return answering(mail.requestPermission()) { $0.asFields(setting: mailPermissionSetting) }
+    case .mailAccounts:
+      return answering(mail.mailAccounts()) { ["mailAccounts": $0.map(\.asFields)] }
+    case .mailboxes(let mailAccount):
+      return answering(mail.mailboxes(inMailAccount: mailAccount)) {
+        ["mailboxes": $0.map(\.asFields)]
       }
     }
   }

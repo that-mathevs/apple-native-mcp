@@ -147,7 +147,7 @@ struct RunningAScriptSpec {
   // felkru c769cc0 shipped a script with a syntax error that only a user ever ran.
   @Test("every script the helper ships compiles")
   func everyShippedScriptCompiles() {
-    for script in NotesScripts.all {
+    for script in NotesScripts.all + MailScripts.all {
       #expect(runner.whyItDoesNotCompile(script) == nil, "\(script.name)")
     }
   }

@@ -88,3 +88,8 @@ public let messageStorePermissionSetting =
 /// separate from every other permission and granted per app.
 public let notesPermissionSetting =
   "System Settings > Privacy & Security > Automation > apple-native-mcp > Notes"
+
+/// Where the user lets the helper read Mail. Mail is reached by scripting it, so the setting sits
+/// under Automation, beneath the helper's own name.
+public let mailPermissionSetting =
+  "System Settings > Privacy & Security > Automation > apple-native-mcp > Mail"

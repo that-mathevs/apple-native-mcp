@@ -5,8 +5,10 @@ The helper is the Swift process that holds every macOS permission and reaches ev
 permission of its own and opens no protected file; it starts the helper and talks to it.
 
 So far it answers for the calendar, with its calendars, the events in a range and one event in
-full; for the reminders, with the reminder lists and the reminders in them; for the contacts; and
-for the messages, with the newest chats and a chat's messages. Each has its own permission.
+full; for the reminders, with the reminder lists and the reminders in them; for the contacts; for
+the messages, with the newest chats and a chat's messages; for Notes, with its note folders and
+notes; and for Mail, with its mail accounts and one account's mailboxes. Each has its own
+permission.
 
 ## What it does
 
@@ -264,6 +266,48 @@ read a note folder at a time. A folder's columns are each one Apple Event, and o
 one to the next, so the identifiers are read before and after and an answer whose columns may have
 slipped is refused rather than pairing one note's title with another's text.
 
+**Mail**
+
+Mail is reached the way Notes is, through static scripts, so its permission is the permission to
+control Mail, the helper's own: `mail_permission` and `mail_permission_request` work as the
+calendar's do, and the setting they name is
+`System Settings > Privacy & Security > Automation > apple-native-mcp > Mail`. Nothing is read
+while nobody has been asked, because the first read is what would make macOS ask.
+
+```json
+{"protocolVersion":1,"id":"10","request":"mail_accounts"}
+{"id":"10","protocolVersion":1,"result":{"mailAccounts":[{"emailAddresses":["ada@example.test"],"identifier":"0F1E2D3C-…","name":"Personal"}]}}
+```
+
+```json
+{"protocolVersion":1,"id":"11","request":"mailboxes","mailAccount":"0F1E2D3C-…"}
+{"id":"11","protocolVersion":1,"result":{"mailboxes":[{"path":["INBOX"],"role":"inbox"},{"path":["[Provider]","Sent Mail"],"role":"sent"},{"path":["Clients","Invoices 2026/27"],"role":null}]}}
+```
+
+`mailboxes` needs its `mailAccount`: there is no request that reads every account at once, because
+Mail answers one request at a time and one covering every account is what hung it (brightline
+`304f384`). An identifier no account has is `mail_account_unknown`, never an answer of no
+mailboxes.
+
+A mailbox is its account and its `path`, every name from the outermost in. Mail addresses a
+mailbox by one full name, the path joined with `/`, and the path joined again is always exactly
+that, so a later read can address the mailbox. Where the full name divides comes from what Mail
+says the mailbox's own name is and which mailboxes it sits inside, so a name that holds a `/` stays
+one name. A parent Mail has no mailbox for, such as a server folder that holds no mail, is still
+in the path: on a Mac with seven accounts, 21 mailboxes in three of them sit under one.
+
+A `role` is Mail's own answer, `inbox`, `drafts`, `sent`, `junk` or `trash`, read from the role
+mailboxes Mail keeps and never from a name, which varies by provider and by language. It is `null`
+where Mail gives none. Mail has no role mailbox for an archive, so an archive mailbox has no role.
+Mailboxes kept on this Mac under no mail account are not listed.
+
+A script gets eight seconds. One that outlives them is `mail_timed_out`, which says that Mail can
+stay busy for minutes (#7), and any other failure is `mail_unreadable` with the number and the
+words Mail failed with. macOS can only say whether Mail may be controlled while Mail is running,
+so the helper starts it when it has to, and a Mail that will not start is `mail_did_not_start`,
+for the permission requests too. None of the three is ever reported as a missing permission or
+as an empty answer.
+
 ## Building it
 
 ```sh
@@ -323,6 +367,6 @@ real Mac.
 
 | Path | Holds |
 |---|---|
-| `Sources/HelperCore/` | the protocol, the calendar, reminders, contacts and messages rules, the named failures, the store ports, and `SQLiteMessageStore`, which reads a SQLite file and so is specified against ones the scenarios build |
+| `Sources/HelperCore/` | the protocol, the calendar, reminders, contacts, messages and mail rules, the named failures, the store ports, and `SQLiteMessageStore`, which reads a SQLite file and so is specified against ones the scenarios build |
 | `Sources/Helper/` | the executable: the disclaimed relaunch, the stdio session, the EventKit adapters |
 | `Tests/HelperCoreTests/` | the scenarios, and the fake Mac they run against |
