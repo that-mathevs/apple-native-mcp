@@ -150,6 +150,10 @@ public struct Helper: Sendable {
       return answering(mail.emails(in: mailbox, receivedIn: nil, most: newest)) { $0.asFields }
     case .emailsInRange(let mailbox, let range, let ceiling):
       return answering(mail.emails(in: mailbox, receivedIn: range, most: ceiling)) { $0.asFields }
+    case .email(let wanted):
+      return answering(mail.email(wanted)) {
+        ["email": $0.map { $0.asFields as Any } ?? NSNull()]
+      }
     case .emailMessageIds(let mailbox, let emails):
       return answering(mail.messageIds(ofEmails: emails, in: mailbox)) {
         ["messageIds": keyedByDigits($0)]

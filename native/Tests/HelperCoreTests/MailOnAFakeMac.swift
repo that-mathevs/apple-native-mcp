@@ -13,6 +13,23 @@ struct HeldEmail {
   let email: Email
   let messageId: String
   let body: String
+  var to: [Correspondent] = []
+  var cc: [Correspondent] = []
+  var sentAt: Date?
+  var attachments: [EmailAttachment] = []
+
+  /// The same email with what only a read in full shows.
+  func inFull(
+    to: [Correspondent] = [], cc: [Correspondent] = [], sent: String? = nil,
+    attachments: [EmailAttachment] = []
+  ) -> HeldEmail {
+    var held = self
+    held.to = to
+    held.cc = cc
+    held.sentAt = sent.map(at)
+    held.attachments = attachments
+    return held
+  }
 }
 
 func anEmail(
@@ -43,6 +60,7 @@ struct FakeMailStore: MailStore {
   var tooLargeMailboxes: [[String]: Int] = [:]
   var bodiesReadInTime = Int.max
   var undatedEmails: [[String]: Int] = [:]
+  var staleIn: Int?
   var fails: MailUnreadable?
   var doesNotStart: String?
   let record = Record()
@@ -98,6 +116,28 @@ struct FakeMailStore: MailStore {
       undated: undatedEmails[mailbox.path] ?? 0)
   }
 
+  func email(_ wanted: EmailWanted) throws(MailUnreadable) -> EmailInFull? {
+    record.timesRead += 1
+    if let fails { throw fails }
+    if let emails = staleIn { throw .emailReferenceStale(emails: emails, seconds: 8) }
+    guard let held = heldEmails[wanted.mailbox] else {
+      throw .mailboxUnknown(path: wanted.mailbox.path)
+    }
+    // As the scripted store does: the store identifier first, and the Message-ID decides.
+    let found =
+      held.first {
+        $0.email.storeIdentifier == wanted.storeIdentifier && $0.messageId == wanted.messageId
+      } ?? held.first { $0.messageId == wanted.messageId }
+    guard let found else { return nil }
+
+    return EmailInFull(
+      email: found.email,
+      mailAccountName: self.held.first { $0.identifier == wanted.mailbox.mailAccount }?.name ?? "",
+      to: found.to, cc: found.cc, bcc: [], sentAt: found.sentAt,
+      body: String(found.body.prefix(wanted.longestBody)), bodyCharacters: found.body.count,
+      attachments: found.attachments)
+  }
+
   func messageIds(
     ofEmails storeIdentifiers: [Int], in mailbox: MailboxAddress
   ) throws(MailUnreadable) -> [Int: String] {
@@ -135,6 +175,13 @@ struct FakeMailStore: MailStore {
   func holdingUndated(_ emails: Int, inMailbox path: [String]) -> FakeMailStore {
     var store = self
     store.undatedEmails[path] = emails
+    return store
+  }
+
+  /// Every reference is stale, in a mailbox of this many emails: too many to look through.
+  func staleReference(inMailboxHolding emails: Int) -> FakeMailStore {
+    var store = self
+    store.staleIn = emails
     return store
   }
 

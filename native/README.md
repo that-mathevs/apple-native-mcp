@@ -7,7 +7,8 @@ permission of its own and opens no protected file; it starts the helper and talk
 So far it answers for the calendar, with its calendars, the events in a range and one event in
 full; for the reminders, with the reminder lists and the reminders in them; for the contacts; for
 the messages, with the newest chats and a chat's messages; for Notes, with its note folders and
-notes; and for Mail, with its mail accounts, one account's mailboxes and one mailbox's emails. Each has its own
+notes; and for Mail, with its mail accounts, one account's mailboxes, one mailbox's emails and one
+email in full. Each has its own
 permission.
 
 ## What it does
@@ -360,7 +361,32 @@ one (#7). A path the account does not have is `mailbox_unknown`. A mailbox Mail 
 in, such as an IMAP account's Notes, fails every read of them, and answers with no emails.
 
 `storeIdentifier` is the number Mail knows an email by inside its mailbox while it runs. It is how
-the server asks for more of the same email, and it never reaches a tool's result.
+the server asks for more of the same email, and an email reference carries it as where to look
+first. Nothing says it outlives a restart of Mail or a move, so it is never trusted on its own.
+
+```json
+{"protocolVersion":1,"id":"16","request":"email","mailAccount":"0F1E2D3C-…","mailbox":["INBOX"],"messageId":"dinner@example.test","storeIdentifier":41,"longestBody":100000}
+{"id":"16","protocolVersion":1,"result":{"email":{"attachments":[{"contentType":null,"name":"menu.pdf","size":48211}],"bcc":[],"body":"At eight.","bodyCharacters":9,"cc":[],"isRead":true,"mailAccountName":"Personal","receivedAt":"2026-09-17T19:00:30Z","sender":"Grace Hopper <grace@example.test>","sentAt":"2026-09-17T19:00:00Z","storeIdentifier":41,"subject":"Dinner","to":[{"address":"ada@example.test","name":"Ada Lovelace"}]}}}
+```
+
+One email in full. The Message-ID says which email; the store identifier says where to look first,
+which takes ten milliseconds in a mailbox of any size, and what is found there is the email only
+when its Message-ID is the one asked for. Otherwise the mailbox is looked through for the
+Message-ID, at a millisecond and a half an email: 7.5 seconds in a mailbox of 5,045. That look
+cannot be stopped, so the identifiers column is read first to see what it would cost. The look
+measured between 6.5 and 11.8 times the column, so twelve times is taken, on top of the time
+already gone and two seconds to read the email, and a mailbox where that would not fit the time
+budget is `email_reference_stale`, which says what gets out of it: a fresh reference, from listing
+or searching again, finds the email at once. No email with that Message-ID in that mailbox is
+`"email":null`, which is an answer: the email was deleted or moved, and no other is read for it.
+An answer that says nothing about the email at all is not that answer, and is refused.
+
+`body` is Mail's own plain-text rendering, which it gives for an HTML-only email too, cut at
+`longestBody` (at most 1,000,000), with `bodyCharacters` saying how long the whole is. What Mail
+does not say is `null` and never filled in: a name beside an address, when the email was sent, an
+attachment's name or size, and its `contentType`, which on macOS 26 Mail fails every read of
+(-10000). Any other failure reading an attachment fails the read. The body is never cut inside a
+character: half of one is not text, and an answer holding it could not be read as JSON.
 
 ```json
 {"protocolVersion":1,"id":"14","request":"email_message_ids","mailAccount":"0F1E2D3C-…","mailbox":["INBOX"],"emails":[41,42]}

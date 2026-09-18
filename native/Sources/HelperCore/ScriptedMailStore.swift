@@ -79,6 +79,40 @@ public struct ScriptedMailStore: MailStore {
       }, truncated: truncated, undated: undated)
   }
 
+  public func email(_ wanted: EmailWanted) throws(MailUnreadable) -> EmailInFull? {
+    var arguments = addressing(wanted.mailbox)
+    arguments["messageId"] = wanted.messageId
+    arguments["storeIdentifier"] = wanted.storeIdentifier
+    arguments["longestBody"] = wanted.longestBody
+    arguments["withinMilliseconds"] = Int(scriptTimeBudget * 1000)
+
+    let answer: EmailAnswer = try asking(MailScripts.email, arguments)
+    try refusing(answer.mailAccountUnknown, answer.mailboxUnknown, asked: wanted.mailbox)
+    if let stale = answer.referenceStale {
+      throw .emailReferenceStale(emails: stale.emails, seconds: Int(scriptTimeBudget))
+    }
+    // "No email" is an answer the script gives in so many words. One that says nothing about the
+    // email is a script that broke, and is never read as an email that has gone.
+    guard answer.saidWhetherThereIsAnEmail else {
+      throw .failed(evidence: unreadable(MailScripts.email))
+    }
+
+    return answer.email.map { read in
+      EmailInFull(
+        email: Email(
+          storeIdentifier: read.storeIdentifier, subject: read.subject, sender: read.sender,
+          receivedAt: Date(timeIntervalSince1970: read.receivedAt / 1000), isRead: read.isRead),
+        mailAccountName: read.mailAccountName,
+        to: read.to.map(\.correspondent), cc: read.cc.map(\.correspondent),
+        bcc: read.bcc.map(\.correspondent),
+        sentAt: read.sentAt.map { Date(timeIntervalSince1970: $0 / 1000) },
+        body: read.body, bodyCharacters: read.bodyCharacters,
+        attachments: read.attachments.map {
+          EmailAttachment(name: $0.name, contentType: $0.contentType, size: $0.size)
+        })
+    }
+  }
+
   public func messageIds(
     ofEmails storeIdentifiers: [Int], in mailbox: MailboxAddress
   ) throws(MailUnreadable) -> [Int: String] {
@@ -200,16 +234,70 @@ private struct EmailsAnswer: Decodable {
     let isRead: Bool
   }
 
-  struct TooLarge: Decodable {
-    let emails: Int
+  let mailAccountUnknown: Bool?
+  let mailboxUnknown: Bool?
+  let mailboxTooLarge: HoldingRecord?
+  let emails: [Record]?
+  let truncated: Bool?
+  let undated: Int?
+}
+
+/// How many emails a mailbox holds, when that is why it was not read.
+private struct HoldingRecord: Decodable {
+  let emails: Int
+}
+
+/// `email` is null when no email with that Message-ID is in the mailbox, which is an answer, and
+/// is told apart from an answer with no `email` in it at all, which is not. A field that is
+/// missing or of the wrong kind inside the email fails the whole decode.
+private struct EmailAnswer: Decodable {
+  struct CorrespondentRecord: Decodable {
+    let name: String?
+    let address: String
+
+    var correspondent: Correspondent { Correspondent(name: name, address: address) }
+  }
+
+  struct AttachmentRecord: Decodable {
+    let name: String?
+    let contentType: String?
+    let size: Int?
+  }
+
+  struct Record: Decodable {
+    let storeIdentifier: Int
+    let mailAccountName: String
+    let subject: String
+    let sender: String
+    let to: [CorrespondentRecord]
+    let cc: [CorrespondentRecord]
+    let bcc: [CorrespondentRecord]
+    let receivedAt: Double
+    let sentAt: Double?
+    let isRead: Bool
+    let body: String
+    let bodyCharacters: Int
+    let attachments: [AttachmentRecord]
   }
 
   let mailAccountUnknown: Bool?
   let mailboxUnknown: Bool?
-  let mailboxTooLarge: TooLarge?
-  let emails: [Record]?
-  let truncated: Bool?
-  let undated: Int?
+  let referenceStale: HoldingRecord?
+  let saidWhetherThereIsAnEmail: Bool
+  let email: Record?
+
+  private enum Key: String, CodingKey {
+    case mailAccountUnknown, mailboxUnknown, referenceStale, email
+  }
+
+  init(from decoder: Decoder) throws {
+    let answer = try decoder.container(keyedBy: Key.self)
+    mailAccountUnknown = try answer.decodeIfPresent(Bool.self, forKey: .mailAccountUnknown)
+    mailboxUnknown = try answer.decodeIfPresent(Bool.self, forKey: .mailboxUnknown)
+    referenceStale = try answer.decodeIfPresent(HoldingRecord.self, forKey: .referenceStale)
+    saidWhetherThereIsAnEmail = answer.contains(.email)
+    email = try answer.decodeIfPresent(Record.self, forKey: .email)
+  }
 }
 
 private struct MessageIdsAnswer: Decodable {

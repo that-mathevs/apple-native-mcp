@@ -77,6 +77,8 @@ public enum FailureCode: String, Equatable, Sendable {
   case mailboxUnknown = "mailbox_unknown"
   /// A mailbox holds too many emails to read within the time budget.
   case mailboxTooLarge = "mailbox_too_large"
+  /// An email was not where its reference said, in a mailbox too large to look through in time.
+  case emailReferenceStale = "email_reference_stale"
   /// One message's archived text could not be read.
   case messageTextUnreadable = "message_text_unreadable"
 }
@@ -248,6 +250,18 @@ extension NamedFailure {
       sentence: "That mailbox holds \(emails) emails, too many to read within \(seconds) "
         + "seconds, so none was read and Mail was left alone. A shorter range would not help: a "
         + "mailbox is read whole whatever the range. Search it in Mail itself.",
+      evidence: "\(emails) emails")
+  }
+
+  // Under its store identifier an email is found in ten milliseconds, and looking through a
+  // mailbox for its Message-ID took 7.5 seconds in one of five thousand emails. A fresh
+  // reference finds it at once again, so that is what the sentence says to get.
+  static func emailReferenceStale(emails: Int, seconds: Int) -> NamedFailure {
+    NamedFailure(
+      code: .emailReferenceStale,
+      sentence: "The email was not where its reference said, and that mailbox holds \(emails) "
+        + "emails, too many to look through for it within \(seconds) seconds. Nothing was read. "
+        + "List or search again for a fresh reference, which finds the email at once.",
       evidence: "\(emails) emails")
   }
 

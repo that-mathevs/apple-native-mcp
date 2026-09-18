@@ -42,6 +42,7 @@ struct Request: Equatable {
     case mailboxes(mailAccount: String)
     case latestEmails(mailbox: MailboxAddress, newest: Int)
     case emailsInRange(mailbox: MailboxAddress, range: Range, ceiling: Int)
+    case email(EmailWanted)
     case emailMessageIds(mailbox: MailboxAddress, emails: [Int])
     case emailBodies(mailbox: MailboxAddress, emails: [Int])
   }
@@ -80,6 +81,7 @@ enum RequestName: String {
   case mailboxes = "mailboxes"
   case latestEmails = "latest_emails"
   case emailsInRange = "emails_in_range"
+  case email = "email"
   case emailMessageIds = "email_message_ids"
   case emailBodies = "email_bodies"
 }
@@ -289,6 +291,19 @@ extension Request {
       else { return .failure(id: id, .requestMalformed(line: line)) }
       let kind = Request.Kind.emailsInRange(mailbox: mailbox, range: range, ceiling: ceiling)
       return .request(Request(id: id, kind: kind))
+    case .email:
+      // The Message-ID is what says which email, and the store identifier only where to look
+      // first, so both are required, and so is the limit on the body: the helper chooses none.
+      guard
+        let mailbox = readMailboxAddress(fields),
+        let messageId = fields["messageId"] as? String, !messageId.isEmpty,
+        let storeIdentifier = fields["storeIdentifier"] as? Int, storeIdentifier > 0,
+        let longestBody = fields["longestBody"] as? Int, (1...greatestBody).contains(longestBody)
+      else { return .failure(id: id, .requestMalformed(line: line)) }
+      let wanted = EmailWanted(
+        mailbox: mailbox, messageId: messageId, storeIdentifier: storeIdentifier,
+        longestBody: longestBody)
+      return .request(Request(id: id, kind: .email(wanted)))
     case .emailMessageIds:
       guard
         let mailbox = readMailboxAddress(fields),
@@ -343,6 +358,9 @@ let greatestLatestEmails = 100
 
 /// The most emails of one mailbox one read looks at, and the most whose bodies it is asked for.
 let greatestEmailCeiling = 5000
+
+/// The most of one body one answer carries, in characters.
+let greatestBody = 1_000_000
 
 /// A mailbox is named by its mail account and its path together, and never by a path alone: a
 /// path names a mailbox in every account that has one.

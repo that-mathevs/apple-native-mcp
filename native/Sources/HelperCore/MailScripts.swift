@@ -2,7 +2,7 @@
 /// it and is only ever parsed as JSON, so an identifier made of script source is an identifier
 /// no mail account has, and nothing more.
 public enum MailScripts {
-  public static let all = [mailAccounts, mailboxes, emails, emailMessageIds, emailBodies]
+  public static let all = [mailAccounts, mailboxes, emails, email, emailMessageIds, emailBodies]
 
   /// Three reads, each of one property of every account at once: measured at 35 to 150 ms for
   /// seven accounts (#7), where asking account by account pays for each one.
@@ -296,6 +296,117 @@ public enum MailScripts {
         slowest = Math.max(slowest, Date.now() - before);
       }
       return JSON.stringify({ bodies: bodies });
+    }
+    """#)
+
+  /// One email in full, found under its store identifier when its Message-ID is the one wanted,
+  /// which takes ten milliseconds in a mailbox of any size, and otherwise by scanning the mailbox
+  /// for the Message-ID, which took 7.5 seconds in one of five thousand emails.
+  public static let email = StaticScript(
+    name: "email",
+    source: #"""
+    function run(argumentsJSON) {
+      const asked = JSON.parse(argumentsJSON);
+      const began = Date.now();
+      const mail = Application("Mail");
+      const accountIdentifiers = mail.accounts.id();
+      const accountIndex = accountIdentifiers.indexOf(asked.mailAccount);
+      if (accountIndex < 0) return JSON.stringify({ mailAccountUnknown: true });
+
+      const account = mail.accounts.byId(asked.mailAccount);
+      const mailbox = account.mailboxes.byName(asked.mailbox);
+      try {
+        mailbox.name();
+      } catch (missing) {
+        if (missing.errorNumber === -1728) return JSON.stringify({ mailboxUnknown: true });
+        throw missing;
+      }
+      const messages = mailbox.messages;
+      const gone = (error) => error.errorNumber === -1728 || error.errorNumber === -1719;
+
+      // The store identifier is where to look first: ten milliseconds in a mailbox of any
+      // size. It is only a hint, because nothing says it outlives a restart of Mail or a
+      // move, so what it finds is the email only when its Message-ID is the one asked for.
+      let found = null;
+      try {
+        const hinted = messages.byId(asked.storeIdentifier);
+        if (hinted.messageId() === asked.messageId) found = hinted;
+      } catch (error) {
+        if (!gone(error)) throw error;
+      }
+
+      // Otherwise the mailbox is looked through for the Message-ID, which costs a millisecond
+      // and a half an email and cannot be stopped once asked for: 7.5 seconds in a mailbox of
+      // five thousand. The identifiers column is read first to see what that would cost: the
+      // look measured between 6.5 and 11.8 times as long as the column, so twelve times is
+      // taken, on top of the time already gone and what reading the email afterwards needs. A
+      // mailbox where that would not fit is refused while Mail is still answering, with the
+      // way out: a fresh reference.
+      if (found === null) {
+        const columnBegan = Date.now();
+        const identifiers = messages.id();
+        const column = Date.now() - columnBegan;
+        const neededToReadTheEmail = 2000;
+        const wouldTake = Date.now() - began + column * 12 + neededToReadTheEmail;
+        if (wouldTake > asked.withinMilliseconds) {
+          return JSON.stringify({ referenceStale: { emails: identifiers.length } });
+        }
+        // Copies of one email in one mailbox share its Message-ID, and any of them is that
+        // email.
+        const matching = messages.whose({ messageId: asked.messageId }).id();
+        if (matching.length === 0) return JSON.stringify({ email: null });
+        found = messages.byId(matching[0]);
+      }
+
+      const correspondents = (recipients) =>
+        recipients.map((recipient) => ({
+          name: recipient.name() || null,
+          address: recipient.address() || "",
+        }));
+      // An attachment Mail has not downloaded may not say its type or its size. What it does
+      // not say is left out, never filled in.
+      const saying = (read) => {
+        try {
+          const said = read();
+          return said === undefined ? null : said;
+        } catch (error) {
+          return null;
+        }
+      };
+
+      // An email with no received date is never listed, so a reference to one was made by
+      // hand.
+      const received = found.dateReceived();
+      if (!received) throw new Error("the email has no received date");
+      const sent = found.dateSent();
+
+      // A character outside the basic plane is two units long, and the cut never falls inside
+      // one: half a character is not text, and an answer holding it cannot be read as JSON.
+      const body = found.content() || "";
+      let text = body.slice(0, asked.longestBody);
+      const last = text.charCodeAt(text.length - 1);
+      if (last >= 0xd800 && last <= 0xdbff) text = text.slice(0, -1);
+      return JSON.stringify({
+        email: {
+          storeIdentifier: found.id(),
+          mailAccountName: mail.accounts.name()[accountIndex],
+          subject: found.subject() || "",
+          sender: found.sender() || "",
+          to: correspondents(found.toRecipients()),
+          cc: correspondents(found.ccRecipients()),
+          bcc: correspondents(found.bccRecipients()),
+          receivedAt: received.getTime(),
+          sentAt: sent ? sent.getTime() : null,
+          isRead: found.readStatus() === true,
+          body: text,
+          bodyCharacters: body.length,
+          attachments: found.mailAttachments().map((attachment) => ({
+            name: saying(() => attachment.name()),
+            contentType: saying(() => attachment.mimeType()),
+            size: saying(() => attachment.fileSize()),
+          })),
+        },
+      });
     }
     """#)
 }

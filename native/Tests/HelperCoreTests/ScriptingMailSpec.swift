@@ -249,3 +249,85 @@ struct ScriptingAMailboxsEmailsSpec {
     }
   }
 }
+
+@Suite("scripting one email in full")
+struct ScriptingOneEmailSpec {
+  let wanted = EmailWanted(
+    mailbox: MailboxAddress(mailAccount: "A1", path: ["Clients", "Invoices 2026/27"]),
+    messageId: "dinner@example.test", storeIdentifier: 41, longestBody: 100_000)
+
+  @Test("asks about one email by its mailbox's full name, its Message-ID, the store identifier to look under first, the most of its body wanted and how long the script has")
+  func asksAboutOneEmail() throws {
+    let runner = FakeScriptRunner().answering("email", with: #"{"email":null}"#)
+
+    _ = try ScriptedMailStore(runner: runner).email(wanted)
+
+    let asked = try #require(runner.runs.first?.arguments)
+    #expect(runner.runs.map(\.script) == ["email"])
+    #expect(asked["mailAccount"] as? String == "A1")
+    #expect(asked["mailbox"] as? String == "Clients/Invoices 2026/27")
+    #expect(asked["messageId"] as? String == "dinner@example.test")
+    #expect(asked["storeIdentifier"] as? Int == 41)
+    #expect(asked["longestBody"] as? Int == 100_000)
+    #expect(asked["withinMilliseconds"] as? Int == 8000)
+  }
+
+  // Measured on macOS 26: Mail fails every read of an attachment's content type, and an email
+  // need not say when it was sent, or give a name with an address. None of them is filled in.
+  @Test("reads the email the script answers with, leaving out whatever Mail did not say: a name, a sent date, an attachment's content type or its size")
+  func readsTheEmail() throws {
+    let runner = FakeScriptRunner().answering(
+      "email",
+      with: #"""
+        {"email":{"storeIdentifier":77,"mailAccountName":"Personal","subject":"Dinner","sender":"Grace Hopper <grace@example.test>","to":[{"name":null,"address":"ada@example.test"}],"cc":[],"bcc":[],"receivedAt":1789722000000,"sentAt":null,"isRead":true,"body":"At eight.","bodyCharacters":9,"attachments":[{"name":"menu.pdf","contentType":null,"size":48211}]}}
+        """#)
+
+    #expect(
+      try ScriptedMailStore(runner: runner).email(wanted)
+        == EmailInFull(
+          email: Email(
+            storeIdentifier: 77, subject: "Dinner", sender: "Grace Hopper <grace@example.test>",
+            receivedAt: at("2026-09-18T09:00:00Z"), isRead: true),
+          mailAccountName: "Personal",
+          to: [Correspondent(name: nil, address: "ada@example.test")], cc: [], bcc: [],
+          sentAt: nil, body: "At eight.", bodyCharacters: 9,
+          attachments: [EmailAttachment(name: "menu.pdf", contentType: nil, size: 48_211)]))
+  }
+
+  @Test("given the script found no email with that Message-ID, answers with none")
+  func answersWithNone() throws {
+    let runner = FakeScriptRunner().answering("email", with: #"{"email":null}"#)
+
+    #expect(try ScriptedMailStore(runner: runner).email(wanted) == nil)
+  }
+
+  // Found under its store identifier an email costs ten milliseconds. Looked for, it costs a
+  // millisecond and a half for every email in the mailbox, and the look cannot be stopped. A
+  // fresh reference finds it at once again, so that is what the failure tells the caller to get.
+  @Test("given the script says the reference has gone stale in a mailbox too large to look through in time, says so with how many emails it holds")
+  func reportsAStaleReference() {
+    let runner = FakeScriptRunner().answering("email", with: #"{"referenceStale":{"emails":5045}}"#)
+
+    #expect(throws: MailUnreadable.emailReferenceStale(emails: 5045, seconds: 8)) {
+      try ScriptedMailStore(runner: runner).email(wanted)
+    }
+  }
+
+  // "No email" is an answer the script has to give. One that says nothing about the email is
+  // not that answer: read as it, a script that broke would say every email had gone.
+  @Test("given an answer that says nothing about the email at all, refuses it rather than reading it as no email")
+  func refusesAnAnswerThatSaysNothing() {
+    let runner = FakeScriptRunner().answering("email", with: #"{}"#)
+
+    #expect(throws: MailUnreadable.self) { try ScriptedMailStore(runner: runner).email(wanted) }
+  }
+
+  // danielk-am 9d9122c invented an untitled item out of an answer it could not read.
+  @Test("given an email with a field missing, refuses the whole answer rather than inventing the rest")
+  func refusesAnAnswerItCannotRead() {
+    let runner = FakeScriptRunner().answering(
+      "email", with: #"{"email":{"storeIdentifier":77,"subject":"Dinner"}}"#)
+
+    #expect(throws: MailUnreadable.self) { try ScriptedMailStore(runner: runner).email(wanted) }
+  }
+}
