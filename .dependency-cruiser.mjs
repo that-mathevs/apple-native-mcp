@@ -14,9 +14,11 @@ export default {
       name: "domain-is-pure",
       comment:
         "Domain holds the rules, so it imports nothing at all: no adapters, no MCP, " +
-        "no Node APIs, no packages. Anything it needs is passed to it.",
+        "no Node APIs, no packages. Anything it needs is passed to it. A rule's own " +
+        "spec sits beside it and does import the test runner, so specs are not modules " +
+        "this rule speaks about.",
       severity: "error",
-      from: { path: "(?:^|/)src/domain/" },
+      from: { path: "(?:^|/)src/domain/", pathNot: "\\.spec\\.ts$" },
       to: { pathNot: "(?:^|/)src/domain/" },
     },
     {

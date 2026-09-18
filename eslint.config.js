@@ -14,5 +14,12 @@ export default defineConfig(
     languageOptions: {
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
     },
+    rules: {
+      // CLAUDE.md asks for types over interfaces unless one is being extended, and the
+      // types here are closed records whose fields are `readonly`, which an interface
+      // cannot promise as plainly. The stylistic preset asks for the opposite, so it is
+      // turned off rather than followed silently.
+      "@typescript-eslint/consistent-type-definitions": "off",
+    },
   },
 );
