@@ -35,6 +35,7 @@ outside evidence verbatim.
 | `calendar_unreadable` | one calendar would not answer; reported beside the events rather than instead of them, so one offline subscription does not take the whole read with it |
 | `reminders_permission_missing` | macOS has not allowed the helper to read the reminders; the sentence names the setting and where it is, or, while nobody has been asked, says to run `npx apple-native-mcp setup` |
 | `reminder_list_unknown` | a request named a reminder list the helper cannot find, perhaps deleted since it was listed; nothing is read |
+| `reminders_timed_out` | no reminder list answered within the time budget; reported instead of an empty answer that would read as "no reminders" |
 
 ## The protocol
 
@@ -126,16 +127,22 @@ counterparts do, naming the Reminders setting instead.
 
 ```json
 {"id":"4","protocolVersion":1,"result":{"reminders":[{
-  "identifier":"…","title":"Bins out","notes":null,"completed":false,
+  "identifier":"…","title":"Bins out","completed":false,
   "due":{"date":"2026-09-25"},
   "reminderList":{"identifier":"…","title":"Errands","account":{"identifier":"…","title":"iCloud"}}
-}]}}
+}],"unreadReminderLists":[]}}
 ```
 
 Both fields are required: the server says which reminder lists and whether completed reminders are
 wanted, and the helper chooses neither. Completed reminders are left out by EventKit's own fetch.
 No reminder lists means no reminders, never those of every one, which is how EventKit would read an
-empty set. `due` is `null`, a due date as `{"date":"2026-09-25"}` with no time of day, or a due time
+empty set.
+
+Every reminder list is fetched at once, and together they have two seconds. A reminder list that
+has not answered by then is cancelled and named in `unreadReminderLists`, so one large list never
+holds up the rest and a short answer never reads as the whole. When none answers in time, the
+answer is `reminders_timed_out`; one deleted since it was listed is `reminder_list_unknown`. A
+reminder's notes are never sent: an index keeps to small fixed fields (ADR-0006). `due` is `null`, a due date as `{"date":"2026-09-25"}` with no time of day, or a due time
 as `{"time":"2026-09-25T21:00:00Z"}`, an instant the server shows in the user's time zone.
 
 Two requests write. `default_calendar` answers with the calendar the user set in Calendar for new

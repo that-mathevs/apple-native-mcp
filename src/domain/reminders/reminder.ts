@@ -27,13 +27,36 @@ export type Reminder = {
 
 /**
  * Reminders in the order a reader expects them: open ones before completed ones, so nothing
- * done reads as still to do, and by title within each so the same lists always read the same.
+ * done reads as still to do, then by title. Reminders with one title fall back to their
+ * identifier, so the same reminders always read the same way and a page never repeats or skips
+ * one.
  */
 export const openBeforeCompleted = (reminders: readonly Reminder[]): readonly Reminder[] =>
   [...reminders].sort(
     (left, right) =>
-      Number(left.isCompleted) - Number(right.isCompleted) || left.title.localeCompare(right.title),
+      Number(left.isCompleted) - Number(right.isCompleted) ||
+      left.title.localeCompare(right.title) ||
+      left.identifier.localeCompare(right.identifier),
   );
+
+/** How many reminders a page holds when the caller names no limit, and the most it may name. */
+export const defaultLimit = 100;
+export const greatestLimit = 500;
+
+/** One page of reminders, and the offset of the next when there is one. */
+export type Page = {
+  readonly reminders: readonly Reminder[];
+  readonly nextOffset?: number;
+};
+
+/** The reminders from an offset, up to a limit. They must already be in reading order. */
+export const pageOf = (reminders: readonly Reminder[], offset: number, limit: number): Page => {
+  const end = offset + limit;
+  return {
+    reminders: reminders.slice(offset, end),
+    ...(reminders.length > end ? { nextOffset: end } : {}),
+  };
+};
 
 /** What a reminder list's name comes to among the reminder lists there are. */
 export type ReminderListNamed =

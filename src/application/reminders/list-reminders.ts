@@ -1,7 +1,9 @@
 import type { NamedFailure, Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
 import {
+  defaultLimit,
   openBeforeCompleted,
+  pageOf,
   reminderListNamed,
   type Reminder,
   type ReminderList,
@@ -12,13 +14,20 @@ import type { ReminderStore } from "./reminder-store.js";
 export type ListRemindersRequest = {
   readonly reminderList?: string;
   readonly includeCompleted: boolean;
+  readonly limit?: number;
+  /** How many reminders earlier pages already returned. */
+  readonly offset?: number;
 };
 
 export type ListedReminders = {
   readonly reminders: readonly Reminder[];
-  /** How many reminder lists were read, so an empty answer says what it covered. */
+  /** How many reminder lists were asked, so an empty answer says what it covered. */
   readonly reminderLists: number;
+  /** The reminder lists asked that did not answer within the time budget. */
+  readonly reminderListsUnread: readonly ReminderList[];
   readonly includesCompleted: boolean;
+  /** Where the next page starts, when this one left reminders behind. */
+  readonly nextOffset?: number;
 };
 
 export type ListRemindersDependencies = {
@@ -80,9 +89,19 @@ export const listReminders = async (
   });
   if (!read.ok) return read;
 
+  const { unreadReminderLists } = read.value;
+  const page = pageOf(
+    openBeforeCompleted(read.value.reminders),
+    request.offset ?? 0,
+    request.limit ?? defaultLimit,
+  );
+
   return succeeded({
-    reminders: openBeforeCompleted(read.value),
+    ...page,
     reminderLists: wanted.value.length,
+    reminderListsUnread: wanted.value.filter(({ identifier }) =>
+      unreadReminderLists.includes(identifier),
+    ),
     includesCompleted: request.includeCompleted,
   });
 };

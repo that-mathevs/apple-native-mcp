@@ -1,3 +1,5 @@
+import Foundation
+
 /// A failure the helper reports instead of crashing or writing a bare error: a stable code, one
 /// sentence saying what did not happen, and the outside evidence verbatim.
 public struct NamedFailure: Error, Equatable, Sendable {
@@ -37,6 +39,8 @@ public enum FailureCode: String, Equatable, Sendable {
   case remindersPermissionMissing = "reminders_permission_missing"
   /// A request named a reminder list the helper cannot find.
   case reminderListUnknown = "reminder_list_unknown"
+  /// No reminder list answered within the time budget.
+  case remindersTimedOut = "reminders_timed_out"
 }
 
 extension NamedFailure {
@@ -131,5 +135,12 @@ extension NamedFailure {
       code: .eventNotSaved,
       sentence: "The event store would not save the event. Nothing was created.",
       evidence: evidence)
+  }
+
+  static func remindersTimedOut(seconds: TimeInterval, reminderLists: Int) -> NamedFailure {
+    NamedFailure(
+      code: .remindersTimedOut,
+      sentence: "No reminder list answered within \(Int(seconds)) seconds, so nothing was read.",
+      evidence: "\(reminderLists) reminder lists")
   }
 }

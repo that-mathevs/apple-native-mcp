@@ -8,6 +8,13 @@ export type RemindersWanted = {
   readonly includeCompleted: boolean;
 };
 
+/** What a read found, and the reminder lists that did not answer within the time budget. */
+export type RemindersRead = {
+  readonly reminders: readonly Reminder[];
+  /** Identifiers of the reminder lists asked that did not answer in time. */
+  readonly unreadReminderLists: readonly string[];
+};
+
 /**
  * The store reminders are read from. The helper implements it; a fake stands in for specs.
  *
@@ -16,5 +23,5 @@ export type RemindersWanted = {
  */
 export type ReminderStore = {
   reminderLists: () => Promise<Outcome<readonly ReminderList[]>>;
-  reminders: (wanted: RemindersWanted) => Promise<Outcome<readonly Reminder[]>>;
+  reminders: (wanted: RemindersWanted) => Promise<Outcome<RemindersRead>>;
 };

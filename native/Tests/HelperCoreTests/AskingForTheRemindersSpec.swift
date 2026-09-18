@@ -9,16 +9,17 @@ struct AskingForTheRemindersSpec {
     return #"{"protocolVersion":1,"id":"4","request":"reminders","reminderLists":[\#(named)],"includeCompleted":\#(includeCompleted)}"#
   }
 
-  @Test("given an open reminder, returns it as a record: its identity, its notes, its state, and its reminder list with that list's calendar account")
+  // An index keeps to small fixed fields (ADR-0006), so a reminder's notes never cross the wire.
+  @Test("given an open reminder, returns it as a record: its identity, its state, and its reminder list with that list's calendar account, but not its notes")
   func returnsAReminderAsARecord() {
     let helper = helperReading(
       aReminderStore().holding(groceries).holding(
-        aReminder("Oat milk", in: groceries, notes: "the barista one")))
+        aReminder("Oat milk", in: groceries)))
 
     #expect(
       helper.respond(to: asking(reminderLists: ["list-groceries"]))
         == #"""
-        {"id":"4","protocolVersion":1,"result":{"reminders":[{"completed":false,"due":null,"identifier":"reminder:Oat milk","notes":"the barista one","reminderList":{"account":{"identifier":"account-icloud","title":"iCloud"},"identifier":"list-groceries","title":"Groceries"},"title":"Oat milk"}]}}
+        {"id":"4","protocolVersion":1,"result":{"reminders":[{"completed":false,"due":null,"identifier":"reminder:Oat milk","reminderList":{"account":{"identifier":"account-icloud","title":"iCloud"},"identifier":"list-groceries","title":"Groceries"},"title":"Oat milk"}],"unreadReminderLists":[]}}
         """#)
   }
 
@@ -83,7 +84,7 @@ struct AskingForTheRemindersSpec {
 
     #expect(
       helperReading(store).respond(to: asking(reminderLists: []))
-        == #"{"id":"4","protocolVersion":1,"result":{"reminders":[]}}"#)
+        == #"{"id":"4","protocolVersion":1,"result":{"reminders":[],"unreadReminderLists":[]}}"#)
     #expect(store.record.reminderListsRead.isEmpty)
   }
 

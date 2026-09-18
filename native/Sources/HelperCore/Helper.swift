@@ -59,7 +59,12 @@ public struct Helper: Sendable {
     case .reminders(let reminderLists, let includeCompleted):
       let read = reminders.reminders(
         inReminderListsNamed: reminderLists, includingCompleted: includeCompleted)
-      return answering(read) { ["reminders": $0.map(\.asFields)] }
+      return answering(read) {
+        [
+          "reminders": $0.reminders.map(\.asFields),
+          "unreadReminderLists": $0.unreadReminderLists.map(\.asFields),
+        ]
+      }
     }
   }
 
@@ -86,7 +91,6 @@ extension Reminder {
     [
       "identifier": identifier,
       "title": title,
-      "notes": notes ?? NSNull(),
       "completed": isCompleted,
       "due": due?.asFields ?? NSNull(),
       "reminderList": reminderList.asFields,

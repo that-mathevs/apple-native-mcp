@@ -1,5 +1,6 @@
 import type {
   ReminderStore,
+  RemindersRead,
   RemindersWanted,
 } from "../../application/reminders/reminder-store.js";
 import type { Outcome } from "../../domain/failure.js";
@@ -63,11 +64,17 @@ export const helperReminderStore = (helper: Helper): ReminderStore => ({
   reminders: async ({
     reminderLists,
     includeCompleted,
-  }: RemindersWanted): Promise<Outcome<readonly Reminder[]>> => {
+  }: RemindersWanted): Promise<Outcome<RemindersRead>> => {
     const answered = await helper.ask({ request: "reminders", reminderLists, includeCompleted });
     if (!answered.ok) return failed(answered.failure);
 
-    const { reminders } = answered.value as { reminders?: ReminderRecord[] };
-    return succeeded((reminders ?? []).map(asReminder));
+    const { reminders, unreadReminderLists } = answered.value as {
+      reminders?: ReminderRecord[];
+      unreadReminderLists?: ListRecord[];
+    };
+    return succeeded({
+      reminders: (reminders ?? []).map(asReminder),
+      unreadReminderLists: (unreadReminderLists ?? []).map(({ identifier }) => identifier),
+    });
   },
 });

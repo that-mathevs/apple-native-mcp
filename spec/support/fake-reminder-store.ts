@@ -1,5 +1,6 @@
 import type {
   ReminderStore,
+  RemindersRead,
   RemindersWanted,
 } from "../../src/application/reminders/reminder-store.js";
 import type { NamedFailure, Outcome } from "../../src/domain/failure.js";
@@ -15,6 +16,13 @@ export const remindersRefused: NamedFailure = {
   evidence: "refused",
 };
 
+/** What the helper answers when no reminder list answered within its time budget. */
+export const remindersTimedOut: NamedFailure = {
+  code: "reminders_timed_out",
+  sentence: "No reminder list answered within 2 seconds, so nothing was read.",
+  evidence: "2 reminder lists",
+};
+
 /**
  * A reminder store held in memory.
  *
@@ -25,6 +33,7 @@ export class FakeReminderStore implements ReminderStore {
   #reminderLists: readonly ReminderList[] = [];
   #reminders: readonly Reminder[] = [];
   #failure: NamedFailure | undefined;
+  #slow: readonly ReminderList[] = [];
 
   holdsReminderLists(...reminderLists: readonly ReminderList[]): void {
     this.#reminderLists = reminderLists;
@@ -38,6 +47,11 @@ export class FakeReminderStore implements ReminderStore {
     this.#failure = failure;
   }
 
+  /** Reminder lists too large, or too far away, to read within the time budget. */
+  cannotReadInTime(...reminderLists: readonly ReminderList[]): void {
+    this.#slow = reminderLists;
+  }
+
   reminderLists(): Promise<Outcome<readonly ReminderList[]>> {
     return Promise.resolve(this.#failure ? failed(this.#failure) : succeeded(this.#reminderLists));
   }
@@ -45,17 +59,28 @@ export class FakeReminderStore implements ReminderStore {
   reminders({
     reminderLists,
     includeCompleted,
-  }: RemindersWanted): Promise<Outcome<readonly Reminder[]>> {
+  }: RemindersWanted): Promise<Outcome<RemindersRead>> {
     if (this.#failure) return Promise.resolve(failed(this.#failure));
 
+    const slow = this.#slow
+      .map(({ identifier }) => identifier)
+      .filter((identifier) => reminderLists.includes(identifier));
+
+    // As the helper does: when nothing answered in time, that is a failure, never "no reminders".
+    if (reminderLists.length > 0 && slow.length === reminderLists.length) {
+      return Promise.resolve(failed(remindersTimedOut));
+    }
+
     return Promise.resolve(
-      succeeded(
-        this.#reminders.filter(
-          (reminder) =>
-            reminderLists.includes(reminder.reminderList.identifier) &&
-            (includeCompleted || !reminder.isCompleted),
+      succeeded({
+        reminders: this.#reminders.filter(
+          ({ reminderList, isCompleted }) =>
+            reminderLists.includes(reminderList.identifier) &&
+            !slow.includes(reminderList.identifier) &&
+            (includeCompleted || !isCompleted),
         ),
-      ),
+        unreadReminderLists: slow,
+      }),
     );
   }
 }
