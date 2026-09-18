@@ -624,13 +624,13 @@ _No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18
 
 #### searching reminders
 
-- [ ] **REM-23** [acceptance] given text found only in a reminder's notes, finds it · — · gene-jelly `c5a0edd`; mjmcg `bde3e31`, `804b77d`; boutquin `8a5d2e0`; upstream #53, #26, #10, #59, #70
-- [ ] **REM-24** [acceptance] given text that differs from a reminder's title or notes only in letter case, finds it · — · boutquin `8a5d2e0`; upstream #26, #53
-- [ ] **REM-25** [acceptance] given a term that matches completed and open reminders, reports both and marks which are completed · — · sicdigital `791f5f2`, `3cfb29d`; upstream #53, #26, #10
-- [ ] **REM-26** [acceptance] given more matches than the limit, reports the first matches and says more exist · NN3 · mjmcg `bde3e31`, `804b77d`
-- [ ] **REM-27** [acceptance] given the search could not cover every list, says how many lists it covered · NN3 · faces-sh `8ac7cb9`, `39585ad`, `4587d0a`
-- [ ] **REM-28** [acceptance] given text that closes a string and runs a command, matches it literally and runs nothing · NN1 · boutquin `2894ab6`, `8a5d2e0`
-- [ ] **REM-29** [acceptance] given a percent sign in the search text, matches it literally · — · felkru `12ad33f`
+- [x] **REM-23** [acceptance] given text found only in a reminder's notes, finds it · — · gene-jelly `c5a0edd`; mjmcg `bde3e31`, `804b77d`; boutquin `8a5d2e0`; upstream #53, #26, #10, #59, #70
+- [x] **REM-24** [acceptance] given text that differs from a reminder's title or notes only in letter case, finds it · — · boutquin `8a5d2e0`; upstream #26, #53
+- [x] **REM-25** [acceptance] given a term that matches completed and open reminders, reports both and marks which are completed · — · sicdigital `791f5f2`, `3cfb29d`; upstream #53, #26, #10
+- [x] **REM-26** [acceptance] given more matches than the limit, reports the first matches and says more exist · NN3 · mjmcg `bde3e31`, `804b77d`
+- [x] **REM-27** [acceptance] given the search could not cover every list, says how many lists it covered · NN3 · faces-sh `8ac7cb9`, `39585ad`, `4587d0a`
+- [x] **REM-28** [acceptance] given text that closes a string and runs a command, matches it literally and runs nothing · NN1 · boutquin `2894ab6`, `8a5d2e0`
+- [x] **REM-29** [acceptance] given a percent sign in the search text, matches it literally · — · felkru `12ad33f`
 
 #### creating a reminder
 

@@ -16,6 +16,7 @@ import {
   listRemindersTool,
   type ListRemindersToolDependencies,
 } from "./reminders/list-reminders-tool.js";
+import { searchRemindersTool } from "./reminders/search-reminders-tool.js";
 import { refusing } from "./result.js";
 import type { Tool } from "./tool.js";
 
@@ -105,6 +106,7 @@ export const buildServer = (dependencies: ServerDependencies): McpServer =>
       createEventTool(dependencies),
       listReminderListsTool(dependencies),
       listRemindersTool(dependencies),
+      searchRemindersTool(dependencies),
       findContactsTool(dependencies),
     ],
     dependencies.settings,

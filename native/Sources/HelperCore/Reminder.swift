@@ -43,17 +43,34 @@ public enum Due: Equatable, Sendable {
 public struct Reminder: Equatable, Sendable {
   public let identifier: String
   public let title: String
+  /// Searched, and never sent: an index keeps to small fixed fields (ADR-0006).
+  public let notes: String?
   public let isCompleted: Bool
   public let due: Due?
   public let reminderList: ReminderList
 
   public init(
-    identifier: String, title: String, isCompleted: Bool, due: Due?, reminderList: ReminderList
+    identifier: String, title: String, notes: String?, isCompleted: Bool, due: Due?,
+    reminderList: ReminderList
   ) {
     self.identifier = identifier
     self.title = title
+    self.notes = notes
     self.isCompleted = isCompleted
     self.due = due
     self.reminderList = reminderList
+  }
+}
+
+extension Reminder {
+  /// Whether the title or the notes mention some text, ignoring case: both are upper-cased, then
+  /// compared code unit by code unit, which the server's fake store does the same way (Greek's
+  /// final sigma folds alike upper-cased, and lower-casing folds it by position). The text is
+  /// compared and never interpreted, so it matches only itself.
+  func mentions(_ text: String) -> Bool {
+    let sought = text.uppercased()
+    return [title, notes].contains {
+      $0?.uppercased().range(of: sought, options: .literal) != nil
+    }
   }
 }

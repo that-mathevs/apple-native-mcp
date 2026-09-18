@@ -20,7 +20,7 @@ struct Request: Equatable {
     case remindersPermission
     case requestRemindersPermission
     case reminderLists
-    case reminders(reminderLists: [String], includeCompleted: Bool)
+    case reminders(reminderLists: [String], includeCompleted: Bool, matching: String?)
     case contactsPermission
     case requestContactsPermission
     case contacts
@@ -133,8 +133,18 @@ extension Request {
       else {
         return .failure(id: id, .requestMalformed(line: line))
       }
+      // Text to match is optional, but when it is there it has to say something: blank text would
+      // match every reminder while seeming to have searched.
+      let matching = fields["matching"]
+      let saysSomething = (matching as? String).map {
+        !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      }
+      guard matching == nil || saysSomething == true else {
+        return .failure(id: id, .requestMalformed(line: line))
+      }
       let kind = Request.Kind.reminders(
-        reminderLists: reminderLists, includeCompleted: includeCompleted)
+        reminderLists: reminderLists, includeCompleted: includeCompleted,
+        matching: matching as? String)
       return .request(Request(id: id, kind: kind))
     case .contactsPermission:
       return .request(Request(id: id, kind: .contactsPermission))

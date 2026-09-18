@@ -14,6 +14,8 @@ import type { ReminderStore } from "./reminder-store.js";
 export type ListRemindersRequest = {
   readonly reminderList?: string;
   readonly includeCompleted: boolean;
+  /** Text a reminder's title or notes has to mention; every reminder when there is none. */
+  readonly matching?: string;
   readonly limit?: number;
   /** How many reminders earlier pages already returned. */
   readonly offset?: number;
@@ -86,6 +88,7 @@ export const listReminders = async (
   const read = await reminderStore.reminders({
     reminderLists: wanted.value.map(({ identifier }) => identifier),
     includeCompleted: request.includeCompleted,
+    ...(request.matching === undefined ? {} : { matching: request.matching }),
   });
   if (!read.ok) return read;
 

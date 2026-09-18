@@ -24,6 +24,13 @@ export const remindersTimedOut: NamedFailure = {
 };
 
 /**
+ * Whether any of these fields mentions the text, ignoring case, as the helper matches it: both
+ * upper-cased, then compared code unit by code unit (native/Sources/HelperCore/Reminder.swift).
+ */
+export const mentions = (fields: readonly (string | undefined)[], text: string): boolean =>
+  fields.some((field) => field?.toUpperCase().includes(text.toUpperCase()) === true);
+
+/**
  * A reminder store held in memory.
  *
  * It answers the same contract as the helper-backed one, so the scenarios that use it are
@@ -34,6 +41,7 @@ export class FakeReminderStore implements ReminderStore {
   #reminders: readonly Reminder[] = [];
   #failure: NamedFailure | undefined;
   #slow: readonly ReminderList[] = [];
+  readonly #notes = new Map<string, string>();
 
   holdsReminderLists(...reminderLists: readonly ReminderList[]): void {
     this.#reminderLists = reminderLists;
@@ -41,6 +49,11 @@ export class FakeReminderStore implements ReminderStore {
 
   holds(...reminders: readonly Reminder[]): void {
     this.#reminders = reminders;
+  }
+
+  /** A reminder's notes, which the store searches and never hands over. */
+  notes(reminderIdentifier: string, notes: string): void {
+    this.#notes.set(reminderIdentifier, notes);
   }
 
   refuses(failure: NamedFailure): void {
@@ -59,6 +72,7 @@ export class FakeReminderStore implements ReminderStore {
   reminders({
     reminderLists,
     includeCompleted,
+    matching,
   }: RemindersWanted): Promise<Outcome<RemindersRead>> {
     if (this.#failure) return Promise.resolve(failed(this.#failure));
 
@@ -74,10 +88,11 @@ export class FakeReminderStore implements ReminderStore {
     return Promise.resolve(
       succeeded({
         reminders: this.#reminders.filter(
-          ({ reminderList, isCompleted }) =>
+          ({ identifier, title, reminderList, isCompleted }) =>
             reminderLists.includes(reminderList.identifier) &&
             !slow.includes(reminderList.identifier) &&
-            (includeCompleted || !isCompleted),
+            (includeCompleted || !isCompleted) &&
+            (matching === undefined || mentions([title, this.#notes.get(identifier)], matching)),
         ),
         unreadReminderLists: slow,
       }),
