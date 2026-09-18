@@ -57,6 +57,6 @@ anEventStoreThatCreatesEvents({
       account: "iCloud",
       acceptsNewEvents: true,
     });
-    return Promise.resolve({ eventStore, calendar: "cal-1" });
+    return Promise.resolve({ eventStore, calendar: "cal-1", timeZone: "America/New_York" });
   },
 });

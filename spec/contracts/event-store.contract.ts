@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { EventStore } from "../../src/application/calendar/event-store.js";
 import type { Occurrence } from "../../src/domain/calendar/event.js";
 import type { Range } from "../../src/domain/calendar/range.js";
+import { dayIn, writtenDay } from "../../src/domain/time-zone.js";
 
 /**
  * What every event store promises, whichever way it reaches macOS.
@@ -109,14 +110,20 @@ export const anEventStoreThatListsCalendars = ({ name, build }: EventStoreUnderT
 };
 
 /**
- * A store a scenario may create events in.
+ * A store a scenario may create events in, and the one calendar it may create them in.
  *
- * Only the fake answers this today. Against the real store it would put events into the
- * maintainer's own calendar, so it waits for a scratch calendar to aim at.
+ * Against the real store that calendar is the one titled "scratch" and no other: v1 cannot
+ * delete an event, so whatever this suite creates stays where it was put. Every title begins
+ * "Contract check" so that it can be told from anything a person wrote.
  */
 export type WritableEventStoreUnderTest = {
   readonly name: string;
-  readonly build: () => Promise<{ readonly eventStore: EventStore; readonly calendar: string }>;
+  readonly build: () => Promise<{
+    readonly eventStore: EventStore;
+    readonly calendar: string;
+    /** The time zone the store's user is in, which an all-day event's days are counted in. */
+    readonly timeZone: string;
+  }>;
 };
 
 export const anEventStoreThatCreatesEvents = ({
@@ -128,7 +135,7 @@ export const anEventStoreThatCreatesEvents = ({
       const { eventStore, calendar } = await build();
 
       const created = await eventStore.create({
-        title: "Lunch",
+        title: "Contract check: lunch",
         calendarIdentifier: calendar,
         time: { kind: "timed", start: noon, end: new Date(noon.getTime() + 60 * 60 * 1000) },
       });
@@ -137,22 +144,28 @@ export const anEventStoreThatCreatesEvents = ({
         ok: true,
         value: {
           confirmed: true,
-          event: { title: "Lunch", start: noon, calendar: { identifier: calendar } },
+          event: {
+            title: "Contract check: lunch",
+            start: noon,
+            calendar: { identifier: calendar },
+          },
         },
       });
 
       const identifier = (created.ok ? created.value.event?.identifier : undefined) ?? "";
       expect(await eventStore.event({ identifier })).toMatchObject({
         ok: true,
-        value: { title: "Lunch" },
+        value: { title: "Contract check: lunch" },
       });
     });
 
-    it("given an all-day event, holds it as an all-day event", async () => {
-      const { eventStore, calendar } = await build();
+    // Upstream #34: made from instants, an all-day event slid onto the day before. This is the
+    // one place that can show the real store keeps it on the days it was given.
+    it("given an all-day event, holds it as an all-day event on exactly the days it was given, in the user's time zone", async () => {
+      const { eventStore, calendar, timeZone } = await build();
 
       const created = await eventStore.create({
-        title: "Conference",
+        title: "Contract check: conference",
         calendarIdentifier: calendar,
         time: {
           kind: "allDay",
@@ -162,13 +175,38 @@ export const anEventStoreThatCreatesEvents = ({
       });
 
       expect(created).toMatchObject({ ok: true, value: { event: { isAllDay: true } } });
+
+      const held = created.ok ? created.value.event : undefined;
+      const lastInstant = new Date((held?.end.getTime() ?? 0) - 1);
+      expect(held && writtenDay(dayIn(timeZone, held.start))).toBe("2026-09-22");
+      expect(held && writtenDay(dayIn(timeZone, lastInstant))).toBe("2026-09-24");
+    });
+
+    // chrischall 18660e4: a quote in a title ended upstream's AppleScript string and the rest ran.
+    it("given a title, location and notes full of quotes, backslashes, line breaks and script text, holds each exactly as given", async () => {
+      const { eventStore, calendar } = await build();
+      const hostile = 'Contract check: "; do shell script "true" \\ `id` $(id)\nsecond line';
+
+      const created = await eventStore.create({
+        title: hostile,
+        location: hostile,
+        notes: hostile,
+        calendarIdentifier: calendar,
+        time: { kind: "timed", start: noon, end: new Date(noon.getTime() + 60 * 60 * 1000) },
+      });
+
+      const identifier = (created.ok ? created.value.event?.identifier : undefined) ?? "";
+      expect(await eventStore.event({ identifier })).toMatchObject({
+        ok: true,
+        value: { title: hostile, location: hostile, notes: hostile },
+      });
     });
 
     it("given a calendar it does not have, refuses rather than creating the event somewhere else", async () => {
       const { eventStore } = await build();
 
       const created = await eventStore.create({
-        title: "Lunch",
+        title: "Contract check: nowhere",
         calendarIdentifier: "no-calendar-has-this-identifier",
         time: { kind: "timed", start: noon, end: new Date(noon.getTime() + 60 * 60 * 1000) },
       });

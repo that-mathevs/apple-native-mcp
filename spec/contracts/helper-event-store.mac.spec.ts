@@ -1,11 +1,15 @@
 import { fileURLToPath } from "node:url";
 
-import { afterAll } from "vitest";
+import { afterAll, describe, it } from "vitest";
 
 import { calendarEventStore } from "../../src/adapters/native/calendar-event-store.js";
 import { Helper } from "../../src/adapters/native/helper.js";
 import { succeeded } from "../../src/domain/failure.js";
-import { anEventStore, anEventStoreThatListsCalendars } from "./event-store.contract.js";
+import {
+  anEventStore,
+  anEventStoreThatCreatesEvents,
+  anEventStoreThatListsCalendars,
+} from "./event-store.contract.js";
 
 /**
  * The same contract, against the real helper and the real calendar on this Mac.
@@ -33,3 +37,35 @@ anEventStoreThatListsCalendars({
   name: "the helper-backed event store",
   build: () => Promise.resolve({ eventStore: calendarEventStore(helper) }),
 });
+
+/**
+ * The one calendar the write contract may touch: a writable calendar titled "scratch", and only
+ * when there is exactly one. Anything else, and creating is left unspecified here rather than
+ * aimed at a calendar somebody uses.
+ */
+const scratchCalendar = async (): Promise<string | undefined> => {
+  const read = await calendarEventStore(helper).calendars();
+  const scratch = (read.ok ? read.value : []).filter(
+    ({ title, acceptsNewEvents }) => acceptsNewEvents && title.trim().toLowerCase() === "scratch",
+  );
+
+  return scratch.length === 1 ? scratch[0]?.identifier : undefined;
+};
+
+const scratch = await scratchCalendar();
+
+if (scratch === undefined) {
+  describe("the helper-backed event store, asked to create an event", () => {
+    it.skip("needs exactly one writable calendar titled scratch, and creates nowhere else");
+  });
+} else {
+  anEventStoreThatCreatesEvents({
+    name: "the helper-backed event store",
+    build: () =>
+      Promise.resolve({
+        eventStore: calendarEventStore(helper),
+        calendar: scratch,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }),
+  });
+}
