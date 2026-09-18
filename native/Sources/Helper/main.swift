@@ -9,18 +9,34 @@ import ScriptRunning
 
 /// The helper that serves the session. It is built only in the process that serves, so the one
 /// that relaunches never opens a store macOS would attribute to whatever started it.
-func servingTheSession() {
+///
+/// The session is served from a thread of its own, and the main thread runs the main run loop,
+/// because that is where scripts have to run: an Apple Event sent from a worker thread while the
+/// main thread sat blocked sometimes never got its reply, and the script hung until its time
+/// budget ran out. Measured against Mail, 30 runs in one process: a worker thread hung within
+/// 15, the main thread never did (#44).
+func servingTheSession() -> Never {
   exitingWithTheParent()
   let scripts = OSAKitScriptRunner()
-  serveSession(
-    Helper(
-      calendarStore: EventKitCalendarStore(), reminderStore: EventKitReminderStore(),
-      contactStore: FrameworkContactStore(),
-      messageStore: SQLiteMessageStore(
-        path: FileManager.default.homeDirectoryForCurrentUser
-          .appendingPathComponent("Library/Messages/chat.db").path),
-      noteStore: ScriptedNoteStore(runner: scripts)),
-    stoppingWhen: { scripts.hasGivenUpOnAScript })
+  let helper = Helper(
+    calendarStore: EventKitCalendarStore(), reminderStore: EventKitReminderStore(),
+    contactStore: FrameworkContactStore(),
+    messageStore: SQLiteMessageStore(
+      path: FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent("Library/Messages/chat.db").path),
+    noteStore: ScriptedNoteStore(runner: scripts))
+
+  let session = Thread {
+    serveSession(helper, stoppingWhen: { scripts.hasGivenUpOnAScript })
+    // The other side closed, or a script was given up on and is still holding the main thread.
+    exit(scripts.hasGivenUpOnAScript ? EXIT_FAILURE : EXIT_SUCCESS)
+  }
+  session.start()
+
+  RunLoop.main.run()
+  // The run loop only returns when it has nothing left to wait on, which the main queue rules
+  // out. Should it ever, this keeps the main queue served until the session ends the process.
+  dispatchMain()
 }
 
 /// Kept for the life of the process, or the watch would end with the function that started it.

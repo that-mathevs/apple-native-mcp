@@ -3,7 +3,9 @@ import HelperCore
 import ScriptRunning
 import Testing
 
-// The real runner, held to its contract by scripts that touch no app. Upstream wrote its
+// The real runner, held to its contract by scripts that touch no app. A test process does not own
+// its main thread, so here each script gets a thread of its own; the helper gives scripts its main
+// thread, and what that is for only a real app can show (spec/contracts, on a Mac). Upstream wrote its
 // arguments into the script's text; here they travel beside it as JSON, and these scenarios are
 // what says nothing in them can run (ANierbeck cd72bdf, morquis d76f3ec, upstream #74, #25).
 
@@ -49,7 +51,7 @@ private func decoded(_ json: Data) -> [String: Any] {
 
 @Suite("running a static script")
 struct RunningAScriptSpec {
-  let runner = OSAKitScriptRunner()
+  let runner = OSAKitScriptRunner(runningScriptsOn: .itsOwn)
 
   @Test("given text full of quotes, backslashes, line breaks, guillemets, dollar patterns, shell metacharacters and script source, delivers it to the script unchanged and runs nothing in it")
   func deliversHostileTextUnchanged() throws {
@@ -113,7 +115,7 @@ struct RunningAScriptSpec {
   // must stop: the server then starts a fresh helper rather than queue behind a stuck one (#7).
   @Test("given a script that outlives its time budget, gives up on it as timed out, and says the helper has to stop")
   func givesUpOnAScriptWhenItsTimeBudgetRunsOut() {
-    let runner = OSAKitScriptRunner()
+    let runner = OSAKitScriptRunner(runningScriptsOn: .itsOwn)
     #expect(!runner.hasGivenUpOnAScript)
 
     #expect(throws: ScriptFailed.timedOut(after: 1)) {
@@ -126,11 +128,19 @@ struct RunningAScriptSpec {
   // OSAKit is not to be entered by two threads at once.
   @Test("given a script was given up on, runs nothing more and says the helper is stopping")
   func runsNothingAfterGivingUp() {
-    let runner = OSAKitScriptRunner()
+    let runner = OSAKitScriptRunner(runningScriptsOn: .itsOwn)
     _ = try? runner.run(endless, arguments: [:], within: 1)
 
     #expect(throws: ScriptFailed.helperIsStopping) {
       try runner.run(echo, arguments: [:], within: 5)
+    }
+  }
+
+  @Test("given the same script many times over in one process, answers every time")
+  func answersEveryTimeItIsAsked() throws {
+    for run in 1...30 {
+      let answer = decoded(try runner.run(echo, arguments: ["run": run], within: 5))
+      #expect((answer["got"] as? [String: Any])?["run"] as? Int == run)
     }
   }
 

@@ -229,6 +229,9 @@ compiled into the helper, each chosen by name. Whatever varies travels beside a 
 argument, never as part of its text, and a script's answer is JSON or is refused. Scripts run
 inside the helper's own process through OSAKit, so the Apple Events are the helper's and so is the
 permission to control the app; nothing is handed to `osascript` and nothing is written to disk.
+They run on the helper's main thread, which runs the main run loop while the session is served
+from a thread of its own: sent from a worker thread while the main thread sat blocked, an Apple
+Event sometimes never got its reply, and against Mail one run in a dozen hung (#44).
 One request's scripts share a time budget of eight seconds, each getting what is left of it. A
 script that outlives it is given up on as `-1712`, and because nothing can cancel a script in
 flight, the helper runs nothing more, answers, and stops, and the server starts a fresh one.

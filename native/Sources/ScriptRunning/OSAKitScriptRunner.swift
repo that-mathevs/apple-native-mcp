@@ -4,13 +4,30 @@ import HelperCore
 import OSAKit
 
 /// The one place OSAKit is touched. A script runs inside the helper's own process, so the Apple
-/// Events it sends are the helper's, and the Automation consent macOS asks for is the helper's
-/// too (ADR-0002). Nothing is ever handed to `/usr/bin/osascript`, and nothing is written to disk.
+/// Events it sends are the helper's, and the permission macOS asks for is the helper's too
+/// (ADR-0002). Nothing is ever handed to `/usr/bin/osascript`, and nothing is written to disk.
+///
+/// Scripts run on the main thread, which has to be running the main run loop, while the caller
+/// waits on another thread. Run from a worker thread while the main thread sat blocked, a script's
+/// Apple Event sometimes never got its reply: against Mail, 30 runs in one process hung within 15,
+/// and on the main thread none of 120 did (#44). `osascript` runs its scripts there too.
 public final class OSAKitScriptRunner: ScriptRunner, @unchecked Sendable {
+  /// Where scripts run. The helper gives them its main thread, which is the only place a script
+  /// that talks to an app reliably hears back. A process that does not own its main thread, such
+  /// as a test runner, gives each script a thread of its own, which is sound only for scripts
+  /// that talk to no app: they have no reply to lose.
+  public enum ScriptThread: Sendable {
+    case main
+    case itsOwn
+  }
+
+  private let scriptThread: ScriptThread
   private let lock = NSLock()
   private var gaveUp = false
 
-  public init() {}
+  public init(runningScriptsOn scriptThread: ScriptThread = .main) {
+    self.scriptThread = scriptThread
+  }
 
   /// How long an app is given to start before macOS is asked about it again. A cold start of
   /// Mail measured 4.1 seconds (#7), and this has to fit inside a request's time budget.
@@ -38,16 +55,28 @@ public final class OSAKitScriptRunner: ScriptRunner, @unchecked Sendable {
     }
 
     let finished = DispatchSemaphore(value: 0)
-    // Written by the worker before it signals and read here after the wait, so the semaphore
-    // orders the two. After a timeout the worker's late result is simply never read.
+    // Written on the main thread before it signals and read here after the wait, so the
+    // semaphore orders the two. After a timeout the late result is simply never read.
     nonisolated(unsafe) var outcome: Result<Data, ScriptFailed> = .failure(.answeredWithoutJSON)
 
-    let worker = Thread {
+    let running = {
       outcome = Self.executing(script, with: argumentsJson)
       finished.signal()
     }
-    worker.stackSize = Self.workerStack
-    worker.start()
+
+    switch scriptThread {
+    case .main:
+      // The caller must not be the main thread, or it would wait here for itself: the helper's
+      // session has a thread of its own for exactly this reason.
+      precondition(!Thread.isMainThread, "a script is asked for from the session's thread")
+      DispatchQueue.main.async(execute: running)
+    case .itsOwn:
+      let thread = Thread(block: running)
+      // JavaScript for Automation recurses through a large answer, and a thread's default half a
+      // megabyte of stack is not enough for a two-megabyte one. The main thread has eight.
+      thread.stackSize = 8 << 20
+      thread.start()
+    }
 
     guard finished.wait(timeout: .now() + seconds) == .success else {
       lock.withLock { gaveUp = true }
@@ -63,6 +92,8 @@ public final class OSAKitScriptRunner: ScriptRunner, @unchecked Sendable {
     return compiled.compileAndReturnError(&problem) ? nil : Self.failure(from: problem)
   }
 
+  /// Asked from the caller's own thread and never the main one: with `asking`, macOS blocks the
+  /// caller for as long as the prompt is up, and Apple says not to make that the main thread.
   public func automationPermission(
     for app: ScriptedApp, asking: Bool
   ) throws(ScriptFailed) -> Permission {
@@ -79,10 +110,6 @@ public final class OSAKitScriptRunner: ScriptRunner, @unchecked Sendable {
   }
 
   // MARK: OSAKit
-
-  /// JavaScript for Automation recurses through a large answer, and a thread's default half a
-  /// megabyte of stack is not enough for a two-megabyte one.
-  private static let workerStack = 8 << 20
 
   /// JavaScript for Automation ships with macOS. Were it ever missing, OSAKit falls back to its
   /// default language, which fails to compile these scripts: a failure that says so.

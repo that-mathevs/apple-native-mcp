@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-import { afterAll, beforeAll } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { Helper } from "../../src/adapters/native/helper.js";
 import { helperNoteStore } from "../../src/adapters/native/note-store.js";
@@ -32,4 +32,18 @@ afterAll(() => {
 aNoteStore({
   name: "the helper-backed note store",
   build: () => Promise.resolve({ noteStore: helperNoteStore(helper) }),
+});
+
+describe("the helper-backed note store, on a Mac", () => {
+  // #44: run from a worker thread while the helper's main thread sat blocked, a script's Apple
+  // Event sometimes never got its reply, and one run in every dozen or so hung until its time
+  // budget ran out. Scripts run on the helper's main thread now, and only a real app, asked many
+  // times in one helper, can show that they keep hearing back.
+  it("given the same script thirty times over in one helper, answers every time", async () => {
+    const noteStore = helperNoteStore(helper);
+
+    for (let run = 0; run < 30; run += 1) {
+      expect(await noteStore.noteFolders()).toMatchObject({ ok: true });
+    }
+  }, 120_000);
 });
