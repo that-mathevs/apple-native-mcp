@@ -8,10 +8,15 @@ import { listCalendarsTool } from "./calendar/list-calendars-tool.js";
 import { listEventsTool } from "./calendar/list-events-tool.js";
 import { readEventTool } from "./calendar/read-event-tool.js";
 import { searchEventsTool } from "./calendar/search-events-tool.js";
+import { listReminderListsTool } from "./reminders/list-reminder-lists-tool.js";
+import {
+  listRemindersTool,
+  type ListRemindersToolDependencies,
+} from "./reminders/list-reminders-tool.js";
 import { refusing } from "./result.js";
 import type { Tool } from "./tool.js";
 
-export type ServerDependencies = ListEventsDependencies;
+export type ServerDependencies = ListEventsDependencies & ListRemindersToolDependencies;
 
 export const serverName = "apple-native-mcp";
 
@@ -92,6 +97,8 @@ export const buildServer = (dependencies: ServerDependencies): McpServer =>
       listEventsTool(dependencies),
       searchEventsTool(dependencies),
       readEventTool(dependencies),
+      listReminderListsTool(dependencies),
+      listRemindersTool(dependencies),
     ],
     dependencies.settings,
   );

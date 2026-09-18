@@ -7,9 +7,11 @@ import Foundation
 /// single real event.
 public struct Helper: Sendable {
   private let calendar: CalendarReading
+  private let reminders: RemindersReading
 
-  public init(calendarStore: CalendarStore) {
+  public init(calendarStore: CalendarStore, reminderStore: ReminderStore) {
     self.calendar = CalendarReading(store: calendarStore)
+    self.reminders = RemindersReading(store: reminderStore)
   }
 
   /// Answer one line. Always returns exactly one line of JSON, whatever arrives.
@@ -25,9 +27,9 @@ public struct Helper: Sendable {
   private func answer(_ kind: Request.Kind) -> [String: Any] {
     switch kind {
     case .calendarPermission:
-      return ["result": calendar.permission().asFields]
+      return ["result": calendar.permission().asFields(setting: calendarPermissionSetting)]
     case .requestCalendarPermission:
-      return ["result": calendar.requestPermission().asFields]
+      return ["result": calendar.requestPermission().asFields(setting: calendarPermissionSetting)]
     case .calendars:
       return answering(calendar.calendars()) { ["calendars": $0.map(\.asFields)] }
     case .event(let identifier, let originalStart):
@@ -36,6 +38,18 @@ public struct Helper: Sendable {
       }
     case .eventsInRange(let range):
       return answering(calendar.events(in: range)) { $0.asFields }
+    case .remindersPermission:
+      return ["result": reminders.permission().asFields(setting: remindersPermissionSetting)]
+    case .requestRemindersPermission:
+      return [
+        "result": reminders.requestPermission().asFields(setting: remindersPermissionSetting)
+      ]
+    case .reminderLists:
+      return answering(reminders.reminderLists()) { ["reminderLists": $0.map(\.asFields)] }
+    case .reminders(let reminderLists, let includeCompleted):
+      let read = reminders.reminders(
+        inReminderListsNamed: reminderLists, includingCompleted: includeCompleted)
+      return answering(read) { ["reminders": $0.map(\.asFields)] }
     }
   }
 
@@ -47,6 +61,38 @@ public struct Helper: Sendable {
     switch read {
     case .success(let found): ["result": fields(found)]
     case .failure(let failure): ["failure": failure.asFields]
+    }
+  }
+}
+
+extension ReminderList {
+  var asFields: [String: Any] {
+    ["identifier": identifier, "title": title, "account": account.asFields]
+  }
+}
+
+extension Reminder {
+  var asFields: [String: Any] {
+    [
+      "identifier": identifier,
+      "title": title,
+      "notes": notes ?? NSNull(),
+      "completed": isCompleted,
+      "due": due?.asFields ?? NSNull(),
+      "reminderList": reminderList.asFields,
+    ]
+  }
+}
+
+extension Due {
+  /// A due date is written as the day alone, never as the instant its midnight falls on
+  /// somewhere; a due time as the instant, which the server shows in the user's time zone.
+  var asFields: [String: Any] {
+    switch self {
+    case .date(let year, let month, let day):
+      ["date": String(format: "%04d-%02d-%02d", year, month, day)]
+    case .time(let instant):
+      ["time": Instant.written(instant)]
     }
   }
 }
@@ -111,10 +157,11 @@ extension NamedFailure {
   }
 }
 
-extension CalendarPermission {
-  var asFields: [String: Any] {
+extension Permission {
+  /// The state, and the setting that would change it when a setting is what would.
+  func asFields(setting: String) -> [String: Any] {
     var fields: [String: Any] = ["state": rawValue]
-    if let setting = settingToEnable { fields["setting"] = setting }
+    if isFixedInSettings { fields["setting"] = setting }
     return fields
   }
 }

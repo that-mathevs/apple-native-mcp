@@ -78,16 +78,16 @@ struct FakeCalendarStore: CalendarStore {
     var calendars: [HelperCore.Calendar] = []
   }
 
-  var permissionHeld: CalendarPermission = .granted
+  var permissionHeld: Permission = .granted
   var held: [Event] = []
   var refusing: [HelperCore.Calendar: String] = [:]
-  var answersWhenAsked: CalendarPermission = .refused
+  var answersWhenAsked: Permission = .refused
   let asking = Asking()
   let reads = Reads()
 
-  func permission() -> CalendarPermission { permissionHeld }
+  func permission() -> Permission { permissionHeld }
 
-  func requestPermission() -> CalendarPermission {
+  func requestPermission() -> Permission {
     asking.times += 1
     return answersWhenAsked
   }
@@ -120,7 +120,7 @@ struct FakeCalendarStore: CalendarStore {
 
   // MARK: builders
 
-  func permission(_ permission: CalendarPermission) -> FakeCalendarStore {
+  func permission(_ permission: Permission) -> FakeCalendarStore {
     var store = self
     store.permissionHeld = permission
     return store
@@ -129,7 +129,7 @@ struct FakeCalendarStore: CalendarStore {
   func permitted() -> FakeCalendarStore { permission(.granted) }
 
   /// What the user will choose when macOS asks them.
-  func answering(_ permission: CalendarPermission) -> FakeCalendarStore {
+  func answering(_ permission: Permission) -> FakeCalendarStore {
     var store = self
     store.answersWhenAsked = permission
     return store
@@ -150,7 +150,9 @@ struct FakeCalendarStore: CalendarStore {
 
 func aCalendarStore() -> FakeCalendarStore { FakeCalendarStore() }
 
-func helperReading(_ store: FakeCalendarStore) -> Helper { Helper(calendarStore: store) }
+func helperReading(_ store: FakeCalendarStore) -> Helper {
+  Helper(calendarStore: store, reminderStore: aReminderStore())
+}
 
 func readingACalendar(_ store: FakeCalendarStore) -> CalendarReading { CalendarReading(store: store) }
 

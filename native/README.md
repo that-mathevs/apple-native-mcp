@@ -4,7 +4,9 @@ The helper is the Swift process that holds every macOS permission and reaches ev
 ([ADR-0002](../docs/adr/0002-helper-owns-every-protected-access.md)). The Node server holds no
 permission of its own and opens no protected file; it starts the helper and talks to it.
 
-This is the first slice of it: the calendar permission, and the events in a range.
+So far it answers for the calendar, with its calendars, the events in a range and one event in
+full, and for the reminders, with the reminder lists and the reminders in them. Each has its own
+permission.
 
 ## What it does
 
@@ -31,6 +33,8 @@ outside evidence verbatim.
 | `request_unknown` | the line named a request the helper does not answer |
 | `calendar_permission_missing` | macOS has not allowed the helper to read the calendar; the sentence names the setting and where it is |
 | `calendar_unreadable` | one calendar would not answer; reported beside the events rather than instead of them, so one offline subscription does not take the whole read with it |
+| `reminders_permission_missing` | macOS has not allowed the helper to read the reminders; the sentence names the setting and where it is |
+| `reminder_list_unknown` | a request named a reminder list the helper cannot find, perhaps deleted since it was listed; nothing is read |
 
 ## The protocol
 
@@ -100,6 +104,40 @@ the event itself, or whichever occurrence of a series the store thinks of first.
 {"protocolVersion":1,"id":"4","request":"event","eventIdentifier":"…","originalStart":"2026-09-22T09:00:00Z"}
 ```
 
+**The reminders permission**
+
+`reminders_permission` and `reminders_permission_request` answer exactly as their calendar
+counterparts do, naming the Reminders setting instead.
+
+**The reminder lists**
+
+```json
+{"protocolVersion":1,"id":"3","request":"reminder_lists"}
+{"id":"3","protocolVersion":1,"result":{"reminderLists":[
+  {"identifier":"…","title":"Groceries","account":{"identifier":"…","title":"iCloud"}}
+]}}
+```
+
+**The reminders in some reminder lists**
+
+```json
+{"protocolVersion":1,"id":"4","request":"reminders","reminderLists":["…"],"includeCompleted":false}
+```
+
+```json
+{"id":"4","protocolVersion":1,"result":{"reminders":[{
+  "identifier":"…","title":"Bins out","notes":null,"completed":false,
+  "due":{"date":"2026-09-25"},
+  "reminderList":{"identifier":"…","title":"Errands","account":{"identifier":"…","title":"iCloud"}}
+}]}}
+```
+
+Both fields are required: the server says which reminder lists and whether completed reminders are
+wanted, and the helper chooses neither. Completed reminders are left out by EventKit's own fetch.
+No reminder lists means no reminders, never those of every one, which is how EventKit would read an
+empty set. `due` is `null`, a due date as `{"date":"2026-09-25"}` with no time of day, or a due time
+as `{"time":"2026-09-25T21:00:00Z"}`, an instant the server shows in the user's time zone.
+
 ## Building it
 
 ```sh
@@ -118,10 +156,11 @@ signed, hardened and notarised in CI
 swift test
 ```
 
-They need no permission, no prompt and no real calendar data, and they run on any Mac and in
-hosted CI. EventKit is reached only through `CalendarStore`, and everything above it — the protocol,
-the range and occurrence rules, the failure mapping — is specified against a fake store in
-`Tests/HelperCoreTests/CalendarOnAFakeMac.swift`.
+They need no permission, no prompt and no real calendar or reminders, and they run on any Mac and
+in hosted CI. EventKit is reached only through `CalendarStore` and `ReminderStore`, and everything
+above them — the protocol, the range and occurrence rules, the failure mapping — is specified
+against the fakes in `Tests/HelperCoreTests/CalendarOnAFakeMac.swift` and
+`RemindersOnAFakeMac.swift`.
 
 Printing the scenario names is how the suite is read as a specification:
 
@@ -142,6 +181,6 @@ real Mac.
 
 | Path | Holds |
 |---|---|
-| `Sources/HelperCore/` | the protocol, the calendar rules, the named failures, and `CalendarStore` |
-| `Sources/Helper/` | the executable: the disclaimed relaunch, the stdio session, the EventKit adapter |
+| `Sources/HelperCore/` | the protocol, the calendar and reminders rules, the named failures, `CalendarStore` and `ReminderStore` |
+| `Sources/Helper/` | the executable: the disclaimed relaunch, the stdio session, the EventKit adapters |
 | `Tests/HelperCoreTests/` | the scenarios, and the fake Mac they run against |

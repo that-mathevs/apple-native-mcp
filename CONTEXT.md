@@ -114,7 +114,8 @@ _Avoid_: dev mode, debug flag
 ### Calendar
 
 **Calendar account**:
-The source a calendar belongs to: iCloud, CalDAV, Exchange or local.
+The source a calendar or a reminder list belongs to: iCloud, CalDAV, Exchange or local. Calendar and
+Reminders share these sources, so one word serves both.
 _Avoid_: source, provider, account (unqualified)
 
 **Calendar**:
@@ -160,9 +161,9 @@ _Avoid_: twin, copy, clash
 ### Reminders
 
 **Reminder list**:
-A container of reminders belonging to one account, with an identifier and a title. Titles repeat
-across accounts. The **default reminder list** is the one the store names for new reminders, which
-isn't necessarily the list called "Reminders".
+A container of reminders belonging to one calendar account, with an identifier and a title. Titles
+repeat across accounts. The **default reminder list** is the one the store names for new reminders,
+which isn't necessarily the list called "Reminders".
 _Avoid_: list (bare), calendar, folder
 
 **Reminder**:

@@ -2,6 +2,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 
 import { calendarEventStore } from "./adapters/native/calendar-event-store.js";
 import { Helper } from "./adapters/native/helper.js";
+import { helperReminderStore } from "./adapters/native/reminder-store.js";
 import { helperPathSetting, settingsFrom } from "./domain/settings.js";
 import { buildServer } from "./mcp/server.js";
 
@@ -26,6 +27,7 @@ if (settings.unparsed !== undefined) {
 
 const server = buildServer({
   eventStore: calendarEventStore(helper),
+  reminderStore: helperReminderStore(helper),
   now: () => new Date(),
   timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   settings,
