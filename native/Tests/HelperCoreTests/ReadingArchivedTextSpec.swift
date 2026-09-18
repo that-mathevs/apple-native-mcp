@@ -116,6 +116,26 @@ struct ReadingArchivedTextSpec {
     #expect(Date().timeIntervalSince(started) < 5, "one of the changes kept it running")
   }
 
+  // A type encoding is named once and referred to by number after that. An archive can write one
+  // a megabyte long and refer to it a hundred thousand times, so reading it afresh each time would
+  // cost minutes, and the chat around it would run out of time.
+  @Test("given one long type encoding referred to again and again, answers within a moment")
+  func readsARepeatedTypeEncodingOnce() {
+    for nameLength in [1_000, 900_000] {
+      var hostile = Array(anArchive(of: written("x")).prefix(16))
+      let encoding = Array("{".utf8) + Array(repeating: UInt8(ascii: "a"), count: nameLength)
+        + Array("=}".utf8)
+      let length = UInt32(encoding.count)
+      hostile += [0x84, 0x82] + (0..<4).map { UInt8(truncatingIfNeeded: length >> (8 * $0)) }
+      hostile += encoding + Array(repeating: 0x92, count: 99_000)
+
+      let started = Date()
+      _ = text(of: Data(hostile))
+
+      #expect(Date().timeIntervalSince(started) < 1, "an encoding \(nameLength) long")
+    }
+  }
+
   @Test("given something that is not an archive at all, refuses it")
   func refusesAStranger() {
     #expect(text(of: Data("just some text".utf8)).isUnreadable)

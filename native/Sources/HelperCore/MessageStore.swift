@@ -126,7 +126,8 @@ public struct SQLiteMessageStore: MessageStore {
           ]
         ) { row in
           let outgoing = row.integer(2) == 1
-          let read = MessageText(plain: row.text(1), archived: row.blob(9))
+          let read = MessageText(
+            plain: row.text(1), archived: row.blob(9, atMost: ArchivedText.greatestSize))
           return Message(
             identifier: row.text(0) ?? "", chat: identifier, text: read.text,
             textUnreadable: read.unreadable,
@@ -214,9 +215,12 @@ private struct Row {
     sqlite3_column_text(statement, column).map { String(cString: $0) }
   }
 
-  func blob(_ column: Int32) -> Data? {
+  /// A blob, copied no further than the first byte past this many: one larger is refused for its
+  /// size, and a stranger's hundreds of megabytes are never read in to find that out.
+  func blob(_ column: Int32, atMost greatest: Int) -> Data? {
     guard let bytes = sqlite3_column_blob(statement, column) else { return nil }
-    return Data(bytes: bytes, count: Int(sqlite3_column_bytes(statement, column)))
+    let count = Int(sqlite3_column_bytes(statement, column))
+    return Data(bytes: bytes, count: min(count, greatest + 1))
   }
 }
 

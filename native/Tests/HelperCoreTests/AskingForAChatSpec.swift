@@ -220,4 +220,25 @@ struct ReadingAMessagesTextSpec {
 
     #expect(response.contains(#""text":"Hey Ben","textUnreadable":null"#))
   }
+
+  // MSG-75: the placeholder stands for an attachment; it is not something anyone wrote.
+  @Test("given a message that is only an attachment, answers it with no text rather than the placeholder")
+  func answersAnAttachmentWithNoText() {
+    let archive = anArchive(of: written(MessageText.placeholder))
+
+    let response = helperReading(aChat(holding: archive, text: MessageText.placeholder))
+      .respond(to: asking)
+
+    #expect(response.contains(#""text":null,"textUnreadable":null"#))
+  }
+
+  @Test("given archived text too large to be a message, answers without it rather than reading it in")
+  func refusesAnOversizedArchive() {
+    let oversized = Data(repeating: 0x2b, count: 2 << 20)
+
+    let response = helperReading(aChat(holding: oversized)).respond(to: asking)
+
+    #expect(response.contains(#""code":"message_text_unreadable""#))
+    #expect(response.contains("larger than"))
+  }
 }

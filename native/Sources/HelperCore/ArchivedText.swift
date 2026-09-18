@@ -20,6 +20,8 @@ enum ArchivedText {
   static let greatestDepth = 32
   /// How many values one archive may hold, arrays' counts included, before it is given up on.
   static let greatestValues = 100_000
+  /// How long a type encoding may be. A message's own are a few characters long.
+  static let greatestEncodingLength = 1024
 
   static func text(of archive: Data) -> Result<String, ArchiveUnreadable> {
     guard archive.count <= greatestSize else {
@@ -109,8 +111,14 @@ private struct Reader {
   var cursor = 0
   /// Type encodings and class names, which later bytes refer back to by number.
   var sharedStrings: [[UInt8]] = []
+  /// Each type encoding's codes, parsed the first time it is used and never again: an archive can
+  /// refer to one long encoding over and over.
+  var parsedEncodings: [Int: [TypeCode]] = [:]
   /// Objects and classes read so far, which share one numbering of their own.
   var objectsAndClasses = 0
+  /// The name of each class read so far, by its number, so a class written as a reference back is
+  /// still known by name. Looking a name up follows nothing.
+  var classNames: [Int: String] = [:]
   var valuesRead = 0
 
   init(bytes: [UInt8]) { self.bytes = bytes }
@@ -126,11 +134,23 @@ private struct Reader {
 
   /// A type encoding and a value for each code in it.
   mutating func readGroup(depth: Int) throws(ArchiveUnreadable) -> [Value] {
-    guard let encoding = try readSharedString() else { throw unreadable("a value has no type") }
-    var parser = TypeParser(encoding: encoding)
     var values: [Value] = []
-    for code in try parser.parseAll() { values.append(try readValue(code, depth: depth)) }
+    for code in try readTypeEncoding() { values.append(try readValue(code, depth: depth)) }
     return values
+  }
+
+  private mutating func readTypeEncoding() throws(ArchiveUnreadable) -> [TypeCode] {
+    guard let number = try readSharedStringNumber() else { throw unreadable("a value has no type") }
+    if let parsed = parsedEncodings[number] { return parsed }
+
+    let encoding = sharedStrings[number]
+    guard encoding.count <= ArchivedText.greatestEncodingLength else {
+      throw unreadable("a type encoding is longer than \(ArchivedText.greatestEncodingLength) bytes")
+    }
+    var parser = TypeParser(encoding: encoding)
+    let parsed = try parser.parseAll()
+    parsedEncodings[number] = parsed
+    return parsed
   }
 
   private mutating func readValue(_ code: TypeCode, depth: Int) throws(ArchiveUnreadable)
@@ -198,13 +218,17 @@ private struct Reader {
       switch marker {
       case Self.none: return name
       case Self.new:
+        let number = objectsAndClasses
         objectsAndClasses += 1
         guard let written = try readSharedString() else { throw unreadable("a class has no name") }
-        if name == nil { name = String(decoding: written, as: UTF8.self) }
+        let className = String(decoding: written, as: UTF8.self)
+        classNames[number] = className
+        if name == nil { name = className }
         _ = try readInteger()  // the class's version
       default:
-        try check(reference: try readInteger(startingWith: marker), within: objectsAndClasses)
-        return name
+        let reference = try readInteger(startingWith: marker)
+        try check(reference: reference, within: objectsAndClasses)
+        return name ?? classNames[reference - Self.firstReference]
       }
     }
   }
@@ -220,17 +244,21 @@ private struct Reader {
   }
 
   private mutating func readSharedString() throws(ArchiveUnreadable) -> [UInt8]? {
+    try readSharedStringNumber().map { sharedStrings[$0] }
+  }
+
+  /// A shared string, new or written before, answered as its number among them.
+  private mutating func readSharedStringNumber() throws(ArchiveUnreadable) -> Int? {
     let marker = try readByte()
     switch marker {
     case Self.none: return nil
     case Self.new:
-      let string = try readBytes()
-      sharedStrings.append(string)
-      return string
+      sharedStrings.append(try readBytes())
+      return sharedStrings.count - 1
     default:
       let reference = try readInteger(startingWith: marker)
       try check(reference: reference, within: sharedStrings.count)
-      return sharedStrings[reference - Self.firstReference]
+      return reference - Self.firstReference
     }
   }
 

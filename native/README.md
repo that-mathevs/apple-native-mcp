@@ -221,8 +221,10 @@ message came from, and `null` for the user's own.
 the plain text only when there is no archive or it cannot be read: the plain text can be nothing
 but the placeholder for an attachment or a link. The archive is a typedstream, the format
 NSArchiver writes, and a stranger writes every byte of it, so `ArchivedText` walks its structure
-itself: bounded in size, depth and number of values, never following a reference back, and never
-handing it to an unarchiver, which would create whatever class it named. When neither gives text,
+itself: bounded in size, depth, number of values and length of a type encoding, parsing each type
+encoding once however often it is referred to, never following a reference back, and never
+handing it to an unarchiver, which would create whatever class it named. Archived text that is
+empty or only the placeholder is no text. When neither gives text,
 `text` is `null` and `textUnreadable` says why, for that message alone.
 
 The store is opened read-only, by path, and every value in a query is bound, never written into it.

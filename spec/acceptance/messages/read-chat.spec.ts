@@ -135,7 +135,8 @@ describe("reading a chat", () => {
       service,
       textUnreadable: {
         code: "message_text_unreadable",
-        sentence: "This message's text could not be read from the store, so it is left out.",
+        sentence:
+          "This message's text could not be read from the store, so it is answered without it.",
         evidence: "the archive ends inside a value",
       },
     });

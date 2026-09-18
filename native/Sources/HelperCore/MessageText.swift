@@ -17,14 +17,19 @@ enum MessageText: Equatable {
   static let placeholder = "\u{FFFC}"
 
   init(plain: String?, archived: Data?) {
-    let usablePlain = plain.flatMap { $0.isEmpty || $0 == Self.placeholder ? nil : $0 }
+    let usablePlain = plain.flatMap(Self.written)
 
     switch archived.map(ArchivedText.text(of:)) {
-    case .success(let text)?: self = .text(text)
+    case .success(let text)? where Self.written(text) != nil: self = .text(text)
     case .failure(let unreadable)? where usablePlain == nil:
       self = .unreadable(.messageTextUnreadable(reason: unreadable.reason))
     default: self = usablePlain.map(MessageText.text) ?? .none
     }
+  }
+
+  /// Text someone wrote, which neither nothing nor the placeholder alone is.
+  private static func written(_ text: String) -> String? {
+    text.isEmpty || text == placeholder ? nil : text
   }
 
   var text: String? {
