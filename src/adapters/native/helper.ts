@@ -88,6 +88,11 @@ class Session {
     this.#process.on("error", (error) => {
       this.#stop(error.message);
     });
+    // A helper that exits between two requests closes the pipe under the next one. Unheard, that
+    // write's EPIPE would take the whole server down with it (spec/adapters/helper-launch).
+    this.#process.stdin.on("error", (error) => {
+      this.#stop(error.message);
+    });
   }
 
   get stopped(): string | undefined {
@@ -161,7 +166,7 @@ export class Helper {
    * may have died after doing it, and sending it again would do it twice.
    */
   async askOnce(request: HelperRequest): Promise<Outcome<Record<string, unknown>>> {
-    return await this.#running().ask(this.#identifier(), request);
+    return await this.#askRunning(request);
   }
 
   /** Ask for a read, which is asked again once if the helper died before answering. */

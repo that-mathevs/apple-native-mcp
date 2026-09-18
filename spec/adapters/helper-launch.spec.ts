@@ -42,6 +42,8 @@ describe("the helper, before it starts", () => {
     });
   });
 
+  // The retry may write to the pipe of a helper that has already gone: an EPIPE nobody listens
+  // for would take the whole server down with it (seen when this ran under the full suite).
   it("given a helper that stopped, asks which helper to launch again before starting another", async () => {
     const launch = allowing("/usr/bin/true");
     helper = new Helper(launch.check);

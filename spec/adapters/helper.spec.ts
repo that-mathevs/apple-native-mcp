@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { calendarEventStore } from "../../src/adapters/native/calendar-event-store.js";
 import { Helper } from "../../src/adapters/native/helper.js";
+import { succeeded } from "../../src/domain/failure.js";
 
 // What the server does when the helper dies between doing the work and saying so. A read is
 // simply asked again. A write must not be: asked twice, it happens twice (faces-sh bcdc856 and
@@ -30,7 +31,7 @@ describe("a helper that stops before it answers", () => {
   beforeEach(() => {
     log = join(mkdtempSync(join(tmpdir(), "apple-native-mcp-")), "requests.log");
     process.env.A_HELPER_THAT_DIES_LOG = log;
-    helper = new Helper(dyingHelper);
+    helper = new Helper(() => Promise.resolve(succeeded(dyingHelper)));
   });
 
   afterEach(() => {
