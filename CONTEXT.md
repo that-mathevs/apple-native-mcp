@@ -80,6 +80,12 @@ The Swift process that holds every macOS permission and reaches every store. See
 [ADR-0002](docs/adr/0002-helper-owns-every-protected-access.md).
 _Avoid_: daemon, bridge, sidecar
 
+**Permission**:
+A macOS grant the helper holds for one store, such as the calendar or the reminders. Its **state**
+is granted, refused, undecided (nobody has been asked), restricted (a profile forbids it) or
+write-only. Setup asks for each one up front; a tool never asks and never opens System Settings.
+_Avoid_: access, authorisation, consent, capability (that word is ours)
+
 **Setup**:
 The command that installs the helper and asks for macOS permissions. Tools never do either.
 _Avoid_: install step, onboarding
