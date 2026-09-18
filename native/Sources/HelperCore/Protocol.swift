@@ -15,6 +15,10 @@ struct Request: Equatable {
     case calendars
     case eventsInRange(Range)
     case event(identifier: String, originalStart: Date?)
+    case remindersPermission
+    case requestRemindersPermission
+    case reminderLists
+    case reminders(reminderLists: [String], includeCompleted: Bool)
   }
 }
 
@@ -25,6 +29,10 @@ enum RequestName: String {
   case calendars = "calendars"
   case eventsInRange = "events_in_range"
   case event = "event"
+  case remindersPermission = "reminders_permission"
+  case requestRemindersPermission = "reminders_permission_request"
+  case reminderLists = "reminder_lists"
+  case reminders = "reminders"
 }
 
 /// What reading a line produced: a request the helper can answer, or a named failure to report
@@ -92,6 +100,24 @@ extension Request {
         return .request(
           Request(id: id, kind: .event(identifier: identifier, originalStart: originalStart)))
       }
+    case .remindersPermission:
+      return .request(Request(id: id, kind: .remindersPermission))
+    case .requestRemindersPermission:
+      return .request(Request(id: id, kind: .requestRemindersPermission))
+    case .reminderLists:
+      return .request(Request(id: id, kind: .reminderLists))
+    case .reminders:
+      // Both are required: the server says which reminder lists and whether completed reminders
+      // are wanted, and the helper never chooses either for it.
+      guard
+        let reminderLists = fields["reminderLists"] as? [String],
+        let includeCompleted = fields["includeCompleted"] as? Bool
+      else {
+        return .failure(id: id, .requestMalformed(line: line))
+      }
+      let kind = Request.Kind.reminders(
+        reminderLists: reminderLists, includeCompleted: includeCompleted)
+      return .request(Request(id: id, kind: kind))
     }
   }
 }

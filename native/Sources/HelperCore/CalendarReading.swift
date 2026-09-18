@@ -21,16 +21,12 @@ struct EventsInRange: Equatable, Sendable {
 struct CalendarReading: Sendable {
   let store: CalendarStore
 
-  func permission() -> CalendarPermission {
+  func permission() -> Permission {
     store.permission()
   }
 
-  /// Ask the user, but only while there is anything to ask: macOS prompts once, so once a
-  /// permission has been decided the answer is the setting to change, not another prompt.
-  func requestPermission() -> CalendarPermission {
-    let held = store.permission()
-    guard held == .undecided else { return held }
-    return store.requestPermission()
+  func requestPermission() -> Permission {
+    .askingOnce(held: store.permission(), ask: store.requestPermission)
   }
 
   /// Every calendar, readable or not: one whose server is down still exists, and the user still

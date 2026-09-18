@@ -1,7 +1,8 @@
 import Foundation
 
-/// The source a calendar belongs to: iCloud, CalDAV, Exchange or local. Two calendars can share a
-/// title, so the account is what tells them apart to a reader.
+/// The source a calendar or a reminder list belongs to: iCloud, CalDAV, Exchange or local. Two
+/// calendars, or two reminder lists, can share a title, so the calendar account is what tells them
+/// apart to a reader.
 public struct CalendarAccount: Equatable, Hashable, Sendable {
   public let identifier: String
   public let title: String

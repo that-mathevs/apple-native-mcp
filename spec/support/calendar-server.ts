@@ -1,7 +1,7 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
 import { settingsFrom } from "../../src/domain/settings.js";
-import { buildServer } from "../../src/mcp/server.js";
+import { aServer } from "./a-server.js";
 import { connectedTo } from "./connected-client.js";
 import type { FakeEventStore } from "./fake-event-store.js";
 
@@ -25,5 +25,5 @@ export const readingTheCalendar = async (
   configuration: Record<string, string> = {},
 ): Promise<Client> =>
   await connectedTo(
-    buildServer({ eventStore, now: () => noon, timeZone, settings: settingsFrom(configuration) }),
+    aServer({ eventStore, now: () => noon, timeZone, settings: settingsFrom(configuration) }),
   );

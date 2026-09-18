@@ -5,11 +5,11 @@ import Foundation
 /// single real event.
 public protocol CalendarStore: Sendable {
   /// What macOS currently allows.
-  func permission() -> CalendarPermission
+  func permission() -> Permission
 
   /// Ask macOS for calendar access, which prompts the user, and report what they chose.
   /// Only ever called while the permission is undecided: macOS prompts once and no more.
-  func requestPermission() -> CalendarPermission
+  func requestPermission() -> Permission
 
   /// Every calendar the helper can see, including ones it may turn out not to be able to read.
   func calendars() -> [Calendar]

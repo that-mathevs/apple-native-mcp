@@ -27,6 +27,10 @@ public enum FailureCode: String, Equatable, Sendable {
   case calendarUnreadable = "calendar_unreadable"
   /// The range is longer than the event store will read in one go.
   case rangeTooLong = "range_too_long"
+  /// macOS has not allowed the helper to read the reminders.
+  case remindersPermissionMissing = "reminders_permission_missing"
+  /// A request named a reminder list the helper cannot find.
+  case reminderListUnknown = "reminder_list_unknown"
 }
 
 extension NamedFailure {
@@ -54,7 +58,7 @@ extension NamedFailure {
 
   // Upstream #65: a missing permission surfaced as a bare failure and left the user with nowhere
   // to go. The sentence names the setting and where it lives.
-  static func calendarPermissionMissing(permission: CalendarPermission) -> NamedFailure {
+  static func calendarPermissionMissing(permission: Permission) -> NamedFailure {
     NamedFailure(
       code: .calendarPermissionMissing,
       sentence:
@@ -74,5 +78,20 @@ extension NamedFailure {
       code: .rangeTooLong,
       sentence: "A range can cover four years at most. Nothing was read: ask for a shorter one.",
       evidence: "\(Instant.written(range.start)) to \(Instant.written(range.end))")
+  }
+
+  static func remindersPermissionMissing(permission: Permission) -> NamedFailure {
+    NamedFailure(
+      code: .remindersPermissionMissing,
+      sentence: "apple-native-mcp cannot read your reminders until it is allowed to, in "
+        + "\(remindersPermissionSetting).",
+      evidence: permission.rawValue)
+  }
+
+  static func reminderListUnknown(identifier: String) -> NamedFailure {
+    NamedFailure(
+      code: .reminderListUnknown,
+      sentence: "No reminder list has that identifier, so nothing was read.",
+      evidence: identifier)
   }
 }

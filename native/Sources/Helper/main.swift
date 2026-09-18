@@ -3,8 +3,16 @@ import Foundation
 import HelperCore
 
 // The helper starts twice. The first process exists only to relaunch itself with responsibility
-// disclaimed, so that macOS attributes the calendar prompt, and the grant behind it, to
+// disclaimed, so that macOS attributes each permission prompt, and the grant behind it, to
 // apple-native-mcp rather than to whatever started it (ADR-0002). The second serves the session.
+
+/// The helper that serves the session. It is built only in the process that serves, so the one
+/// that relaunches never opens a store macOS would attribute to whatever started it.
+func servingTheSession() {
+  serveSession(
+    Helper(calendarStore: EventKitCalendarStore(), reminderStore: EventKitReminderStore()))
+}
+
 switch startingChoice(environment: ProcessInfo.processInfo.environment) {
 case .relaunchDisclaimed:
   if let status = Disclaiming.relaunch() { exit(status) }
@@ -13,7 +21,7 @@ case .relaunchDisclaimed:
   write(
     "apple-native-mcp could not disclaim responsibility, so macOS will attribute its permissions "
       + "to whatever started it.", to: FileHandle.standardError)
-  serveSession(Helper(calendarStore: EventKitCalendarStore()))
+  servingTheSession()
 case .serveSession:
-  serveSession(Helper(calendarStore: EventKitCalendarStore()))
+  servingTheSession()
 }

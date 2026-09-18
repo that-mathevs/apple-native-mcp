@@ -2,7 +2,7 @@ import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { settingsFrom } from "../../../src/domain/settings.js";
-import { buildServer } from "../../../src/mcp/server.js";
+import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
 import { FakeEventStore } from "../../support/fake-event-store.js";
 
@@ -46,7 +46,7 @@ describe("listing events", () => {
   beforeEach(async () => {
     eventStore = new FakeEventStore();
     client = await connectedTo(
-      buildServer({ eventStore, now: () => noon, timeZone, settings: settingsFrom({}) }),
+      aServer({ eventStore, now: () => noon, timeZone, settings: settingsFrom({}) }),
     );
   });
 
