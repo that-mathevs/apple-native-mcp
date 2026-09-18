@@ -11,9 +11,9 @@ concurrency:
 
 jobs:
   check:
-    # macOS because the Swift helper only builds here. The contract specs that need a
-    # real Mac are not part of this run: a hosted runner cannot grant the permissions
-    # they need, so they stay on a maintainer's Mac (plan.md, "Three kinds of spec").
+    # macOS because it is the only platform the server runs on. The contract specs that need
+    # a real Mac are not part of this run: a hosted runner cannot grant the permissions they
+    # need, so they stay on a maintainer's Mac (plan.md, "Three kinds of spec").
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v5
@@ -33,3 +33,22 @@ jobs:
 
       - name: Spec
         run: npm run spec
+
+  helper:
+    # Its own job, so a broken server never hides a broken helper and the other way round:
+    # the helper holds every protected access (ADR-0002), so its breakage must show on its
+    # own. Its specs need no permission and no real data, so a hosted runner runs all of them.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Swift toolchain
+        run: swift --version
+
+      # The release build is the one that ships, and its link is what embeds Info.plist, the
+      # identity macOS attributes a permission prompt to (native/Package.swift).
+      - name: Build
+        run: swift build -c release --package-path native
+
+      - name: Spec
+        run: swift test --package-path native

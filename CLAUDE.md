@@ -11,10 +11,11 @@ what order.
 
 ## Commands
 
-- `npm run spec` — the whole suite. `npm run spec:watch` while working.
+- `npm run spec` — the server's suite. `npm run spec:watch` while working.
+- `npm run helper:spec` — the Swift helper's suite, `swift test` in `native/`.
 - `npm run typecheck` — `tsc --noEmit`.
 - `npm run lint` — ESLint, type-aware.
-- `npm run check` — all three, as CI runs them.
+- `npm run check` — all four in one go: what CI runs, across its two jobs.
 
 Node 24 or newer. CI runs on a macOS runner.
 

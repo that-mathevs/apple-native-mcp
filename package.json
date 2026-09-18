@@ -20,7 +20,8 @@
     "spec:watch": "vitest",
     "spec:mac": "vitest run --config vitest.mac.config.ts",
     "helper:build": "swift build -c release --package-path native",
-    "check": "npm run typecheck && npm run lint && npm run spec"
+    "helper:spec": "swift test --package-path native",
+    "check": "npm run typecheck && npm run lint && npm run spec && npm run helper:spec"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
