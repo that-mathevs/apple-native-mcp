@@ -2225,9 +2225,9 @@ outcome is marked `(after #7)`.
 
 #### listing mail accounts
 
-- [ ] **MAIL-01** [acceptance] lists every configured account by the name Mail shows for it · — · brightline `ba218e6`, `be4becf`; felkru `c769cc0`; gene-jelly `bb07be5`; upstream #69
-- [ ] **MAIL-02** [acceptance] reports each account's email addresses together with its name · — · chrischall `0860cf8`, `18660e4`, `88b58d0`
-- [ ] **MAIL-03** [acceptance] given Mail has no accounts set up, says so rather than reporting a permission failure · NN5 · long-tail/zaclohrenz `277aac7`
+- [x] **MAIL-01** [acceptance] lists every configured account by the name Mail shows for it · — · brightline `ba218e6`, `be4becf`; felkru `c769cc0`; gene-jelly `bb07be5`; upstream #69
+- [x] **MAIL-02** [acceptance] reports each account's email addresses together with its name · — · chrischall `0860cf8`, `18660e4`, `88b58d0`
+- [x] **MAIL-03** [acceptance] given Mail has no accounts set up, says so rather than reporting a permission failure · NN5 · long-tail/zaclohrenz `277aac7`
 
 #### finding a mail account
 
@@ -2235,11 +2235,11 @@ outcome is marked `(after #7)`.
 
 #### listing mailboxes
 
-- [ ] **MAIL-05** [acceptance] reports each mailbox under the account it belongs to · — · long-tail/zaclohrenz `277aac7`; upstream PR #73
-- [ ] **MAIL-06** [acceptance] given two accounts that both have an inbox, reports each inbox under its own account · — · felkru `c769cc0`
-- [ ] **MAIL-07** [acceptance] given nested mailboxes, reports each one with its path inside its account · — · gene-jelly `bb07be5`; morquis `5bee2f6`, `5c01104`, `6361803`, `8a9b013`
+- [x] **MAIL-05** [acceptance] reports each mailbox under the account it belongs to · — · long-tail/zaclohrenz `277aac7`; upstream PR #73
+- [x] **MAIL-06** [acceptance] given two accounts that both have an inbox, reports each inbox under its own account · — · felkru `c769cc0`
+- [x] **MAIL-07** [acceptance] given nested mailboxes, reports each one with its path inside its account · — · gene-jelly `bb07be5`; morquis `5bee2f6`, `5c01104`, `6361803`, `8a9b013`
 - [ ] **MAIL-08** [acceptance] given local mailboxes on this Mac, reports them apart from any account · — · felkru `c769cc0`
-- [ ] **MAIL-09** [acceptance] without being asked for counts, reports none rather than looking through emails: counting is slow on large accounts · — · morquis `5bee2f6`, `5c01104`, `6361803`, `8a9b013`
+- [x] **MAIL-09** [acceptance] without being asked for counts, reports none rather than looking through emails: counting is slow on large accounts · — · morquis `5bee2f6`, `5c01104`, `6361803`, `8a9b013`
 
 #### counting unread mail
 
@@ -2251,7 +2251,7 @@ outcome is marked `(after #7)`.
 - [ ] **MAIL-12** [acceptance] given unread emails in the inboxes of two accounts, reports all of them, each labelled with its account and mailbox · — · chrischall `25d47cc`; danielk-am `ad3e9e9`; gene-jelly `c5a0edd`; upstream PR #73; upstream #58, #69
 - [ ] **MAIL-13** [acceptance] given unread emails in several accounts, orders them newest first by their real sent date · NN3 · ANierbeck `2c5506c`; chrischall `25d47cc`
 - [ ] **MAIL-14** [acceptance] given unread emails in Junk or Trash, leaves them out unless asked for · — · chrischall `25d47cc`; gene-jelly `c5a0edd`
-- [ ] **MAIL-15** [acceptance] given an account whose inbox has a localised name, finds that inbox · — · morquis `d76f3ec`
+- [x] **MAIL-15** [acceptance] given an account whose inbox has a localised name, finds that inbox · — · morquis `d76f3ec`
 - [ ] **MAIL-16** [acceptance] given an account named in the request, fills the limit from that account alone · — · ANierbeck `2c5506c`
 - [ ] **MAIL-17** [acceptance] given a mailbox named in the request, looks only in that mailbox · — · ANierbeck `3005df4`
 - [ ] **MAIL-18** [acceptance] given one email that cannot be read, still returns the others · — · ANierbeck `3005df4`
@@ -2302,10 +2302,10 @@ These scenarios hold for every read operation above.
 
 - [ ] **MAIL-42** [acceptance] given the mail store cannot be read, fails and says what failed rather than reporting no accounts, mailboxes or emails · NN3 · ANierbeck `dd7eecb`; brightline `ba218e6`, `be4becf`; gene-jelly `c5a0edd`; long-tail/zaclohrenz `277aac7`; nivra `0b616cd`, `2860fb6`; upstream #69
 - [ ] **MAIL-43** [acceptance] given macOS has not granted the access that reading mail needs, fails naming the permission and where to grant it, rather than reporting no mail · NN5 · ANierbeck `2c5506c`; felkru `c769cc0`; fpjnijweide `05305b2`, `42c9e11`, `6cf16c0`, `c8e39f6`
-- [ ] **MAIL-44** [acceptance] given one account that fails or does not answer in time, still reports the other accounts' mail and names the account it could not read · NN3 · brightline `304f384`, `84edc6b`; upstream #19
+- [x] **MAIL-44** [acceptance] given one account that fails or does not answer in time, still reports the other accounts' mail and names the account it could not read · NN3 · brightline `304f384`, `84edc6b`; upstream #19
 - [ ] **MAIL-45** [acceptance] given Mail is not running, still reports the emails, within the time budget · — · felkru `c769cc0`
-- [ ] **MAIL-46** [acceptance] given Mail has no accounts, fails saying so rather than asking for a permission · NN5 · felkru `c769cc0`
-- [ ] **MAIL-47** [acceptance] given the mail store does not answer within the time budget, fails saying it timed out rather than blaming a permission · NN5 · felkru `c769cc0`; nivra `0b616cd`, `2860fb6`
+- [x] **MAIL-46** [acceptance] given Mail has no accounts, fails saying so rather than asking for a permission · NN5 · felkru `c769cc0`
+- [x] **MAIL-47** [acceptance] given the mail store does not answer within the time budget, fails saying it timed out rather than blaming a permission · NN5 · felkru `c769cc0`; nivra `0b616cd`, `2860fb6`
 - [ ] **MAIL-48** [acceptance] given an email body that imitates the end of a result or another email, reports it inside that one email's body · — · ANierbeck `d2b9bf5`
 - [ ] **MAIL-49** [acceptance] given an email with no sent date, reports the date as unknown rather than inventing one · NN3 · sicdigital `3c13e0d`
 
@@ -2384,7 +2384,7 @@ _No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18
 
 #### a mailbox
 
-- [ ] **MAIL-69** [domain] is identified by its account and its path within that account · — · brightline `ba218e6`
+- [x] **MAIL-69** [domain] is identified by its account and its path within that account · — · brightline `ba218e6`
 
 #### a mailbox path
 
@@ -2423,7 +2423,7 @@ _No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18
 - [ ] **MAIL-76** [contract] lists the mailboxes of each account, not only the mailboxes stored on this Mac · — · brightline `ba218e6`
 - [ ] **MAIL-77** [contract] given two configured accounts, reports each by its real name · — · nivra `0b616cd`, `2860fb6`
 - [ ] **MAIL-78** [contract] given a mailbox whose name contains a comma, reports it as one mailbox · — · nivra `0b616cd`, `2860fb6`
-- [ ] **MAIL-79** [contract] finds each account's inbox whatever the server or the user's language calls it (after #7) · — · brightline `0833904`, `ba218e6`, `d2eef83`; morquis `d76f3ec`
+- [x] **MAIL-79** [contract] finds each account's inbox whatever the server or the user's language calls it (after #7) · — · brightline `0833904`, `ba218e6`, `d2eef83`; morquis `d76f3ec`
 - [ ] **MAIL-80** [contract] reports sent dates as instants with a time zone, not as locale-formatted text · — · brightline `ba218e6`, `be4becf`; sicdigital `3c13e0d`
 - [ ] **MAIL-81** [contract] given a subject or body containing tabs, newlines, commas or other delimiter characters, returns every field intact · — · brightline `ba218e6`, `be4becf`; nivra `2860fb6`; upstream PR #73
 - [ ] **MAIL-82** [contract] given an email whose body contains text shaped like another result, returns it as one email · — · ANierbeck `3005df4`
@@ -2434,7 +2434,7 @@ _No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18
 - [ ] **MAIL-87** [contract] given a mailbox of ten thousand read emails and three unread, lists the unread ones within the time budget · — · gene-jelly `c5a0edd`
 - [ ] **MAIL-88** [contract] given mailboxes with nothing unread, does not read their emails · — · gene-jelly `c5a0edd`
 - [ ] **MAIL-89** [contract] given a mailbox of 50,000 emails, answers a 30-day search within the time budget · — · chrischall `e23e11e`
-- [ ] **MAIL-90** [contract] queries one account at a time, so Mail is never asked about every account in one request (after #7) · — · brightline `304f384`, `84edc6b`
+- [x] **MAIL-90** [contract] queries one account at a time, so Mail is never asked about every account in one request (after #7) · — · brightline `304f384`, `84edc6b`
 - [ ] **MAIL-91** [contract] given Mail is not running, starts it without bringing it to the front (after MAIL-V3) · — · morquis `d76f3ec`; ANierbeck `3005df4`
 
 ### Conflicts
