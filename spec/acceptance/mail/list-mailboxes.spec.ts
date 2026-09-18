@@ -3,11 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
-import {
-  FakeMailStore,
-  mailAccountTimedOut,
-  mailRefused,
-} from "../../support/fake-mail-store.js";
+import { FakeMailStore, mailAccountTimedOut, mailRefused } from "../../support/fake-mail-store.js";
 
 const personal = {
   identifier: "account-personal",

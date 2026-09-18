@@ -110,7 +110,8 @@ export const aMailStore = ({ name, build }: MailStoreUnderTest): void => {
 
         const latest = await mailStore.latestEmails({ mailbox: inbox, newest: 3 });
         if (!latest.ok && latest.failure.code === "mailbox_too_large") continue;
-        if (!latest.ok) throw new Error(`the latest emails could not be read: ${latest.failure.code}`);
+        if (!latest.ok)
+          throw new Error(`the latest emails could not be read: ${latest.failure.code}`);
         if (latest.value.emails.length > 0) return { inbox, emails: latest.value.emails };
       }
       throw new Error("no mail account has an inbox with an email in it");

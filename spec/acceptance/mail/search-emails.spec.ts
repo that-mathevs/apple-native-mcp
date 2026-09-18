@@ -3,11 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
-import {
-  anEmail,
-  FakeMailStore,
-  mailAccountTimedOut,
-} from "../../support/fake-mail-store.js";
+import { anEmail, FakeMailStore, mailAccountTimedOut } from "../../support/fake-mail-store.js";
 
 const personal = {
   identifier: "account-personal",
@@ -28,9 +24,7 @@ describe("searching mail", () => {
   let mailStore: FakeMailStore;
   let client: Client;
 
-  const searchEmails = async (
-    request: Record<string, unknown>,
-  ): ReturnType<Client["callTool"]> =>
+  const searchEmails = async (request: Record<string, unknown>): ReturnType<Client["callTool"]> =>
     await client.callTool({ name: "search_emails", arguments: request });
 
   const subjectsIn = (result: Awaited<ReturnType<typeof searchEmails>>): string[] =>
@@ -124,9 +118,21 @@ describe("searching mail", () => {
       { path: ["Junk"], role: "junk" },
       { path: ["Deleted"], role: "trash" },
     );
-    mailStore.holdsEmails(personal, { path: ["Receipts"] }, anEmail("Boiler receipt", { receivedAt: "2026-09-17T09:00:00Z" }));
-    mailStore.holdsEmails(personal, { path: ["Junk"] }, anEmail("Boiler prize", { receivedAt: "2026-09-17T10:00:00Z" }));
-    mailStore.holdsEmails(personal, { path: ["Deleted"] }, anEmail("Boiler spam", { receivedAt: "2026-09-17T11:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      { path: ["Receipts"] },
+      anEmail("Boiler receipt", { receivedAt: "2026-09-17T09:00:00Z" }),
+    );
+    mailStore.holdsEmails(
+      personal,
+      { path: ["Junk"] },
+      anEmail("Boiler prize", { receivedAt: "2026-09-17T10:00:00Z" }),
+    );
+    mailStore.holdsEmails(
+      personal,
+      { path: ["Deleted"] },
+      anEmail("Boiler spam", { receivedAt: "2026-09-17T11:00:00Z" }),
+    );
 
     const result = await searchEmails({ query: "boiler" });
 
@@ -137,7 +143,11 @@ describe("searching mail", () => {
   // Upstream PR #37 took the first matches it met, so an old mailbox could crowd out new mail.
   it("given more matches than the limit, reports the best across every mailbox searched and says how many matched in all", async () => {
     mailStore.holdsMailboxes(personal, inbox, { path: ["Receipts"] });
-    mailStore.holdsEmails(personal, inbox, anEmail("Boiler old", { receivedAt: "2026-09-01T09:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Boiler old", { receivedAt: "2026-09-01T09:00:00Z" }),
+    );
     mailStore.holdsEmails(
       personal,
       { path: ["Receipts"] },
@@ -152,7 +162,11 @@ describe("searching mail", () => {
   });
 
   it("given a query with nothing to find, matches nothing and reads no mailbox", async () => {
-    mailStore.holdsEmails(personal, inbox, anEmail("Boiler", { receivedAt: "2026-09-17T09:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Boiler", { receivedAt: "2026-09-17T09:00:00Z" }),
+    );
 
     const result = await searchEmails({ query: "-boiler" });
 
@@ -180,8 +194,16 @@ describe("searching mail", () => {
   it("given a mail account, searches that mail account alone", async () => {
     mailStore.holdsMailAccounts(personal, work);
     mailStore.holdsMailboxes(work, inbox);
-    mailStore.holdsEmails(personal, inbox, anEmail("Boiler at home", { receivedAt: "2026-09-17T09:00:00Z" }));
-    mailStore.holdsEmails(work, inbox, anEmail("Boiler room audit", { receivedAt: "2026-09-18T09:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Boiler at home", { receivedAt: "2026-09-17T09:00:00Z" }),
+    );
+    mailStore.holdsEmails(
+      work,
+      inbox,
+      anEmail("Boiler room audit", { receivedAt: "2026-09-18T09:00:00Z" }),
+    );
 
     const result = await searchEmails({ query: "boiler", mailAccount: "account-work" });
 
@@ -191,8 +213,16 @@ describe("searching mail", () => {
 
   it("given a mailbox, searches that mailbox alone, junk included when junk is the one named", async () => {
     mailStore.holdsMailboxes(personal, inbox, { path: ["Junk"], role: "junk" });
-    mailStore.holdsEmails(personal, inbox, anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }));
-    mailStore.holdsEmails(personal, { path: ["Junk"] }, anEmail("Boiler prize", { receivedAt: "2026-09-17T10:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }),
+    );
+    mailStore.holdsEmails(
+      personal,
+      { path: ["Junk"] },
+      anEmail("Boiler prize", { receivedAt: "2026-09-17T10:00:00Z" }),
+    );
 
     const result = await searchEmails({
       query: "boiler",
@@ -246,7 +276,11 @@ describe("searching mail", () => {
   it("given a mailbox that cannot be read, still searches the others and names the one it could not search, with why", async () => {
     mailStore.holdsMailboxes(personal, inbox, { path: ["Receipts"] });
     mailStore.cannotSearch(personal, inbox, mailUnreadable);
-    mailStore.holdsEmails(personal, { path: ["Receipts"] }, anEmail("Boiler receipt", { receivedAt: "2026-09-17T09:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      { path: ["Receipts"] },
+      anEmail("Boiler receipt", { receivedAt: "2026-09-17T09:00:00Z" }),
+    );
 
     const result = await searchEmails({ query: "boiler" });
 
@@ -264,7 +298,11 @@ describe("searching mail", () => {
   it("given a mailbox that ran out of its time budget, still searches the mailboxes after it", async () => {
     mailStore.holdsMailboxes(personal, inbox, { path: ["Huge"] }, { path: ["Receipts"] });
     mailStore.cannotSearch(personal, { path: ["Huge"] }, mailAccountTimedOut);
-    mailStore.holdsEmails(personal, { path: ["Receipts"] }, anEmail("Boiler receipt", { receivedAt: "2026-09-17T09:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      { path: ["Receipts"] },
+      anEmail("Boiler receipt", { receivedAt: "2026-09-17T09:00:00Z" }),
+    );
 
     const result = await searchEmails({ query: "boiler" });
 
@@ -280,7 +318,11 @@ describe("searching mail", () => {
     mailStore.holdsMailboxes(personal, { path: ["Huge"] }, { path: ["Huger"] }, inbox);
     mailStore.cannotSearch(personal, { path: ["Huge"] }, mailAccountTimedOut);
     mailStore.cannotSearch(personal, { path: ["Huger"] }, mailAccountTimedOut);
-    mailStore.holdsEmails(personal, inbox, anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }),
+    );
 
     const result = await searchEmails({ query: "boiler" });
 
@@ -293,7 +335,11 @@ describe("searching mail", () => {
     mailStore.holdsMailAccounts(personal, work);
     mailStore.holdsMailboxes(personal, inbox, { path: ["Huge"] }, { path: ["Receipts"] });
     mailStore.holdsMailboxes(work, inbox);
-    mailStore.holdsEmails(personal, inbox, anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }),
+    );
     mailStore.cannotSearch(personal, { path: ["Huge"] }, mailAccountTimedOut);
     mailStore.answersNothingAfterATimeout();
 
@@ -323,7 +369,11 @@ describe("searching mail", () => {
     mailStore.holdsMailAccounts(personal, work);
     mailStore.cannotRead(personal, mailUnreadable);
     mailStore.holdsMailboxes(work, inbox);
-    mailStore.holdsEmails(work, inbox, anEmail("Boiler room audit", { receivedAt: "2026-09-18T09:00:00Z" }));
+    mailStore.holdsEmails(
+      work,
+      inbox,
+      anEmail("Boiler room audit", { receivedAt: "2026-09-18T09:00:00Z" }),
+    );
 
     const result = await searchEmails({ query: "boiler" });
 
@@ -385,8 +435,16 @@ describe("searching mail", () => {
     mailStore.holdsMailAccounts(personal, work);
     mailStore.holdsMailboxes(personal, inbox, { path: ["Receipts"] }, { path: ["Travel"] });
     mailStore.holdsMailboxes(work, inbox);
-    mailStore.holdsEmails(personal, inbox, anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }));
-    mailStore.holdsEmails(personal, { path: ["Travel"] }, anEmail("Boiler room tour", { receivedAt: "2026-09-16T09:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }),
+    );
+    mailStore.holdsEmails(
+      personal,
+      { path: ["Travel"] },
+      anEmail("Boiler room tour", { receivedAt: "2026-09-16T09:00:00Z" }),
+    );
 
     const result = await searchEmails({ query: "boiler" });
 
@@ -461,7 +519,10 @@ describe("searching mail", () => {
     mailStore.holdsEmails(
       personal,
       inbox,
-      anEmail("Your appointment", { receivedAt: "2026-09-18T09:00:00Z", body: "About the boiler." }),
+      anEmail("Your appointment", {
+        receivedAt: "2026-09-18T09:00:00Z",
+        body: "About the boiler.",
+      }),
       anEmail("Boiler quote", { receivedAt: "2026-09-17T09:00:00Z", body: "See attached." }),
       anEmail("Dinner", { receivedAt: "2026-09-16T09:00:00Z", body: "Near the old boiler house." }),
     );
@@ -478,8 +539,16 @@ describe("searching mail", () => {
   // search knows (#24: a search reports what it has).
   it("given the Message-IDs of one mailbox's matches cannot be read, still reports the other mailboxes' matches, the range and the coverage, and names that mailbox", async () => {
     mailStore.holdsMailboxes(personal, inbox, { path: ["Receipts"] });
-    mailStore.holdsEmails(personal, inbox, anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }));
-    mailStore.holdsEmails(personal, { path: ["Receipts"] }, anEmail("Boiler receipt", { receivedAt: "2026-09-16T09:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }),
+    );
+    mailStore.holdsEmails(
+      personal,
+      { path: ["Receipts"] },
+      anEmail("Boiler receipt", { receivedAt: "2026-09-16T09:00:00Z" }),
+    );
     mailStore.cannotReadMessageIds(personal, { path: ["Receipts"] }, mailUnreadable);
 
     const result = await searchEmails({ query: "boiler" });
@@ -505,7 +574,11 @@ describe("searching mail", () => {
 
   // findings MAIL-49: an email with no date was given one that was made up.
   it("given emails with no received date, which no range can hold, says how many there were rather than dropping them unmentioned", async () => {
-    mailStore.holdsEmails(personal, inbox, anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Boiler service", { receivedAt: "2026-09-17T09:00:00Z" }),
+    );
     mailStore.holdsUndatedEmails(personal, inbox, 3);
 
     const result = await searchEmails({ query: "boiler" });
@@ -520,7 +593,10 @@ describe("searching mail", () => {
     mailStore.holdsEmails(
       personal,
       inbox,
-      anEmail("Your appointment", { receivedAt: "2026-09-18T09:00:00Z", body: "About the boiler." }),
+      anEmail("Your appointment", {
+        receivedAt: "2026-09-18T09:00:00Z",
+        body: "About the boiler.",
+      }),
       anEmail("Dinner", { receivedAt: "2026-09-16T09:00:00Z", body: "Near the old boiler house." }),
     );
 
@@ -545,7 +621,11 @@ describe("searching mail", () => {
 
   it("given bodies were asked for and a mailbox's could not be read at all, names that mailbox with why, and still matches its emails by subject and sender", async () => {
     mailStore.cannotReadBodies(personal, inbox, mailUnreadable);
-    mailStore.holdsEmails(personal, inbox, anEmail("Boiler quote", { receivedAt: "2026-09-17T09:00:00Z", body: "See attached." }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Boiler quote", { receivedAt: "2026-09-17T09:00:00Z", body: "See attached." }),
+    );
 
     const result = await searchEmails({ query: "boiler", searchBodies: true });
 

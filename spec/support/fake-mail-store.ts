@@ -30,7 +30,10 @@ type EmailHeld = Omit<Email, "mailbox" | "storeIdentifier"> & {
 /** An email with this subject, and whatever else a scenario's behaviour reads. */
 export const anEmail = (
   subject: string,
-  { receivedAt, ...rest }: Partial<Omit<EmailHeld, "subject" | "receivedAt">> & {
+  {
+    receivedAt,
+    ...rest
+  }: Partial<Omit<EmailHeld, "subject" | "receivedAt">> & {
     readonly receivedAt: string;
   },
 ): EmailHeld => ({
@@ -228,11 +231,7 @@ export class FakeMailStore implements MailStore {
     );
   }
 
-  emailsInRange({
-    mailbox,
-    range,
-    ceiling,
-  }: EmailsInRangeWanted): Promise<Outcome<EmailsInRange>> {
+  emailsInRange({ mailbox, range, ceiling }: EmailsInRangeWanted): Promise<Outcome<EmailsInRange>> {
     if (this.#failure) return Promise.resolve(failed(this.#failure));
 
     this.mailboxesSearched.push(`${mailbox.mailAccount.name}/${mailbox.path.join("/")}`);

@@ -101,10 +101,7 @@ export const helperMailStore = (helper: Helper): MailStore => ({
     );
   },
 
-  latestEmails: async ({
-    mailbox,
-    newest,
-  }: LatestEmailsWanted): Promise<Outcome<LatestEmails>> => {
+  latestEmails: async ({ mailbox, newest }: LatestEmailsWanted): Promise<Outcome<LatestEmails>> => {
     const answered = await helper.ask({ request: "latest_emails", ...addressing(mailbox), newest });
     if (!answered.ok) return failed(answered.failure);
 

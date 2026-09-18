@@ -3,11 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
-import {
-  anEmail,
-  FakeMailStore,
-  mailAccountTimedOut,
-} from "../../support/fake-mail-store.js";
+import { anEmail, FakeMailStore, mailAccountTimedOut } from "../../support/fake-mail-store.js";
 
 const personal = {
   identifier: "account-personal",
@@ -66,7 +62,11 @@ describe("listing the latest mail", () => {
     mailStore.holdsMailAccounts(personal, work);
     mailStore.holdsMailboxes(personal, inbox);
     mailStore.holdsMailboxes(work, { path: ["Posteingang"], role: "inbox" });
-    mailStore.holdsEmails(personal, inbox, anEmail("Dinner", { receivedAt: "2026-09-17T19:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Dinner", { receivedAt: "2026-09-17T19:00:00Z" }),
+    );
     mailStore.holdsEmails(
       work,
       { path: ["Posteingang"] },
@@ -105,7 +105,11 @@ describe("listing the latest mail", () => {
       { path: ["Junk"] },
       anEmail("You have won", { receivedAt: "2026-09-18T12:00:00Z" }),
     );
-    mailStore.holdsEmails(personal, inbox, anEmail("Dinner", { receivedAt: "2026-09-17T19:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Dinner", { receivedAt: "2026-09-17T19:00:00Z" }),
+    );
 
     const result = await listLatestEmails();
 
@@ -182,7 +186,11 @@ describe("listing the latest mail", () => {
     mailStore.holdsMailAccounts(personal, work);
     mailStore.cannotRead(personal, mailUnreadable);
     mailStore.holdsMailboxes(work, inbox);
-    mailStore.holdsEmails(work, inbox, anEmail("Standup notes", { receivedAt: "2026-09-18T08:00:00Z" }));
+    mailStore.holdsEmails(
+      work,
+      inbox,
+      anEmail("Standup notes", { receivedAt: "2026-09-18T08:00:00Z" }),
+    );
 
     const result = await listLatestEmails();
 
@@ -190,7 +198,10 @@ describe("listing the latest mail", () => {
     expect(result.structuredContent).toMatchObject({
       emails: [{ subject: "Standup notes" }],
       unreadMailAccounts: [
-        { mailAccount: { identifier: "account-personal", name: "Personal" }, failure: mailUnreadable },
+        {
+          mailAccount: { identifier: "account-personal", name: "Personal" },
+          failure: mailUnreadable,
+        },
       ],
     });
   });
@@ -201,7 +212,11 @@ describe("listing the latest mail", () => {
     mailStore.holdsMailAccounts(personal, work);
     mailStore.cannotRead(personal, mailAccountTimedOut);
     mailStore.holdsMailboxes(work, inbox);
-    mailStore.holdsEmails(work, inbox, anEmail("Standup notes", { receivedAt: "2026-09-18T08:00:00Z" }));
+    mailStore.holdsEmails(
+      work,
+      inbox,
+      anEmail("Standup notes", { receivedAt: "2026-09-18T08:00:00Z" }),
+    );
 
     const result = await listLatestEmails();
 
@@ -293,8 +308,16 @@ describe("listing the latest mail", () => {
     mailStore.holdsMailAccounts(personal, work);
     mailStore.holdsMailboxes(personal, inbox);
     mailStore.holdsMailboxes(work, inbox);
-    mailStore.holdsEmails(personal, inbox, anEmail("Dinner", { receivedAt: "2026-09-18T19:00:00Z" }));
-    mailStore.holdsEmails(work, inbox, anEmail("Standup notes", { receivedAt: "2026-09-18T08:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Dinner", { receivedAt: "2026-09-18T19:00:00Z" }),
+    );
+    mailStore.holdsEmails(
+      work,
+      inbox,
+      anEmail("Standup notes", { receivedAt: "2026-09-18T08:00:00Z" }),
+    );
 
     const result = await listLatestEmails({ mailAccount: "account-work" });
 
@@ -306,7 +329,11 @@ describe("listing the latest mail", () => {
   it("given a mailbox, reports that mailbox's newest emails in place of the inbox's", async () => {
     mailStore.holdsMailAccounts(personal);
     mailStore.holdsMailboxes(personal, inbox, { path: ["Clients", "Invoices"] });
-    mailStore.holdsEmails(personal, inbox, anEmail("Dinner", { receivedAt: "2026-09-18T19:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Dinner", { receivedAt: "2026-09-18T19:00:00Z" }),
+    );
     mailStore.holdsEmails(
       personal,
       { path: ["Clients", "Invoices"] },
@@ -365,8 +392,16 @@ describe("listing the latest mail", () => {
     mailStore.holdsMailAccounts(personal, work);
     mailStore.holdsMailboxes(personal, inbox);
     mailStore.holdsMailboxes(work, inbox);
-    mailStore.holdsEmails(personal, inbox, anEmail("Dinner", { receivedAt: "2026-09-18T19:00:00Z" }));
-    mailStore.holdsEmails(work, inbox, anEmail("Standup notes", { receivedAt: "2026-09-18T08:00:00Z" }));
+    mailStore.holdsEmails(
+      personal,
+      inbox,
+      anEmail("Dinner", { receivedAt: "2026-09-18T19:00:00Z" }),
+    );
+    mailStore.holdsEmails(
+      work,
+      inbox,
+      anEmail("Standup notes", { receivedAt: "2026-09-18T08:00:00Z" }),
+    );
     mailStore.cannotReadMessageIds(personal, inbox, mailUnreadable);
 
     const result = await listLatestEmails();
