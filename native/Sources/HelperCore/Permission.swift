@@ -36,6 +36,25 @@ extension Permission {
   }
 }
 
+extension Permission {
+  /// What the user answered, if they answered at all. EventKit also says "not granted" when
+  /// asking failed before anyone saw a prompt, and that is no refusal: calling it one would send
+  /// the user to a setting macOS never created, and stop the helper asking again.
+  public static func answer(granted: Bool, askingFailed: Bool) -> Permission? {
+    guard !askingFailed else { return nil }
+    return granted ? .granted : .refused
+  }
+
+  /// What macOS allows, from what it reports and what the user answered in this process.
+  ///
+  /// Straight after the user answers, EventKit can go on reporting a permission as undecided for
+  /// the rest of the process, while the answer it gave is already true (#57). So an answer stands
+  /// in for an undecided report, and anything else macOS reports wins.
+  public static func held(reported: Permission, answered: Permission?) -> Permission {
+    reported == .undecided ? (answered ?? .undecided) : reported
+  }
+}
+
 /// Where the user turns calendar access on, named in full so a failure never sends them hunting.
 public let calendarPermissionSetting =
   "System Settings > Privacy & Security > Calendars > apple-native-mcp"

@@ -7,24 +7,17 @@ import HelperCore
 final class EventKitReminderStore: ReminderStore, @unchecked Sendable {
   private let store = EKEventStore()
 
+  /// The user's answer, once they have given one in this process: EventKit can go on reporting
+  /// the permission as undecided after it (#57). Mutable state is safe here only because the
+  /// session serves one request at a time on one thread (Session.swift).
+  private var answer: Permission?
+
   func permission() -> Permission {
-    switch EKEventStore.authorizationStatus(for: .reminder) {
-    case .notDetermined: .undecided
-    case .restricted: .restricted
-    case .denied: .refused
-    case .writeOnly: .writeOnly
-    case .fullAccess: .granted
-    // A state this helper has never heard of is not a state it may read in.
-    @unknown default: .restricted
-    }
+    .held(reported: Permission(EKEventStore.authorizationStatus(for: .reminder)), answered: answer)
   }
 
-  /// Asking prompts the user, and the answer arrives on another thread. The protocol is one line
-  /// in, one line out, so the session waits here.
   func requestPermission() -> Permission {
-    let answered = DispatchSemaphore(value: 0)
-    store.requestFullAccessToReminders { _, _ in answered.signal() }
-    answered.wait()
+    answer = .asking(store.requestFullAccessToReminders)
     return permission()
   }
 
