@@ -70,6 +70,16 @@ How far a read actually reached, such as how many items were scanned or how far 
 A result that stopped at a limit is **truncated**, and says so.
 _Avoid_: partial, incomplete, scan window
 
+**Ceiling**:
+The most a read will scan before it stops and says it is truncated.
+_Avoid_: cap, max rows
+
+**Search query**:
+What a search is asked for: words, "quoted phrases" and -exclusions. Words are optional and rank
+the results; a phrase matches as consecutive words; an exclusion leaves out anything containing it.
+Case and accents are folded, every other character is literal, and an empty query matches nothing.
+_Avoid_: filter, keyword search, pattern
+
 **Time budget**:
 How long something may take before it is given up on with a named timeout: a read of every
 reminder list, or any request to the helper. A request that waits on the user, such as a permission
