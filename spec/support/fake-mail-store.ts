@@ -2,6 +2,7 @@ import type {
   EmailBodies,
   EmailsInRange,
   EmailsInRangeWanted,
+  EmailWanted,
   LatestEmails,
   LatestEmailsWanted,
   MailStore,
@@ -9,7 +10,15 @@ import type {
 } from "../../src/application/mail/mail-store.js";
 import type { NamedFailure, Outcome } from "../../src/domain/failure.js";
 import { failed, succeeded } from "../../src/domain/failure.js";
-import { newestFirst, type Email } from "../../src/domain/mail/email.js";
+import {
+  cutAt,
+  type Correspondent,
+  type Email,
+  type EmailAttachment,
+  emailBody,
+  type EmailInFull,
+  newestFirst,
+} from "../../src/domain/mail/email.js";
 import type { MailAccount } from "../../src/domain/mail/mail-account.js";
 import type { Mailbox, MailboxAddress } from "../../src/domain/mail/mailbox.js";
 
@@ -23,6 +32,11 @@ type MailboxHeld = Omit<Mailbox, "mailAccount">;
 type EmailHeld = Omit<Email, "mailbox" | "storeIdentifier"> & {
   readonly messageId: string;
   readonly body: string;
+  readonly to: readonly Correspondent[];
+  readonly cc: readonly Correspondent[];
+  readonly bcc: readonly Correspondent[];
+  readonly sentAt?: string;
+  readonly attachments: readonly EmailAttachment[];
   /** Deleted after it was listed and before anything more could be read of it. */
   readonly goesBeforeItsMessageIdIsRead: boolean;
 };
@@ -42,6 +56,10 @@ export const anEmail = (
   isRead: false,
   messageId: `<${subject.toLowerCase().replaceAll(" ", "-")}@example.test>`,
   body: "",
+  to: [],
+  cc: [],
+  bcc: [],
+  attachments: [],
   goesBeforeItsMessageIdIsRead: false,
   receivedAt: new Date(receivedAt),
   ...rest,
@@ -58,6 +76,29 @@ export const mailRefused: NamedFailure = {
     "Privacy & Security > Automation > apple-native-mcp > Mail.",
   evidence: "refused",
 };
+
+/** What the helper answers for a stale reference in a mailbox too large to look through. */
+export const emailReferenceStale: NamedFailure = {
+  code: "email_reference_stale",
+  sentence:
+    "The email was not where its reference said, and that mailbox holds 5045 emails, too many " +
+    "to look through for it within 8 seconds. Nothing was read. List or search again for a " +
+    "fresh reference, which finds the email at once.",
+  evidence: "5045 emails",
+};
+
+/** What the helper answers for an identifier no mail account has, and a path no mailbox has. */
+const mailAccountUnknown = (identifier: string): NamedFailure => ({
+  code: "mail_account_unknown",
+  sentence: "No mail account has that identifier, so no mailbox was read.",
+  evidence: identifier,
+});
+
+const mailboxUnknown = (path: readonly string[]): NamedFailure => ({
+  code: "mailbox_unknown",
+  sentence: "That mail account has no mailbox with that path, so no email was read.",
+  evidence: path.join("/"),
+});
 
 /** What the helper answers when one mail account ran out of its time budget. */
 export const mailAccountTimedOut: NamedFailure = {
@@ -83,6 +124,7 @@ export class FakeMailStore implements MailStore {
   readonly #unsearchable = new Map<string, NamedFailure>();
   readonly #unreferenceable = new Map<string, NamedFailure>();
   readonly #bodiesUnreadable = new Map<string, NamedFailure>();
+  readonly #unreadableInFull = new Map<string, NamedFailure>();
   readonly #undated = new Map<string, number>();
 
   /** Called after each mailbox is searched, so a scenario can let time pass. */
@@ -98,6 +140,9 @@ export class FakeMailStore implements MailStore {
 
   #answersNothingAfterATimeout = false;
   #timedOut = false;
+
+  /** How many emails this store has been asked to read in full. */
+  emailsReadInFull = 0;
 
   /** How many Message-IDs this store has been asked for. */
   messageIdsRead = 0;
@@ -155,6 +200,15 @@ export class FakeMailStore implements MailStore {
     failure: NamedFailure,
   ): void {
     this.#unreferenceable.set(mailboxKey({ mailAccount: { identifier, name }, path }), failure);
+  }
+
+  /** A mailbox whose emails are listed, and where no email can be read in full. */
+  cannotReadInFull(
+    { identifier, name }: MailAccount,
+    { path }: MailboxHeld,
+    failure: NamedFailure,
+  ): void {
+    this.#unreadableInFull.set(mailboxKey({ mailAccount: { identifier, name }, path }), failure);
   }
 
   /** A mailbox whose emails answer, and whose bodies do not. */
@@ -263,6 +317,55 @@ export class FakeMailStore implements MailStore {
         receivedAt,
         isRead,
       }));
+  }
+
+  email({ reference, longestBody }: EmailWanted): Promise<Outcome<EmailInFull | undefined>> {
+    this.emailsReadInFull += 1;
+    if (this.#failure) return Promise.resolve(failed(this.#failure));
+
+    // As the helper does: an account or a mailbox that is not there is said to be not there,
+    // which is not an email that has gone.
+    const account = this.#mailAccounts.find(
+      ({ identifier }) => identifier === reference.mailAccount,
+    );
+    if (account === undefined) {
+      return Promise.resolve(failed(mailAccountUnknown(reference.mailAccount)));
+    }
+    const mailbox = (this.#mailboxes.get(account.identifier) ?? []).find(
+      ({ path }) => JSON.stringify(path) === JSON.stringify(reference.mailboxPath),
+    );
+    if (mailbox === undefined) {
+      return Promise.resolve(failed(mailboxUnknown(reference.mailboxPath)));
+    }
+    const unreadable = this.#unreadableInFull.get(mailboxKey(mailbox));
+    if (unreadable) return Promise.resolve(failed(unreadable));
+
+    // The hint first, and the Message-ID decides whether what is there is the email.
+    const held = this.#emails.get(mailboxKey(mailbox)) ?? [];
+    const found =
+      held.find(
+        ({ storeIdentifier, messageId }) =>
+          storeIdentifier === reference.storeIdentifier && messageId === reference.messageId,
+      ) ?? held.find(({ messageId }) => messageId === reference.messageId);
+    if (found === undefined) return Promise.resolve(succeeded(undefined));
+
+    const { subject, sender, receivedAt, isRead, to, cc, bcc, sentAt, body } = found;
+    return Promise.resolve(
+      succeeded({
+        reference: { ...reference, storeIdentifier: found.storeIdentifier },
+        mailbox: found.mailbox,
+        subject,
+        sender,
+        to,
+        cc,
+        bcc,
+        receivedAt,
+        ...(sentAt === undefined ? {} : { sentAt: new Date(sentAt) }),
+        isRead,
+        body: emailBody(cutAt(body, longestBody), body.length),
+        attachments: found.attachments,
+      }),
+    );
   }
 
   emailBodies({ mailbox, storeIdentifiers }: EmailsAskedAbout): Promise<Outcome<EmailBodies>> {

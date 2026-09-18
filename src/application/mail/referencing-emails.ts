@@ -56,12 +56,17 @@ export const referencing = async (
   }
 
   return {
-    emails: emails.flatMap((email) => {
-      const messageId = messageIds.get(mailboxKey(email.mailbox))?.get(email.storeIdentifier);
+    emails: emails.flatMap(({ storeIdentifier, ...email }) => {
+      const messageId = messageIds.get(mailboxKey(email.mailbox))?.get(storeIdentifier);
       if (messageId === undefined) return [];
 
       const { mailAccount, path } = email.mailbox;
-      const reference = { mailAccount: mailAccount.identifier, mailboxPath: path, messageId };
+      const reference = {
+        mailAccount: mailAccount.identifier,
+        mailboxPath: path,
+        messageId,
+        storeIdentifier,
+      };
       return [{ ...email, reference }];
     }),
     unreferencedMailboxes,

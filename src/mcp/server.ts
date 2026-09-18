@@ -19,6 +19,7 @@ import { findContactsTool } from "./contacts/find-contacts-tool.js";
 import { listLatestEmailsTool } from "./mail/list-latest-emails-tool.js";
 import { listMailAccountsTool } from "./mail/list-mail-accounts-tool.js";
 import { listMailboxesTool } from "./mail/list-mailboxes-tool.js";
+import { readEmailTool } from "./mail/read-email-tool.js";
 import { searchEmailsTool } from "./mail/search-emails-tool.js";
 import { listChatsTool } from "./messages/list-chats-tool.js";
 import { readChatTool } from "./messages/read-chat-tool.js";
@@ -134,6 +135,7 @@ export const buildServer = (dependencies: ServerDependencies): McpServer =>
       listMailboxesTool(dependencies),
       listLatestEmailsTool(dependencies),
       searchEmailsTool(dependencies),
+      readEmailTool(dependencies),
       listChatsTool(dependencies),
       readChatTool(dependencies),
       searchMessagesTool(dependencies),

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import type { UnreadMailAccount } from "../../application/mail/each-mail-account.js";
-import type { ReferencedEmail } from "../../domain/mail/email.js";
+import type { EmailReference, ReferencedEmail } from "../../domain/mail/email.js";
 import type { MailboxAddress } from "../../domain/mail/mailbox.js";
 
 export const mailAccountRecord = z.object({
@@ -53,14 +53,33 @@ export const mailboxNamedOf = ({
   path: [...path],
 });
 
+/**
+ * An email reference, as every read returns it and `read_email` takes it back. It is one schema
+ * so that what a read gives is always what the next one accepts.
+ */
+export const emailReference = z
+  .object({
+    mailAccount: z.string().min(1),
+    mailboxPath: z.array(z.string().min(1)).min(1),
+    messageId: z.string().min(1),
+    storeIdentifier: z.number().int().positive(),
+  })
+  .describe("What addresses exactly this email in a later call. Pass it back unchanged.");
+
+export const emailReferenceOf = ({
+  mailAccount,
+  mailboxPath,
+  messageId,
+  storeIdentifier,
+}: EmailReference): z.infer<typeof emailReference> => ({
+  mailAccount,
+  mailboxPath: [...mailboxPath],
+  messageId,
+  storeIdentifier,
+});
+
 export const emailRecord = z.object({
-  reference: z
-    .object({
-      mailAccount: z.string(),
-      mailboxPath: z.array(z.string()),
-      messageId: z.string(),
-    })
-    .describe("What addresses exactly this email in a later call. Pass it back unchanged."),
+  reference: emailReference,
   mailbox: mailboxNamed,
   subject: z.string(),
   sender: z.string(),
@@ -69,11 +88,7 @@ export const emailRecord = z.object({
 });
 
 export const emailRecordOf = (email: ReferencedEmail): z.infer<typeof emailRecord> => ({
-  reference: {
-    mailAccount: email.reference.mailAccount,
-    mailboxPath: [...email.reference.mailboxPath],
-    messageId: email.reference.messageId,
-  },
+  reference: emailReferenceOf(email.reference),
   mailbox: mailboxNamedOf(email.mailbox),
   subject: email.subject,
   sender: email.sender,

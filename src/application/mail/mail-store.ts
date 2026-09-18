@@ -1,6 +1,6 @@
 import type { Outcome } from "../../domain/failure.js";
 import type { MailAccount } from "../../domain/mail/mail-account.js";
-import type { Email } from "../../domain/mail/email.js";
+import type { Email, EmailInFull, EmailReference } from "../../domain/mail/email.js";
 import type { Mailbox, MailboxAddress } from "../../domain/mail/mailbox.js";
 import type { SearchRange } from "../../domain/search-range.js";
 
@@ -45,6 +45,12 @@ export type EmailsAskedAbout = {
  */
 export type EmailBodies = ReadonlyMap<number, string>;
 
+/** Which email to read in full, and the most of its body to return. */
+export type EmailWanted = {
+  readonly reference: EmailReference;
+  readonly longestBody: number;
+};
+
 /**
  * The store mail is read from. The helper implements it; a fake stands in for specs.
  *
@@ -57,6 +63,12 @@ export type MailStore = {
   /** One mailbox to a request, for the reason one mail account is: Mail answers one at a time. */
   latestEmails: (wanted: LatestEmailsWanted) => Promise<Outcome<LatestEmails>>;
   emailsInRange: (wanted: EmailsInRangeWanted) => Promise<Outcome<EmailsInRange>>;
+  /**
+   * One email in full, or nothing when no email with that Message-ID is in that mailbox now. The
+   * reference's store identifier is where the store looks first, and what it finds there counts
+   * only when its Message-ID is the reference's.
+   */
+  email: (wanted: EmailWanted) => Promise<Outcome<EmailInFull | undefined>>;
   /** Asked for only when a caller wants bodies searched. A body is never part of an answer. */
   emailBodies: (wanted: EmailsAskedAbout) => Promise<Outcome<EmailBodies>>;
   /**

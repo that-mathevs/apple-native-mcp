@@ -146,6 +146,7 @@ describe("listing the latest mail", () => {
           mailAccount: "account-personal",
           mailboxPath: ["INBOX"],
           messageId: "<dinner@example.test>",
+          storeIdentifier: expect.any(Number) as number,
         },
         subject: "Dinner",
         sender: "Grace Hopper <grace@example.test>",

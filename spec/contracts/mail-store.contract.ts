@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { MailStore } from "../../src/application/mail/mail-store.js";
-import { newestFirst, type Email } from "../../src/domain/mail/email.js";
+import { type Email, type EmailReference, newestFirst } from "../../src/domain/mail/email.js";
 import type { MailAccount } from "../../src/domain/mail/mail-account.js";
 import { mailboxRoles, type Mailbox } from "../../src/domain/mail/mailbox.js";
 
@@ -191,6 +191,58 @@ export const aMailStore = ({ name, build }: MailStoreUnderTest): void => {
       if (!read.ok) return;
       expect([...read.value.keys()]).toStrictEqual([newest.storeIdentifier]);
       expect(read.value.get(newest.storeIdentifier)).toStrictEqual(expect.any(String));
+    });
+    /** The reference an index would give for an inbox's newest email. */
+    const aReference = async (
+      mailStore: MailStore,
+    ): Promise<{ reference: EmailReference; newest: Email }> => {
+      const { inbox, emails } = await anInboxWithMail(mailStore);
+      const [newest] = emails;
+      if (!newest) throw new Error("the inbox held no email after all");
+      const messageIds = await mailStore.messageIds({
+        mailbox: inbox,
+        storeIdentifiers: [newest.storeIdentifier],
+      });
+      const messageId = messageIds.ok ? messageIds.value.get(newest.storeIdentifier) : undefined;
+      if (messageId === undefined) throw new Error("the newest email has no Message-ID");
+      const reference = {
+        mailAccount: inbox.mailAccount.identifier,
+        mailboxPath: inbox.path,
+        messageId,
+        storeIdentifier: newest.storeIdentifier,
+      };
+      return { reference, newest };
+    };
+
+    // findings MAIL-93: a read acts on exactly the email its reference names.
+    it("reads in full the email a reference names, with no more of its body than was asked for", async () => {
+      const { mailStore } = await build();
+      const { reference, newest } = await aReference(mailStore);
+
+      const read = await mailStore.email({ reference, longestBody: 500 });
+
+      if (!read.ok || read.value === undefined) throw new Error("the email was not read");
+      expect(read.value.reference).toStrictEqual(reference);
+      expect(read.value.subject).toBe(newest.subject);
+      expect(read.value.receivedAt).toStrictEqual(newest.receivedAt);
+      expect(read.value.body.text.length).toBeLessThanOrEqual(500);
+      expect(read.value.body.truncated).toBe(read.value.body.characters > 500);
+    });
+
+    // The store identifier only says where to look first: the Message-ID says which email. A
+    // store may find that mailbox too large to look through, which it says, and that is not an
+    // email either.
+    it("given a reference whose Message-ID no email in that mailbox has, never answers with an email, whatever its store identifier points at", async () => {
+      const { mailStore } = await build();
+      const { reference } = await aReference(mailStore);
+
+      const read = await mailStore.email({
+        reference: { ...reference, messageId: `not-${reference.messageId}` },
+        longestBody: 500,
+      });
+
+      if (read.ok) expect(read.value).toBeUndefined();
+      else expect(read.failure.code).toBe("email_reference_stale");
     });
   });
 };
