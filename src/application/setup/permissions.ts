@@ -1,0 +1,21 @@
+import type { Outcome } from "../../domain/failure.js";
+
+/** The permissions the helper holds, one per store it guards. */
+export const permissionsAskedBySetup = ["calendar", "reminders"] as const;
+
+export type Permission = (typeof permissionsAskedBySetup)[number];
+
+/** What macOS allows the helper, in the helper's own words (native/README.md). */
+export type PermissionState = "granted" | "refused" | "undecided" | "restricted" | "writeOnly";
+
+export type PermissionAnswer = {
+  readonly state: PermissionState;
+  /** The setting to change and where, whenever changing one is what would help. */
+  readonly setting?: string;
+};
+
+/** Where a permission is asked for: the helper, which is what macOS attributes a grant to. */
+export type Permissions = {
+  /** Asks the user while nobody has been asked, and otherwise says what was answered. */
+  readonly askFor: (permission: Permission) => Promise<Outcome<PermissionAnswer>>;
+};

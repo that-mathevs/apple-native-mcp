@@ -12,9 +12,11 @@ import {
 } from "./adapters/native/codesign-code-requirement.js";
 import { diskHelperFiles } from "./adapters/native/disk-helper-files.js";
 import { Helper } from "./adapters/native/helper.js";
+import { helperPermissions } from "./adapters/native/helper-permissions.js";
 import { helperReminderStore } from "./adapters/native/reminder-store.js";
 import { helperToLaunch } from "./application/setup/helper-to-launch.js";
 import { installHelper } from "./application/setup/install-helper.js";
+import { setup } from "./cli/setup.js";
 import { helperPathSetting, settingsFrom } from "./domain/settings.js";
 import { buildServer } from "./mcp/server.js";
 
@@ -41,53 +43,77 @@ const codeRequirement = codesignCodeRequirement(pinnedCodeRequirement);
 /** Only the client's configuration can name a development build (ADR-0003). */
 const developmentBuild = process.env[helperPathSetting];
 
-const settings = settingsFrom(process.env);
+/** A helper started only once the check before launch allows it (ADR-0003). */
+const helperChecked = (client: () => string): Helper =>
+  new Helper(
+    async () =>
+      await helperToLaunch({
+        helperFiles,
+        codeRequirement,
+        serverVersion,
+        client: client(),
+        ...(developmentBuild === undefined ? {} : { developmentBuild }),
+      }),
+  );
 
-// stdout belongs to the protocol. A client shows a server's stderr in its log, which is the one
-// place a user looks when a write they switched on is not offered.
-if (settings.unparsed !== undefined) {
-  console.error(`apple-native-mcp: every write capability is off. ${settings.unparsed}`);
-}
+/** `apple-native-mcp setup`, run by the user in a terminal, where stdout is theirs to read. */
+const runSetup = async (): Promise<void> => {
+  const helper = helperChecked(() => "the install you ran setup from");
+  const permissions = helperPermissions(helper);
 
-// An update arrives as a newer shipped helper, so every start offers it to the fixed path. A
-// failure here is not the end: the check before launch names what to do, on the call that needs
-// the helper.
-if (developmentBuild === undefined) {
-  const installed = await installHelper({ helperFiles, codeRequirement });
-  if (!installed.ok) {
-    const { sentence, evidence } = installed.failure;
-    const because = evidence === undefined ? "" : ` (${evidence})`;
-    console.error(`apple-native-mcp: ${sentence}${because}`);
-  }
-}
+  const status = await setup({ helperFiles, codeRequirement, permissions }, (line) => {
+    console.log(line);
+  });
 
-const helper = new Helper(
-  async () =>
-    await helperToLaunch({
-      helperFiles,
-      codeRequirement,
-      serverVersion,
-      // Asked only when a tool first needs the helper, by which time the client has said who
-      // it is in its initialize.
-      client: server.server.getClientVersion()?.name ?? "your MCP client",
-      ...(developmentBuild === undefined ? {} : { developmentBuild }),
-    }),
-);
-
-const server = buildServer({
-  eventStore: calendarEventStore(helper),
-  reminderStore: helperReminderStore(helper),
-  now: () => new Date(),
-  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  settings,
-});
-
-const stopping = (): void => {
   helper.stop();
-  process.exit(0);
+  process.exit(status);
 };
 
-process.on("SIGINT", stopping);
-process.on("SIGTERM", stopping);
+/** The MCP server, started by a client, which owns stdout for the protocol. */
+const serve = async (): Promise<void> => {
+  const settings = settingsFrom(process.env);
 
-await server.connect(new StdioServerTransport());
+  // A client shows a server's stderr in its log, which is the one place a user looks when a
+  // write they switched on is not offered.
+  if (settings.unparsed !== undefined) {
+    console.error(`apple-native-mcp: every write capability is off. ${settings.unparsed}`);
+  }
+
+  // An update arrives as a newer shipped helper, so every start offers it to the fixed path. A
+  // failure here is not the end: the check before launch names what to do, on the call that
+  // needs the helper.
+  if (developmentBuild === undefined) {
+    const installed = await installHelper({ helperFiles, codeRequirement });
+    if (!installed.ok) {
+      const { sentence, evidence } = installed.failure;
+      const because = evidence === undefined ? "" : ` (${evidence})`;
+      console.error(`apple-native-mcp: ${sentence}${because}`);
+    }
+  }
+
+  // The client's name is asked for only when a tool first needs the helper, by which time the
+  // client has said who it is in its initialize.
+  const helper = helperChecked(
+    () => server.server.getClientVersion()?.name ?? "your MCP client",
+  );
+
+  const server = buildServer({
+    eventStore: calendarEventStore(helper),
+    reminderStore: helperReminderStore(helper),
+    now: () => new Date(),
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    settings,
+  });
+
+  const stopping = (): void => {
+    helper.stop();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", stopping);
+  process.on("SIGTERM", stopping);
+
+  await server.connect(new StdioServerTransport());
+};
+
+await (process.argv[2] === "setup" ? runSetup() : serve());
