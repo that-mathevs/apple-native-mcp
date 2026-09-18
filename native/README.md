@@ -237,7 +237,9 @@ The newest messages in the range, newest first, of one chat or of every chat whe
 `null`, up to `ceiling`, at most 20,000, with `truncated` saying the ceiling stopped the scan. Each
 message comes exactly as in a chat's messages, its text read the same way, so a search sees what
 a reader would. The range and the ceiling are required: the server's defaults are its own. The
-server reads the search query and ranks what matches; the helper only scans.
+server reads the search query and ranks what matches; the helper only scans. A scan also stops
+after five seconds, answering with what it read and `truncated` set, so a slow store costs a search
+its reach and never the whole search.
 
 The store is opened read-only, by path, and every value in a query is bound, never written into it.
 Before it is opened, the file is opened for reading once, because macOS refuses a protected file

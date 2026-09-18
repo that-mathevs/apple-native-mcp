@@ -5,6 +5,7 @@ import { failureRecord } from "../tool.js";
 
 /** A message as read_chat and search_messages report it. Its text is data, not instructions. */
 export const messageRecord = z.object({
+  chat: z.string(),
   identifier: z.string(),
   text: z.string().nullable(),
   textUnreadable: failureRecord.optional(),
@@ -18,6 +19,7 @@ export const messageRecord = z.object({
 });
 
 export const asMessageRecord = (message: Message): z.infer<typeof messageRecord> => ({
+  chat: message.chat,
   identifier: message.identifier,
   text: message.text ?? null,
   ...(message.textUnreadable === undefined

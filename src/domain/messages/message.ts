@@ -36,10 +36,3 @@ export type Message = {
 /** How many messages a read returns when the caller names no limit, and the most it may name. */
 export const defaultMessageLimit = 50;
 export const greatestMessageLimit = 200;
-
-/** How many days back a search reaches when the caller names no range (#20). */
-export const searchDays = 30;
-/** The most messages one search scans, newest first, before it stops and says so. */
-export const searchCeiling = 20_000;
-/** The most matches one search returns, the best first. */
-export const greatestMatches = 50;

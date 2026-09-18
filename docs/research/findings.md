@@ -1532,7 +1532,9 @@ country, so CON-37 is rejected._
 
 _[#24](https://github.com/that-mathevs/apple-native-mcp/issues/24) settles MAIL-C10: this is one
 grammar, in one domain module, shared with Mail search (MAIL-71). Messages has no default range,
-because its store answers quickly._
+because its store answers quickly._ _Overturned while building #40: the maintainer chose the last 30
+days as Messages' default too, with a scan of at most 20,000 messages and a time budget, each stated
+in the result's coverage._
 
 - [ ] **MSG-80** [domain] given bare words, treats each as optional and ranks messages matching more of them higher · — · faces-sh `cad640a`, `ccc9f55`, `fa7dcbd`, `bdbb896`
 - [ ] **MSG-81** [domain] given a quoted phrase, matches it only as consecutive words · — · faces-sh `cad640a`, `ccc9f55`, `fa7dcbd`, `bdbb896`
@@ -2478,7 +2480,8 @@ _No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18
   - Refuse unless account, mailbox, start and end dates are given: morquis `5ce2351`
   - No bound, one indexed query: fpjnijweide `6cf16c0`, `05305b2`
 - **Recommendation:** Never bound silently (MAIL-19, MAIL-30). Apply a default range and state it in the result (MAIL-37) rather than refusing (MAIL-38). An agent that is told the range can widen it, but one that is refused has to guess dates.
-- **Settled by [#24](https://github.com/that-mathevs/apple-native-mcp/issues/24):** the default range is the last 30 days, newest first, and the result states the range it used and its coverage — how far back it reached and whether it stopped at its time budget. **MAIL-37 ships, MAIL-38 doesn't.** #7 measured Mail at about 17 ms per *matching* email, with a date search on a large mailbox failing after 120 s, so an unbounded search is not viable. Messages has no default range, because its store answers quickly.
+- **Settled by [#24](https://github.com/that-mathevs/apple-native-mcp/issues/24):** the default range is the last 30 days, newest first, and the result states the range it used and its coverage — how far back it reached and whether it stopped at its time budget. **MAIL-37 ships, MAIL-38 doesn't.** #7 measured Mail at about 17 ms per *matching* email, with a date search on a large mailbox failing after 120 s, so an unbounded search is not viable. Messages has no default range, because its store answers quickly. (Overturned in #40: Messages
+also defaults to the last 30 days.)
 
 #### MAIL-C5 How several accounts are read without hanging Mail
 

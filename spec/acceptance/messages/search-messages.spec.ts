@@ -7,8 +7,8 @@ import { connectedTo } from "../../support/connected-client.js";
 import { FakeMessageStore } from "../../support/fake-message-store.js";
 
 // Upstream #62 searched with SQL LIKE over plain text alone, so every message kept only as
-// archived text was invisible to it, and it never said how much it had looked at. A search here reads the
-// messages' text as read_chat does, and always states its coverage.
+// archived text was invisible to it, and it never said how much it had looked at. A search here
+// reads the messages' text as read_chat does, and always states its coverage.
 
 /** 2026-09-18 12:00 in New York. */
 const noon = new Date("2026-09-18T16:00:00Z");
@@ -40,6 +40,7 @@ describe("searching messages", () => {
     );
   });
 
+  // MSG-19: each match names the chat it came from.
   it("returns the messages that match across every chat, the best match first, each naming its chat", async () => {
     messageStore.holdsMessages(
       aMessage("one", climbing, "bring the rope", "2026-09-18T14:00:00Z"),
@@ -50,9 +51,9 @@ describe("searching messages", () => {
     const result = await search({ query: "rope wall" });
 
     expect(result.structuredContent).toMatchObject({
-      hits: [
-        { chat: withBen, message: { identifier: "both", text: "rope at the wall" } },
-        { chat: climbing, message: { identifier: "one", text: "bring the rope" } },
+      messages: [
+        { chat: withBen, identifier: "both", text: "rope at the wall" },
+        { chat: climbing, identifier: "one", text: "bring the rope" },
       ],
     });
   });
@@ -68,7 +69,7 @@ describe("searching messages", () => {
 
     expect(result.structuredContent).toMatchObject({
       range: { from: "2026-08-20T04:00:00.000Z", to: "2026-09-19T04:00:00.000Z" },
-      hits: [{ message: { identifier: "recent" } }],
+      messages: [{ identifier: "recent" }],
     });
   });
 
@@ -106,7 +107,7 @@ describe("searching messages", () => {
     const result = await search({ query: "rope", chat: withBen });
 
     expect(result.structuredContent).toMatchObject({
-      hits: [{ message: { identifier: "there" } }],
+      messages: [{ identifier: "there" }],
     });
   });
 
@@ -126,7 +127,7 @@ describe("searching messages", () => {
 
     const result = await search({ query: "rope" });
 
-    expect(result.structuredContent).toMatchObject({ coverage: { textsUnread: 1 } });
+    expect(result.structuredContent).toMatchObject({ coverage: { unsearched: 1 } });
   });
 
   it("given a chat identifier no chat has, refuses rather than reporting no matches", async () => {
@@ -137,11 +138,67 @@ describe("searching messages", () => {
     expect(result.structuredContent).toMatchObject({ failure: { code: "chat_unknown" } });
   });
 
-  it("given an empty query, matches nothing rather than everything", async () => {
+  // MSG-84: a search for nothing that found everything handed an agent the whole store.
+  it("given an empty query, matches nothing, and scans nothing to find it", async () => {
     messageStore.holdsMessages(aMessage("here", climbing, "rope", "2026-09-18T14:00:00Z"));
 
     const result = await search({ query: "" });
 
-    expect(result.structuredContent).toMatchObject({ hits: [] });
+    expect(result.structuredContent).toMatchObject({
+      messages: [],
+      coverage: { scanned: 0, matched: 0 },
+    });
+  });
+
+  // #24: a search is never bounded silently. The maintainer set 50 as the most one returns.
+  it("given more matches than it returns, returns the best 50 and says how many matched in all", async () => {
+    messageStore.holdsMessages(
+      ...Array.from({ length: 60 }, (_, index) =>
+        aMessage(
+          `m${String(index)}`,
+          climbing,
+          "rope",
+          `2026-09-18T${String(10 + (index % 5))}:00:00Z`,
+        ),
+      ),
+    );
+
+    const result = await search({ query: "rope" });
+
+    expect(result.structuredContent).toMatchObject({ coverage: { matched: 60 } });
+    expect((result.structuredContent as { messages: unknown[] }).messages).toHaveLength(50);
+  });
+
+  // CONTEXT "Range": date-only bounds mean whole days in the user's time zone (MSG-77, MSG-78).
+  it("given dates alone, searches those whole days in the user's time zone", async () => {
+    messageStore.holdsMessages(aMessage("late", climbing, "rope", "2026-09-18T03:30:00Z"));
+
+    const result = await search({ query: "rope", from: "2026-09-17", to: "2026-09-17" });
+
+    expect(result.structuredContent).toMatchObject({
+      range: { from: "2026-09-17T04:00:00.000Z", to: "2026-09-18T04:00:00.000Z" },
+      messages: [{ identifier: "late" }],
+    });
+  });
+
+  it("given only an end, searches the 30 days before it rather than a range that ends before it starts", async () => {
+    const result = await search({ query: "rope", to: "2025-01-01T00:00:00Z" });
+
+    expect(result.structuredContent).toMatchObject({
+      range: { from: "2024-12-02T00:00:00.000Z", to: "2025-01-01T00:00:00.000Z" },
+    });
+  });
+
+  it("given a range that ends before it starts, refuses it rather than finding nothing", async () => {
+    const result = await search({ query: "rope", from: "2026-09-18", to: "2026-09-01" });
+
+    expect(result.structuredContent).toMatchObject({ failure: { code: "range-not-forwards" } });
+  });
+
+  // MSG-79: a date the calendar does not have is refused, never rolled over into the next month.
+  it("given a date the calendar does not have, refuses it", async () => {
+    const result = await search({ query: "rope", from: "2026-02-30" });
+
+    expect(result.structuredContent).toMatchObject({ failure: { code: "arguments-invalid" } });
   });
 });

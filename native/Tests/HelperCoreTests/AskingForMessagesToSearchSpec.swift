@@ -87,4 +87,31 @@ struct AskingForMessagesToSearchSpec {
     #expect(helper.respond(to: asking(range: #""range":null"#)).contains("request_malformed"))
     #expect(helper.respond(to: asking(ceiling: 20_001)).contains("request_malformed"))
   }
+
+  // #24: a search that runs out of time reports what it has rather than failing. The server gives
+  // the helper ten seconds, and a slow store must not cost the whole search.
+  @Test("given a scan that runs out of time, answers what it scanned and says it stopped")
+  func stopsAtItsTimeBudget() {
+    let slow = SQLiteMessageStore(path: twoChats.path, clock: aClockAdvancing(by: 2))
+    let helper = Helper(
+      calendarStore: aCalendarStore(), reminderStore: aReminderStore(),
+      contactStore: aContactStore(), messageStore: slow, noteStore: aNoteStore(),
+      mailStore: aMailStore())
+
+    let response = helper.respond(to: asking())
+
+    #expect(response.contains("newest"))
+    #expect(!response.contains("oldest"))
+    #expect(response.contains(#""truncated":true"#))
+  }
+}
+
+/// A clock that moves on by this many seconds each time it is read.
+func aClockAdvancing(by seconds: TimeInterval) -> @Sendable () -> Date {
+  final class Ticking: @unchecked Sendable { var now = nineOClock }
+  let ticking = Ticking()
+  return {
+    ticking.now = ticking.now.addingTimeInterval(seconds)
+    return ticking.now
+  }
 }

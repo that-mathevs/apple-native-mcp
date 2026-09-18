@@ -26,7 +26,9 @@ struct MessagesReading: Sendable {
     store.messagesToSearch(within: range, inChat: identifier, ceiling: ceiling)
       .mapError(NamedFailure.init(refusal:))
       .flatMap { scanned in
-        scanned.map { .success($0) } ?? .failure(.chatUnknown(identifier: identifier ?? ""))
+        // Only a named chat can be unknown; every chat always answers.
+        guard let scanned else { return .failure(.chatUnknown(identifier: identifier ?? "")) }
+        return .success(scanned)
       }
   }
 }

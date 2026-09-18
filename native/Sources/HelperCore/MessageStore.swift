@@ -39,12 +39,23 @@ public struct SQLiteMessageStore: MessageStore {
   /// file before SQLite ever sees it, and only the error number tells a refusal from absence.
   let probing: @Sendable (String) -> Int32
 
+  /// What time it is, which a search reads to keep to its budget.
+  let clock: @Sendable () -> Date
+
   /// How long a read waits on Messages' write lock before it fails.
   static let lockWaitMilliseconds: Int32 = 1000
 
-  public init(path: String, probing: @escaping @Sendable (String) -> Int32 = openingForReading) {
+  /// How long a search scans before it answers with what it has. Half the server's budget for a
+  /// whole request, which leaves the rest for sending twenty thousand messages back.
+  static let searchTimeBudget: TimeInterval = 5
+
+  public init(
+    path: String, probing: @escaping @Sendable (String) -> Int32 = openingForReading,
+    clock: @escaping @Sendable () -> Date = { Date() }
+  ) {
     self.path = path
     self.probing = probing
+    self.clock = clock
   }
 
   public func chats(limit: Int) -> Result<ChatsRead, MessageStoreRefusal> {
@@ -101,23 +112,13 @@ public struct SQLiteMessageStore: MessageStore {
     opened().flatMap { database in
       defer { sqlite3_close(database) }
 
-      let chat = rows(
-        in: database, "SELECT ROWID FROM chat WHERE guid = ?", binding: [.text(identifier)]
-      ) { row in row.integer(0) }
+      return chatRow(identifiedBy: identifier, in: database).flatMap { rowid in
+        guard let rowid else { return .success(nil) }
 
-      return chat.flatMap { found in
-        guard let rowid = found.first else { return .success(nil) }
-
-        // A reaction is stored as a message that points at another (associated_message_type),
-        // and a group event such as a rename as a message of another item type. Neither is
-        // something anyone wrote to the chat.
-        let newest = newestMessages(
-          in: database, chat: rowid, within: range, limit: Int64(limit) + 1)
-
-        return newest.map { messages in
-          MessagesRead(
-            messages: messages.prefix(limit).reversed(), truncated: messages.count > limit)
-        }
+        return newestMessages(in: database, of: .chat(rowid), within: range, limit: limit)
+          .map { newest in
+            MessagesRead(messages: newest.messages.reversed(), truncated: newest.truncated)
+          }
       }
     }
   }
@@ -128,62 +129,93 @@ public struct SQLiteMessageStore: MessageStore {
     opened().flatMap { database in
       defer { sqlite3_close(database) }
 
-      let chat: Result<Int64??, MessageStoreRefusal>
-      if let identifier {
-        chat = rows(
-          in: database, "SELECT ROWID FROM chat WHERE guid = ?", binding: [.text(identifier)]
-        ) { row in row.integer(0) }.map { found in found.first.map { .some($0) } }
-      } else {
-        chat = .success(.some(nil))
-      }
+      let scope: Result<Scope?, MessageStoreRefusal> =
+        identifier.map { identifier in
+          chatRow(identifiedBy: identifier, in: database).map { $0.map(Scope.chat) }
+        } ?? .success(.everyChat)
 
-      return chat.flatMap { found in
-        guard let rowid = found else { return .success(nil) }
+      return scope.flatMap { scope in
+        guard let scope else { return .success(nil) }
 
-        return newestMessages(in: database, chat: rowid, within: range, limit: Int64(ceiling) + 1)
-          .map { messages in
-            MessagesScanned(
-              messages: Array(messages.prefix(ceiling)), truncated: messages.count > ceiling)
-          }
+        // A search scans for as long as its budget lasts and answers with what it has read,
+        // saying it stopped: a slow store must not cost the whole search (#24).
+        let deadline = clock().addingTimeInterval(Self.searchTimeBudget)
+        return newestMessages(
+          in: database, of: scope, within: range, limit: ceiling, until: deadline
+        ).map { newest in MessagesScanned(messages: newest.messages, truncated: newest.truncated) }
       }
     }
   }
 
-  /// The newest messages in a range, of one chat or of every chat, newest first, each read with
-  /// its text. A reaction is stored as a message that points at another
-  /// (associated_message_type), and a group event such as a rename as a message of another item
-  /// type. Neither is something anyone wrote to the chat.
+  /// Which chats a read of messages covers.
+  private enum Scope {
+    case chat(Int64)
+    case everyChat
+  }
+
+  /// A chat's row in the store, or nothing when no chat has that identifier.
+  private func chatRow(identifiedBy identifier: String, in database: OpaquePointer) -> Result<
+    Int64?, MessageStoreRefusal
+  > {
+    rows(in: database, "SELECT ROWID FROM chat WHERE guid = ?", binding: [.text(identifier)]) {
+      row in row.integer(0)
+    }.map(\.first)
+  }
+
+  /// The messages of one chat, or of every chat, newest first. Two queries rather than one that
+  /// branches on a value, so a read of one chat is planned around that chat.
+  private static let messagesOfOneChat = messagesQuery(filtering: "j.chat_id = ? AND")
+  private static let messagesOfEveryChat = messagesQuery(filtering: "")
+
+  private static func messagesQuery(filtering chat: String) -> String {
+    """
+    SELECT m.guid, m.text, m.is_from_me, h.id, m.date, m.service, m.is_sent,
+      m.is_delivered, m.error, m.attributedBody, c.guid
+    FROM chat_message_join j
+    JOIN chat c ON c.ROWID = j.chat_id
+    JOIN message m ON m.ROWID = j.message_id
+    LEFT JOIN handle h ON h.ROWID = m.handle_id AND m.is_from_me = 0
+    WHERE \(chat) m.associated_message_type = 0 AND m.item_type = 0
+      AND m.date >= ? AND m.date < ?
+    ORDER BY m.date DESC, m.ROWID DESC
+    LIMIT ?
+    """
+  }
+
+  /// The newest messages in a range, newest first, each read with its text, up to a limit or a
+  /// deadline, and whether either stopped the read. A reaction is stored as a message that points
+  /// at another (associated_message_type), and a group event such as a rename as a message of
+  /// another item type. Neither is something anyone wrote to the chat.
   private func newestMessages(
-    in database: OpaquePointer, chat: Int64?, within range: MessageRange, limit: Int64
-  ) -> Result<[Message], MessageStoreRefusal> {
-    rows(
-      in: database,
-      """
-      SELECT m.guid, m.text, m.is_from_me, h.id, m.date, m.service, m.is_sent,
-        m.is_delivered, m.error, m.attributedBody, c.guid
-      FROM chat_message_join j
-      JOIN chat c ON c.ROWID = j.chat_id
-      JOIN message m ON m.ROWID = j.message_id
-      LEFT JOIN handle h ON h.ROWID = m.handle_id AND m.is_from_me = 0
-      WHERE (? IS NULL OR j.chat_id = ?)
-        AND m.associated_message_type = 0 AND m.item_type = 0
-        AND m.date >= ? AND m.date < ?
-      ORDER BY m.date DESC, m.ROWID DESC
-      LIMIT ?
-      """,
-      binding: [
-        chat.map(Bound.integer) ?? .null, chat.map(Bound.integer) ?? .null,
-        .integer(range.start.map(storeDate(from:)) ?? Int64.min),
-        .integer(range.end.map(storeDate(from:)) ?? Int64.max),
-        .integer(limit),
-      ]
+    in database: OpaquePointer, of scope: Scope, within range: MessageRange, limit: Int,
+    until deadline: Date? = nil
+  ) -> Result<(messages: [Message], truncated: Bool), MessageStoreRefusal> {
+    let bounds: [Bound] = [
+      .integer(range.start.map(storeDate(from:)) ?? Int64.min),
+      .integer(range.end.map(storeDate(from:)) ?? Int64.max),
+      .integer(Int64(limit) + 1),
+    ]
+    let (query, binding): (String, [Bound]) =
+      switch scope {
+      case .chat(let rowid): (Self.messagesOfOneChat, [.integer(rowid)] + bounds)
+      case .everyChat: (Self.messagesOfEveryChat, bounds)
+      }
+
+    var outOfTime = false
+    let read = rows(
+      in: database, query, binding: binding,
+      continuing: {
+        guard let deadline else { return true }
+        outOfTime = clock() > deadline
+        return !outOfTime
+      }
     ) { row in
       let outgoing = row.integer(2) == 1
-      let read = MessageText(
+      let text = MessageText(
         plain: row.text(1), archived: row.blob(9, atMost: ArchivedText.greatestSize))
       return Message(
-        identifier: row.text(0) ?? "", chat: row.text(10) ?? "", text: read.text,
-        textUnreadable: read.unreadable,
+        identifier: row.text(0) ?? "", chat: row.text(10) ?? "", text: text.text,
+        textUnreadable: text.unreadable,
         direction: outgoing ? .outgoing : .incoming, handle: row.text(3),
         timestamp: instant(fromStoreDate: row.integer(4)), service: row.text(5) ?? "",
         delivery: outgoing
@@ -191,6 +223,10 @@ public struct SQLiteMessageStore: MessageStore {
             sent: row.integer(6) == 1, delivered: row.integer(7) == 1,
             error: row.integer(8) == 0 ? nil : Int(row.integer(8)))
           : nil)
+    }
+
+    return read.map { messages in
+      (Array(messages.prefix(limit)), outOfTime || messages.count > limit)
     }
   }
 
@@ -249,7 +285,6 @@ func storeDate(from instant: Date) -> Int64 {
 private enum Bound {
   case integer(Int64)
   case text(String)
-  case null
 }
 
 /// One row of an answer, read by column.
@@ -274,7 +309,7 @@ private struct Row {
 /// Run one prepared statement with its values bound, and read every row it answers with.
 private func rows<Found>(
   in database: OpaquePointer, _ query: String, binding values: [Bound],
-  reading: (Row) -> Found
+  continuing: () -> Bool = { true }, reading: (Row) -> Found
 ) -> Result<[Found], MessageStoreRefusal> {
   var statement: OpaquePointer?
   guard sqlite3_prepare_v2(database, query, -1, &statement, nil) == SQLITE_OK, let statement
@@ -289,14 +324,15 @@ private func rows<Found>(
     switch value {
     case .integer(let number): sqlite3_bind_int64(statement, position, number)
     case .text(let text): sqlite3_bind_text(statement, position, text, -1, transient)
-    case .null: sqlite3_bind_null(statement, position)
     }
   }
 
   var found: [Found] = []
   while true {
     switch sqlite3_step(statement) {
-    case SQLITE_ROW: found.append(reading(Row(statement: statement)))
+    case SQLITE_ROW:
+      guard continuing() else { return .success(found) }
+      found.append(reading(Row(statement: statement)))
     case SQLITE_DONE: return .success(found)
     default: return .failure(.unreadable(evidence: String(cString: sqlite3_errmsg(database))))
     }

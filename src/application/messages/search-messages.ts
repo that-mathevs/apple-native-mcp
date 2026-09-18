@@ -1,9 +1,9 @@
-import type { Outcome } from "../../domain/failure.js";
-import { succeeded } from "../../domain/failure.js";
+import type { NamedFailure, Outcome } from "../../domain/failure.js";
+import { failed, succeeded } from "../../domain/failure.js";
 import type { Message } from "../../domain/messages/message.js";
-import { greatestMatches, searchCeiling, searchDays } from "../../domain/messages/message.js";
-import { relevance, searchQueryFrom } from "../../domain/search-query.js";
-import { dayIn, startOfDay } from "../../domain/time-zone.js";
+import { greatestMatches, searchCeiling, searchDays } from "../../domain/messages/search.js";
+import { rankingBy, searchQueryFrom } from "../../domain/search-query.js";
+import { dayIn, type LocalDay, startOfDay } from "../../domain/time-zone.js";
 import type { MessageStore } from "./message-store.js";
 
 export type SearchMessagesDependencies = {
@@ -12,10 +12,13 @@ export type SearchMessagesDependencies = {
   readonly timeZone: string;
 };
 
+/** One end of a range as written: an instant, or a whole day in the user's time zone. */
+export type Bound = { readonly at: Date } | { readonly day: LocalDay };
+
 export type SearchMessagesRequest = {
   readonly query: string;
-  readonly from?: Date | undefined;
-  readonly to?: Date | undefined;
+  readonly from?: Bound | undefined;
+  readonly to?: Bound | undefined;
   readonly chat?: string | undefined;
 };
 
@@ -26,8 +29,10 @@ export type SearchCoverage = {
   readonly truncated: boolean;
   /** The oldest message scanned, when the scan stopped short. */
   readonly reachedBack?: Date;
-  /** Messages whose text could not be read, which were not searched. */
-  readonly textsUnread: number;
+  /** Every message that matched, of which the best are returned. */
+  readonly matched: number;
+  /** Messages whose text could not be read, and so were not searched. */
+  readonly unsearched: number;
 };
 
 export type MessagesFound = {
@@ -36,21 +41,62 @@ export type MessagesFound = {
   readonly coverage: SearchCoverage;
 };
 
-/** The last `searchDays` whole days in the user's time zone, today included. */
-const defaultRange = (now: Date, timeZone: string): { from: Date; to: Date } => {
-  const today = dayIn(timeZone, now);
-  return {
-    from: startOfDay(timeZone, { ...today, day: today.day - (searchDays - 1) }),
-    to: startOfDay(timeZone, { ...today, day: today.day + 1 }),
-  };
+const rangeNotForwards: NamedFailure = {
+  code: "range-not-forwards",
+  sentence: "Nothing was searched: the range ends at or before it starts.",
 };
+
+const dayAfter = (day: LocalDay): LocalDay => ({ ...day, day: day.day + 1 });
+
+const daysBefore = (instant: Date, days: number): Date =>
+  new Date(instant.getTime() - days * 24 * 60 * 60 * 1000);
+
+/**
+ * The range a search covers. A day alone is the whole of that day (MSG-77), from its local
+ * midnight (MSG-78). With neither end, it is the last `searchDays` whole days, today included;
+ * with only an end, the `searchDays` before it; with only a start, from it until tomorrow.
+ */
+const rangeOf = (
+  { from, to }: SearchMessagesRequest,
+  now: Date,
+  timeZone: string,
+): { from: Date; to: Date } => {
+  const today = dayIn(timeZone, now);
+  const end =
+    to === undefined
+      ? startOfDay(timeZone, dayAfter(today))
+      : "at" in to
+        ? to.at
+        : startOfDay(timeZone, dayAfter(to.day));
+  const start =
+    from === undefined
+      ? to === undefined
+        ? startOfDay(timeZone, { ...today, day: today.day - (searchDays - 1) })
+        : daysBefore(end, searchDays)
+      : "at" in from
+        ? from.at
+        : startOfDay(timeZone, from.day);
+  return { from: start, to: end };
+};
+
+const nothingScanned = (range: { from: Date; to: Date }): MessagesFound => ({
+  range,
+  matches: [],
+  coverage: { scanned: 0, truncated: false, matched: 0, unsearched: 0 },
+});
 
 export const searchMessages = async (
   { messageStore, now, timeZone }: SearchMessagesDependencies,
   request: SearchMessagesRequest,
 ): Promise<Outcome<MessagesFound>> => {
-  const fallback = defaultRange(now(), timeZone);
-  const range = { from: request.from ?? fallback.from, to: request.to ?? fallback.to };
+  const range = rangeOf(request, now(), timeZone);
+  if (range.to <= range.from) return failed(rangeNotForwards);
+
+  // A query with nothing to find matches nothing (MSG-84), so nothing is read to find it.
+  const query = searchQueryFrom(request.query);
+  if (query.words.length === 0 && query.phrases.length === 0) {
+    return succeeded(nothingScanned(range));
+  }
 
   const scanned = await messageStore.messagesToSearch({
     ...range,
@@ -60,30 +106,29 @@ export const searchMessages = async (
   if (!scanned.ok) return scanned;
 
   const { messages, truncated } = scanned.value;
-  const query = searchQueryFrom(request.query);
+  const ranking = rankingBy(query);
 
-  const matches = messages
+  const ranked = messages
     .flatMap((message) => {
-      const found = message.text === undefined ? undefined : relevance(query, message.text);
-      return found === undefined ? [] : [{ message, found }];
+      const score = message.text === undefined ? undefined : ranking(message.text);
+      return score === undefined ? [] : [{ message, score }];
     })
     .sort(
       (left, right) =>
-        right.found - left.found ||
+        right.score - left.score ||
         right.message.timestamp.getTime() - left.message.timestamp.getTime(),
-    )
-    .slice(0, greatestMatches)
-    .map(({ message }) => message);
+    );
 
   const oldest = messages.at(-1);
   return succeeded({
     range,
-    matches,
+    matches: ranked.slice(0, greatestMatches).map(({ message }) => message),
     coverage: {
       scanned: messages.length,
       truncated,
       ...(truncated && oldest !== undefined ? { reachedBack: oldest.timestamp } : {}),
-      textsUnread: messages.filter(({ textUnreadable }) => textUnreadable !== undefined).length,
+      matched: ranked.length,
+      unsearched: messages.filter(({ textUnreadable }) => textUnreadable !== undefined).length,
     },
   });
 };

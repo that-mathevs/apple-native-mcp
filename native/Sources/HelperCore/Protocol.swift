@@ -27,7 +27,7 @@ struct Request: Equatable {
     case contactNote
     case chats(limit: Int)
     case chatMessages(chat: String, range: MessageRange, limit: Int)
-    case messagesToSearch(range: Range, chat: String?, ceiling: Int)
+    case messagesToSearch(range: MessageRange, chat: String?, ceiling: Int)
     case notesPermission
     case requestNotesPermission
     case noteFolders
@@ -201,12 +201,13 @@ extension Request {
       // ceiling. A chat may be left out with null, meaning every chat.
       let chat = fields["chat"]
       guard
-        let range = readRange(fields["range"]),
+        let bounded = readRange(fields["range"]),
         let ceiling = fields["ceiling"] as? Int, (1...greatestSearchCeiling).contains(ceiling),
         chat is NSNull || (chat as? String).map({ !$0.isEmpty }) == true
       else {
         return .failure(id: id, .requestMalformed(line: line))
       }
+      let range = MessageRange(start: bounded.start, end: bounded.end)
       let kind = Request.Kind.messagesToSearch(
         range: range, chat: chat as? String, ceiling: ceiling)
       return .request(Request(id: id, kind: kind))

@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { relevance, searchQueryFrom } from "./search-query.js";
+import { rank, rankingBy, searchQueryFrom } from "./search-query.js";
 
 // One grammar for every search that takes a search query (#24). Forks each invented their own:
 // substring matches that found "plumbing" when asked for "plumber", AND-only matching that found
 // nothing for a longer question, and characters that meant something to a regular expression.
 
 const matching = (query: string, text: string): number | undefined =>
-  relevance(searchQueryFrom(query), text);
+  rank(searchQueryFrom(query), text);
 
 describe("a search query", () => {
   it("given bare words, matches a text holding any of them, ranking one holding more higher", () => {
@@ -64,5 +64,59 @@ describe("a search query", () => {
     const query = searchQueryFrom('rope "wall at 6" -invoice');
 
     expect(JSON.parse(JSON.stringify(query))).toStrictEqual(query);
+  });
+
+  // Words are whole words only where a script spaces its words. Chinese, Japanese and Thai don't,
+  // so there a word is found wherever it stands.
+  it("given a script written without spaces, finds a word inside a sentence", () => {
+    expect(matching("东京", "我在东京工作")).toBe(1);
+    expect(matching("東京", "東京に行く")).toBe(1);
+    expect(matching("ข้าว", "กินข้าว")).toBe(1);
+  });
+
+  // Only accents are folded: a vowel sign in Devanagari is part of the word, not a mark on it.
+  it("folds accents only, and keeps the vowel signs other scripts write with", () => {
+    expect(matching("कम", "मुझे काम है")).toBeUndefined();
+    expect(matching("नमस्ते", "नमस्ते दोस्त")).toBe(1);
+  });
+
+  // iOS types a curly apostrophe; a query is typed with a straight one.
+  it("reads a curly apostrophe as a straight one, and keeps it inside the word", () => {
+    expect(matching("don't", "I don’t know")).toBe(1);
+    expect(matching("don", "I don’t know")).toBeUndefined();
+  });
+
+  it("folds compatibility forms, such as a ligature or a full-width letter", () => {
+    expect(matching("file", "the ﬁle is here")).toBe(1);
+    expect(matching("abc", "ＡＢＣ")).toBe(1);
+  });
+
+  it("given a mark with no letter or digit in it, such as a lone dash, ignores it", () => {
+    expect(matching("plumber - invoice", "an e-mail")).toBeUndefined();
+    expect(matching("plumber - invoice", "the plumber")).toBe(1);
+  });
+
+  // A query an agent writes can be chosen to make matching slow: many terms that occur again and
+  // again but never as whole words.
+  it("given terms that occur everywhere but never as whole words, answers a large search quickly", () => {
+    const query = Array.from({ length: 20 }, (_, index) => "ha".repeat(index + 1)).join(" ");
+    const ranking = rankingBy(searchQueryFrom(query));
+    const texts = Array.from({ length: 20_000 }, () => "ha".repeat(500));
+
+    const started = performance.now();
+    for (const text of texts) ranking(text);
+
+    expect(performance.now() - started).toBeLessThan(2_000);
+  });
+
+  it("given many one-letter words, each in every text but never whole, answers a large search quickly", () => {
+    const everyLetter = "a b c d e f g h i j k l m n o p q r s t u v w x y z";
+    const ranking = rankingBy(searchQueryFrom(everyLetter));
+    const texts = Array.from({ length: 20_000 }, () => "abcdefghijklmnopqrstuvwxyz".repeat(40));
+
+    const started = performance.now();
+    for (const text of texts) ranking(text);
+
+    expect(performance.now() - started).toBeLessThan(2_000);
   });
 });

@@ -50,6 +50,7 @@ describe("reading a chat", () => {
       chat: climbing,
       messages: [
         {
+          chat: climbing,
           identifier: "message-1",
           text: "Wall at 6?",
           direction: "incoming",
@@ -58,6 +59,7 @@ describe("reading a chat", () => {
           service: "iMessage",
         },
         {
+          chat: climbing,
           identifier: "message-2",
           text: "I'm in",
           direction: "outgoing",
@@ -118,7 +120,9 @@ describe("reading a chat", () => {
     const result = await readChat({ chat: climbing });
 
     expect(result.structuredContent).toMatchObject({
-      messages: [{ direction: "outgoing", delivery: { sent: false, delivered: false, error: 22 } }],
+      messages: [
+        { direction: "outgoing", delivery: { sent: false, delivered: false, error: 22 } },
+      ],
     });
   });
 
