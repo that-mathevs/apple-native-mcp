@@ -15,6 +15,14 @@ struct CalendarReading: Sendable {
     store.permission()
   }
 
+  /// Ask the user, but only while there is anything to ask: macOS prompts once, so once a
+  /// permission has been decided the answer is the setting to change, not another prompt.
+  func requestPermission() -> CalendarPermission {
+    let held = store.permission()
+    guard held == .undecided else { return held }
+    return store.requestPermission()
+  }
+
   func events(in range: Range) -> Result<EventsInRange, NamedFailure> {
     let permission = store.permission()
     guard permission.allowsReading else {

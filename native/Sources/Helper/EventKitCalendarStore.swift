@@ -19,6 +19,16 @@ final class EventKitCalendarStore: CalendarStore, @unchecked Sendable {
     }
   }
 
+  /// Asking EventKit prompts the user, and the answer arrives on another thread. The protocol is
+  /// one line in, one line out, so the session waits here rather than growing a second shape for
+  /// the one request that has a person in the middle of it.
+  func requestPermission() -> CalendarPermission {
+    let answered = DispatchSemaphore(value: 0)
+    events.requestFullAccessToEvents { _, _ in answered.signal() }
+    answered.wait()
+    return permission()
+  }
+
   func calendars() -> [HelperCore.Calendar] {
     events.calendars(for: .event).map { calendar in
       let source = calendar.source

@@ -11,6 +11,7 @@ struct Request: Equatable {
 
   enum Kind: Equatable {
     case calendarPermission
+    case requestCalendarPermission
     case eventsInRange(Range)
   }
 }
@@ -18,6 +19,7 @@ struct Request: Equatable {
 /// The names the protocol uses on the wire, kept in one place so a name is never spelled twice.
 enum RequestName: String {
   case calendarPermission = "calendar_permission"
+  case requestCalendarPermission = "calendar_permission_request"
   case eventsInRange = "events_in_range"
 }
 
@@ -62,6 +64,8 @@ extension Request {
     switch known {
     case .calendarPermission:
       return .request(Request(id: id, kind: .calendarPermission))
+    case .requestCalendarPermission:
+      return .request(Request(id: id, kind: .requestCalendarPermission))
     case .eventsInRange:
       guard let range = readRange(fields["range"]) else {
         return .failure(id: id, .requestMalformed(line: line))

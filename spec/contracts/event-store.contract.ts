@@ -13,9 +13,19 @@ import type { Range } from "../../src/domain/calendar/range.js";
  */
 export type EventStoreUnderTest = {
   readonly name: string;
+  readonly build: () => Promise<{ readonly eventStore: EventStore }>;
+};
+
+/**
+ * A store a scenario can load with occurrences.
+ *
+ * Only the fake can be loaded today: putting an event into a real calendar needs `create_event`,
+ * which v1 builds later, so the real store answers the suite above and takes this one then.
+ */
+export type LoadableEventStoreUnderTest = {
+  readonly name: string;
   readonly build: () => Promise<{
     readonly eventStore: EventStore;
-    /** The events the store is expected to hold, in whatever way this store is loaded. */
     readonly holding: (...occurrences: readonly Occurrence[]) => Promise<void>;
   }>;
 };
@@ -38,6 +48,30 @@ const occurrence = (start: Date, title: string): Occurrence => ({
 
 export const anEventStore = ({ name, build }: EventStoreUnderTest): void => {
   describe(`${name}, as an event store`, () => {
+    it("given a range, answers with occurrences rather than a failure: a readable calendar always answers", async () => {
+      const { eventStore } = await build();
+
+      const read = await eventStore.occurrencesIn(dayAround(noon));
+
+      expect(read).toMatchObject({ ok: true, value: { occurrences: expect.any(Array) as unknown[] } });
+    });
+
+    it("always says how many calendars it could not read, so a short answer is never mistaken for an empty diary", async () => {
+      const { eventStore } = await build();
+
+      const read = await eventStore.occurrencesIn(dayAround(noon));
+
+      expect(read).toMatchObject({ ok: true, value: { calendarsUnread: expect.any(Number) as number } });
+    });
+
+  });
+};
+
+export const anEventStoreThatCanBeLoaded = ({
+  name,
+  build,
+}: LoadableEventStoreUnderTest): void => {
+  describe(`${name}, loaded with occurrences`, () => {
     it("given a range holding nothing, answers with no occurrences rather than a failure", async () => {
       const { eventStore } = await build();
 
@@ -68,12 +102,5 @@ export const anEventStore = ({ name, build }: EventStoreUnderTest): void => {
       expect(read).toMatchObject({ ok: true, value: { occurrences: [] } });
     });
 
-    it("always says how many calendars it could not read, so a short answer is never mistaken for an empty diary", async () => {
-      const { eventStore } = await build();
-
-      const read = await eventStore.occurrencesIn(dayAround(noon));
-
-      expect(read).toMatchObject({ ok: true, value: { calendarsUnread: expect.any(Number) as number } });
-    });
   });
 };

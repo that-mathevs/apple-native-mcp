@@ -63,11 +63,24 @@ func occurrenceOfASeries(
 /// A calendar store that is not a Mac's: it holds whatever a scenario says it holds, so every rule
 /// above EventKit is specified without a permission, a prompt or a real event.
 struct FakeCalendarStore: CalendarStore {
+  /// How many times macOS was asked. A Mac only ever prompts once, so a scenario has to be able
+  /// to say that the helper did not ask again.
+  final class Asking: @unchecked Sendable {
+    var times = 0
+  }
+
   var permissionHeld: CalendarPermission = .granted
   var held: [Event] = []
   var refusing: [HelperCore.Calendar: String] = [:]
+  var answersWhenAsked: CalendarPermission = .refused
+  let asking = Asking()
 
   func permission() -> CalendarPermission { permissionHeld }
+
+  func requestPermission() -> CalendarPermission {
+    asking.times += 1
+    return answersWhenAsked
+  }
 
   func calendars() -> [HelperCore.Calendar] {
     var seen: [HelperCore.Calendar] = []
@@ -95,6 +108,13 @@ struct FakeCalendarStore: CalendarStore {
   }
 
   func permitted() -> FakeCalendarStore { permission(.granted) }
+
+  /// What the user will choose when macOS asks them.
+  func answering(_ permission: CalendarPermission) -> FakeCalendarStore {
+    var store = self
+    store.answersWhenAsked = permission
+    return store
+  }
 
   func holding(_ events: Event...) -> FakeCalendarStore {
     var store = self

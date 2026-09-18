@@ -42,3 +42,42 @@ struct AskingWhetherTheCalendarMayBeReadSpec {
         """#)
   }
 }
+
+// Nothing reads a calendar until the user has been asked, and macOS only prompts while the
+// permission is undecided: once it has been refused, asking again does nothing at all, so the
+// helper says what to change instead of asking into the void.
+@Suite("asking the user for the calendar")
+struct AskingTheUserForTheCalendarSpec {
+  @Test("given nobody has been asked yet, asks macOS and reports what the user chose")
+  func asksWhileUndecided() {
+    let store = aCalendarStore().permission(.undecided).answering(.granted)
+    let helper = helperReading(store)
+
+    #expect(
+      helper.respond(to: #"{"protocolVersion":1,"id":"1","request":"calendar_permission_request"}"#)
+        == #"{"id":"1","protocolVersion":1,"result":{"state":"granted"}}"#)
+    #expect(store.asking.times == 1)
+  }
+
+  @Test("given the user already refused, does not ask again and names the setting to enable")
+  func doesNotAskAfterARefusal() {
+    let store = aCalendarStore().permission(.refused).answering(.granted)
+    let helper = helperReading(store)
+
+    #expect(
+      helper.respond(to: #"{"protocolVersion":1,"id":"1","request":"calendar_permission_request"}"#)
+        == #"{"id":"1","protocolVersion":1,"result":{"setting":"\#(calendarPermissionSetting)","state":"refused"}}"#)
+    #expect(store.asking.times == 0)
+  }
+
+  @Test("given the permission is already granted, does not ask again")
+  func doesNotAskWhenAlreadyGranted() {
+    let store = aCalendarStore().permitted()
+    let helper = helperReading(store)
+
+    #expect(
+      helper.respond(to: #"{"protocolVersion":1,"id":"1","request":"calendar_permission_request"}"#)
+        == #"{"id":"1","protocolVersion":1,"result":{"state":"granted"}}"#)
+    #expect(store.asking.times == 0)
+  }
+}

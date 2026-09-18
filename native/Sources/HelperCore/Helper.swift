@@ -26,6 +26,8 @@ public struct Helper: Sendable {
     switch kind {
     case .calendarPermission:
       return ["result": calendar.permission().asFields]
+    case .requestCalendarPermission:
+      return ["result": calendar.requestPermission().asFields]
     case .eventsInRange(let range):
       switch calendar.events(in: range) {
       case .success(let found): return ["result": found.asFields]
