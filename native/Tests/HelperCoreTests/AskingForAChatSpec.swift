@@ -18,7 +18,9 @@ struct AskingForAChatSpec {
     AMessageStoreFile()
       .chat(climbing, group: true, with: ["+15551230001", "ben@example.com"])
       .message(in: climbing, from: "ben@example.com", text: "Wall at 6?", at: nineOClock)
-      .message(in: climbing, text: "I'm in", at: nineOClock.addingTimeInterval(300), direction: .outgoing)
+      .message(
+        in: climbing, text: "I'm in", at: nineOClock.addingTimeInterval(300),
+        direction: .outgoing)
   }
 
   // Upstream #62 matched messages by handle alone, which dropped everything the user sent and
@@ -191,7 +193,7 @@ struct ReadingAMessagesTextSpec {
     let archive = anArchive(of: written("https://example.com/route"))
 
     #expect(
-      helperReading(aChat(holding: archive, text: "\u{FFFC}")).respond(to: asking)
+      helperReading(aChat(holding: archive, text: MessageText.placeholder)).respond(to: asking)
         .contains(#""text":"https://example.com/route""#))
   }
 
@@ -199,7 +201,9 @@ struct ReadingAMessagesTextSpec {
   func namesAnUnreadableText() {
     let broken = anArchive(of: written("Hey Ben")).cut(after: 30)
     let store = aChat(holding: broken)
-      .message(in: climbing, from: "ben@example.com", text: "Still here", at: nineOClock.addingTimeInterval(60))
+      .message(
+        in: climbing, from: "ben@example.com", text: "Still here",
+        at: nineOClock.addingTimeInterval(60))
 
     let response = helperReading(store).respond(to: asking)
 

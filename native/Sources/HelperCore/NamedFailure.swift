@@ -314,7 +314,8 @@ extension NamedFailure {
   static func messageTextUnreadable(reason: String) -> NamedFailure {
     NamedFailure(
       code: .messageTextUnreadable,
-      sentence: "This message's text could not be read from the store, so it is left out.",
+      sentence: "This message's text could not be read from the store, so it is answered "
+        + "without it.",
       evidence: reason)
   }
 }

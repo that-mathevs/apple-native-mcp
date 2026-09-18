@@ -126,10 +126,10 @@ public struct SQLiteMessageStore: MessageStore {
           ]
         ) { row in
           let outgoing = row.integer(2) == 1
-          let text = MessageText(plain: row.text(1), archive: row.blob(9))
+          let read = MessageText(plain: row.text(1), archived: row.blob(9))
           return Message(
-            identifier: row.text(0) ?? "", chat: identifier, text: text.text,
-            textUnreadable: text.unreadable,
+            identifier: row.text(0) ?? "", chat: identifier, text: read.text,
+            textUnreadable: read.unreadable,
             direction: outgoing ? .outgoing : .incoming, handle: row.text(3),
             timestamp: instant(fromStoreDate: row.integer(4)), service: row.text(5) ?? "",
             delivery: outgoing

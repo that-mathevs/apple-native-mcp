@@ -41,7 +41,8 @@ extension NSMutableAttributedString {
   /// binary result beside it.
   func linking(_ url: URL) -> NSMutableAttributedString {
     let whole = NSRange(location: 0, length: length)
-    addAttribute(NSAttributedString.Key("__kIMLinkAttributeName"), value: url as NSURL, range: whole)
+    addAttribute(
+      NSAttributedString.Key("__kIMLinkAttributeName"), value: url as NSURL, range: whole)
     addAttribute(
       NSAttributedString.Key("__kIMDataDetectedAttributeName"),
       value: Data([0x62, 0x70, 0x6c, 0x69, 0x73, 0x74, 0x30, 0x30, 0x00, 0xff]) as NSData,
@@ -76,10 +77,11 @@ extension Data {
   /// archive has left: its one-byte length becomes the mark of a two-byte one, which the text's
   /// own first two bytes then spell as a length in the tens of thousands.
   func overrunning(_ text: String) -> Data {
+    let twoByteLength: UInt8 = 0x81
     let bytes = Array(text.utf8)
     var archive = Array(self)
-    guard let start = archive.firstRange(of: bytes)?.lowerBound else { return self }
-    archive[start - 1] = 0x81
+    guard let start = archive.firstRange(of: bytes)?.lowerBound, start > 0 else { return self }
+    archive[start - 1] = twoByteLength
     return Data(archive)
   }
 }

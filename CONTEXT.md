@@ -269,6 +269,13 @@ One item in a chat, with its text, its direction, its timestamp and its service.
 message row that records a tapback rather than text the user wrote.
 _Avoid_: text, SMS, tapback, email (that word is Mail's)
 
+**Archived text and plain text**:
+A message's text as the store keeps it. The archived text is rich text in a binary archive, which the
+sender's device writes byte by byte, so it is read as hostile data. The plain text is the simpler
+copy the store sometimes keeps beside it, which can be nothing but a **placeholder** for an
+attachment or a link. The archived text wins when it can be read.
+_Avoid_: attributedBody, typedstream, blob, body
+
 **Service**:
 The transport carrying a chat: iMessage, SMS or RCS. v1 sends over iMessage only.
 _Avoid_: protocol, channel
@@ -370,7 +377,7 @@ name, a tool name or a result field.
 
 | Word out there | What we say |
 | --- | --- |
-| `attributedBody`, typedstream, bookkeeping string | the message's text |
+| `attributedBody`, typedstream, bookkeeping string | the message's archived text, or its text |
 | buddy, `services`, `chat id` | handle, chat |
 | `chat.db`, `NoteStore.sqlite`, Envelope Index, `.emlx` | the message store, the note store, the mail store |
 | `calendarIdentifier`, `eventIdentifier`, `calendarItemIdentifier` | calendar identifier, event identifier, reminder identifier |

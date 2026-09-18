@@ -15,7 +15,9 @@ struct ReadingArchivedTextSpec {
 
   @Test("given a message a person wrote, reads its text exactly")
   func readsTheText() {
-    #expect(text(of: anArchive(of: written("Hey Ben, wall at 6?"))) == .success("Hey Ben, wall at 6?"))
+    let archive = anArchive(of: written("Hey Ben, wall at 6?"))
+
+    #expect(text(of: archive) == .success("Hey Ben, wall at 6?"))
   }
 
   // morquis 96759b3: a byte-wise reader split accented letters and emoji.
@@ -34,6 +36,8 @@ struct ReadingArchivedTextSpec {
     }
   }
 
+  // faces-sh cad640a found the text among an archive's strings, but never proved it for a mention,
+  // a rich link, an edit or a reply (MSG-V3), whose attributes carry strings of their own.
   @Test("given a mention of someone, reads the text as written, not the handle behind it")
   func readsAMention() {
     let mention = written("Ben, bring the rope").mentioning(
@@ -44,7 +48,8 @@ struct ReadingArchivedTextSpec {
 
   @Test("given a rich link, reads the link as the text, whatever binary data rides beside it")
   func readsARichLink() {
-    let link = written("https://example.com/route").linking(URL(string: "https://example.com/route")!)
+    let route = "https://example.com/route"
+    let link = written(route).linking(URL(string: route)!)
 
     #expect(text(of: anArchive(of: link)) == .success("https://example.com/route"))
   }
@@ -92,13 +97,14 @@ struct ReadingArchivedTextSpec {
     #expect(text(of: Data(cyclic)).isUnreadable)
   }
 
-  // Every byte of an archive is a stranger's to choose. Whatever one byte is changed to, the reader
-  // answers or refuses; it never crashes, reads past the end or runs on.
+  // Every byte of an archive is a stranger's to choose. Whatever one byte is changed to, the
+  // reader answers or refuses; it never crashes, reads past the end or runs on.
   @Test("given any one byte of a real archive changed, answers or refuses, and never crashes")
   func survivesEveryOneByteChange() {
     let archive = Array(anArchive(of: written("Ben, bring the rope").mentioning(
       "ben@example.com", at: NSRange(location: 0, length: 3))))
 
+    let started = Date()
     for position in archive.indices {
       for value: UInt8 in [0x00, 0x7f, 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x92, 0xff] {
         var changed = archive
@@ -106,6 +112,8 @@ struct ReadingArchivedTextSpec {
         _ = text(of: Data(changed))
       }
     }
+
+    #expect(Date().timeIntervalSince(started) < 5, "one of the changes kept it running")
   }
 
   @Test("given something that is not an archive at all, refuses it")

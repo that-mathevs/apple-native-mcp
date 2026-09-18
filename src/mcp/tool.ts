@@ -33,7 +33,8 @@ type ToolDefinition<Input extends z.ZodRawShape> = {
   readonly call: (request: z.infer<z.ZodObject<Input>>) => Promise<ToolResult>;
 };
 
-const failure = z.object({
+/** A named failure as every tool reports it, whole or beside one item a read could not reach. */
+export const failureRecord = z.object({
   code: z.string(),
   sentence: z.string(),
   setting: z.string().optional(),
@@ -50,7 +51,7 @@ const asJsonSchema = (schema: z.ZodType, io: "input" | "output"): JsonSchema =>
  * still checked in full before it leaves.
  */
 const published = (output: z.ZodObject): JsonSchema =>
-  asJsonSchema(output.partial().extend({ failure: failure.optional() }), "output");
+  asJsonSchema(output.partial().extend({ failure: failureRecord.optional() }), "output");
 
 /** A tool from its schemas, so what it accepts is written once and is what it is called with. */
 export const tool = <Input extends z.ZodRawShape>(definition: ToolDefinition<Input>): Tool => {

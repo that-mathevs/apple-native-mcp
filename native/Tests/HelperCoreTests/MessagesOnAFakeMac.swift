@@ -83,7 +83,8 @@ final class AMessageStoreFile: @unchecked Sendable {
         + "is_sent, is_delivered, error, associated_message_type, item_type) VALUES (?, ?, ?, "
         + "COALESCE((SELECT ROWID FROM handle WHERE id = ?), 0), ?, ?, ?, ?, ?, ?, ?, ?)",
       [
-        guid, text, archive, handle, service, storeDate(from: instant), direction == .outgoing ? 1 : 0,
+        guid, text, archive, handle, service, storeDate(from: instant),
+        direction == .outgoing ? 1 : 0,
         sent ? 1 : 0, delivered ? 1 : 0, deliveryError, reaction ? 2000 : 0, groupEvent ? 1 : 0,
       ])
     run(

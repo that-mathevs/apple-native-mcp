@@ -4,16 +4,14 @@ import { readChat, type ReadChatDependencies } from "../../application/messages/
 import type { Message } from "../../domain/messages/message.js";
 import { greatestMessageLimit } from "../../domain/messages/message.js";
 import { refusing, reporting } from "../result.js";
-import { tool, type Tool } from "../tool.js";
+import { failureRecord, tool, type Tool } from "../tool.js";
 
 const instant = z.iso.datetime({ offset: true });
 
 const messageRecord = z.object({
   identifier: z.string(),
   text: z.string().nullable(),
-  textUnreadable: z
-    .object({ code: z.string(), sentence: z.string(), evidence: z.string().optional() })
-    .optional(),
+  textUnreadable: failureRecord.optional(),
   direction: z.enum(["incoming", "outgoing"]),
   handle: z.string().optional(),
   timestamp: z.iso.datetime(),
