@@ -39,6 +39,12 @@ jobs:
     # the helper holds every protected access (ADR-0002), so its breakage must show on its
     # own. Its specs need no permission and no real data, so a hosted runner runs all of them.
     runs-on: macos-15
+    env:
+      # Pinned, so the Swift that CI compiles with changes only when this line does. The
+      # image's default is Xcode 16, older than any maintainer's, and a spec using newer Swift
+      # would pass on a Mac and fail here. 26.3 is the newest this image carries; if it is
+      # dropped, the job fails rather than falling back.
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
 
