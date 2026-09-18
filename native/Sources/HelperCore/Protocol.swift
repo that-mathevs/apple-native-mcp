@@ -40,6 +40,7 @@ struct Request: Equatable {
     case requestMailPermission
     case mailAccounts
     case mailboxes(mailAccount: String)
+    case localMailboxes
     case latestEmails(mailbox: MailboxAddress, newest: Int)
     case emailsInRange(mailbox: MailboxAddress, range: Range, ceiling: Int)
     case email(EmailWanted)
@@ -79,6 +80,7 @@ enum RequestName: String {
   case requestMailPermission = "mail_permission_request"
   case mailAccounts = "mail_accounts"
   case mailboxes = "mailboxes"
+  case localMailboxes = "local_mailboxes"
   case latestEmails = "latest_emails"
   case emailsInRange = "emails_in_range"
   case email = "email"
@@ -276,6 +278,8 @@ extension Request {
         return .failure(id: id, .requestMalformed(line: line))
       }
       return .request(Request(id: id, kind: .mailboxes(mailAccount: mailAccount)))
+    case .localMailboxes:
+      return .request(Request(id: id, kind: .localMailboxes))
     case .latestEmails:
       guard
         let mailbox = readMailboxAddress(fields),

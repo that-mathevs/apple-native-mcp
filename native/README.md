@@ -334,7 +334,21 @@ in the path: on a Mac with seven accounts, 21 mailboxes in three of them sit und
 A `role` is Mail's own answer, `inbox`, `drafts`, `sent`, `junk` or `trash`, read from the role
 mailboxes Mail keeps and never from a name, which varies by provider and by language. It is `null`
 where Mail gives none. Mail has no role mailbox for an archive, so an archive mailbox has no role.
-Mailboxes kept on this Mac under no mail account are not listed.
+Mailboxes kept on this Mac under no mail account are the local mailboxes, below.
+
+**The local mailboxes**
+
+```json
+{"protocolVersion":1,"id":"18","request":"local_mailboxes"}
+{"id":"18","protocolVersion":1,"result":{"localMailboxes":[{"path":["Tax returns"],"role":null},{"path":["Outbox"],"role":null}]}}
+```
+
+The mailboxes Mail keeps on this Mac under no mail account, which it lists under "On My Mac": the
+ones a user made to file mail away, and Mail's own Outbox. They are a request of their own, so a
+failure to read them costs no mail account's mailboxes, and they are never filed under an account
+that is not one (felkru `c769cc0`). Mail addresses one by its full name alone, and its path and its role
+are read exactly as an account's mailbox's are. Mail's Outbox has the job of one, but `outbox` is
+not among the roles the helper reports, so it has none.
 
 **A mailbox's emails**
 

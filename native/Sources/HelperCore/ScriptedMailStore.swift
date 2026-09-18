@@ -37,16 +37,26 @@ public struct ScriptedMailStore: MailStore {
   public func mailboxes(inMailAccount identifier: String) throws(MailUnreadable) -> [Mailbox] {
     let answer: MailboxesAnswer = try asking(MailScripts.mailboxes, ["mailAccount": identifier])
     if answer.mailAccountUnknown == true { throw .mailAccountUnknown(identifier: identifier) }
+    return try mailboxes(in: answer, from: MailScripts.mailboxes)
+  }
 
+  public func localMailboxes() throws(MailUnreadable) -> [Mailbox] {
+    try mailboxes(in: try asking(MailScripts.localMailboxes, [:]), from: MailScripts.localMailboxes)
+  }
+
+  /// A mailbox's path is read from how Mail addresses it, and its role from the role mailbox that
+  /// names it by its full name: a role is Mail's own answer, never read from a name.
+  private func mailboxes(
+    in answer: MailboxesAnswer, from script: StaticScript
+  ) throws(MailUnreadable) -> [Mailbox] {
     guard let mailboxes = answer.mailboxes, let roles = answer.roles else {
-      throw .failed(evidence: unreadable(MailScripts.mailboxes))
+      throw .failed(evidence: unreadable(script))
     }
 
     return mailboxes.map { mailbox in
       Mailbox(
         path: mailboxPath(
           fullName: mailbox.fullName, name: mailbox.name, containers: mailbox.containers),
-        // A role is Mail's own answer: the role mailbox that names this one by its full name.
         role: MailboxRole.allCases.first { roles[$0.rawValue]?.contains(mailbox.fullName) == true })
     }
   }

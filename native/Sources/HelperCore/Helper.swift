@@ -146,6 +146,8 @@ public struct Helper: Sendable {
       return answering(mail.mailboxes(inMailAccount: mailAccount)) {
         ["mailboxes": $0.map(\.asFields)]
       }
+    case .localMailboxes:
+      return answering(mail.localMailboxes()) { ["localMailboxes": $0.map(\.asFields)] }
     case .latestEmails(let mailbox, let newest):
       return answering(mail.emails(in: mailbox, receivedIn: nil, most: newest)) { $0.asFields }
     case .emailsInRange(let mailbox, let range, let ceiling):

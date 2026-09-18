@@ -57,6 +57,7 @@ struct FakeMailStore: MailStore {
   var held: [MailAccount] = []
   var heldMailboxes: [String: [Mailbox]] = [:]
   var heldEmails: [MailboxAddress: [HeldEmail]] = [:]
+  var heldLocally: [Mailbox] = []
   var tooLargeMailboxes: [[String]: Int] = [:]
   var bodiesReadInTime = Int.max
   var undatedEmails: [[String]: Int] = [:]
@@ -114,6 +115,19 @@ struct FakeMailStore: MailStore {
     return EmailsRead(
       emails: Array(inRange.prefix(most)), truncated: inRange.count > most,
       undated: undatedEmails[mailbox.path] ?? 0)
+  }
+
+  func localMailboxes() throws(MailUnreadable) -> [Mailbox] {
+    record.timesRead += 1
+    if let fails { throw fails }
+    return heldLocally
+  }
+
+  /// Mailboxes this Mac keeps under no mail account.
+  func holdingLocally(_ mailboxes: Mailbox...) -> FakeMailStore {
+    var store = self
+    store.heldLocally += mailboxes
+    return store
   }
 
   func email(_ wanted: EmailWanted) throws(MailUnreadable) -> EmailInFull? {

@@ -331,3 +331,51 @@ struct ScriptingOneEmailSpec {
     #expect(throws: MailUnreadable.self) { try ScriptedMailStore(runner: runner).email(wanted) }
   }
 }
+
+@Suite("scripting the local mailboxes")
+struct ScriptingTheLocalMailboxesSpec {
+  // A local mailbox is addressed by its full name alone, and its path is read from that as any
+  // mailbox's is: what Mail says each name is decides where the full name divides.
+  @Test("reads each local mailbox's path from its full name, its own name and the mailboxes it sits inside, and its role from Mail's role mailboxes")
+  func readsTheLocalMailboxes() throws {
+    let runner = FakeScriptRunner().answering(
+      "local_mailboxes",
+      with: #"""
+        {"mailboxes":[
+          {"fullName":"Tax returns","name":"Tax returns","containers":[]},
+          {"fullName":"Tax returns/2025 A/B","name":"2025 A/B","containers":["Tax returns"]},
+          {"fullName":"Deleted","name":"Deleted","containers":[]}],
+         "roles":{"inbox":[],"drafts":[],"sent":[],"junk":[],"trash":["Deleted"]}}
+        """#)
+
+    #expect(
+      try ScriptedMailStore(runner: runner).localMailboxes() == [
+        Mailbox(path: ["Tax returns"], role: nil),
+        Mailbox(path: ["Tax returns", "2025 A/B"], role: nil),
+        Mailbox(path: ["Deleted"], role: .trash),
+      ])
+    #expect(runner.runs.map(\.script) == ["local_mailboxes"])
+  }
+
+  // Mail gives its Outbox the job of one, and the glossary names five roles, none of them that.
+  @Test("given a role the glossary does not name, such as Mail's own for its Outbox, gives the mailbox no role")
+  func givesTheOutboxNoRole() throws {
+    let runner = FakeScriptRunner().answering(
+      "local_mailboxes",
+      with: #"""
+        {"mailboxes":[{"fullName":"Outbox","name":"Outbox","containers":[]}],
+         "roles":{"inbox":[],"drafts":[],"sent":[],"junk":[],"trash":[],"outbox":["Outbox"]}}
+        """#)
+
+    #expect(
+      try ScriptedMailStore(runner: runner).localMailboxes() == [Mailbox(path: ["Outbox"], role: nil)])
+  }
+
+  @Test("given an answer with a field missing, refuses the whole answer rather than inventing a mailbox")
+  func refusesAnAnswerItCannotRead() {
+    let runner = FakeScriptRunner().answering(
+      "local_mailboxes", with: #"{"mailboxes":[{"name":"Tax returns"}],"roles":{}}"#)
+
+    #expect(throws: MailUnreadable.self) { try ScriptedMailStore(runner: runner).localMailboxes() }
+  }
+}

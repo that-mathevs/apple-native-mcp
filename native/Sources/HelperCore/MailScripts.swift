@@ -2,7 +2,9 @@
 /// it and is only ever parsed as JSON, so an identifier made of script source is an identifier
 /// no mail account has, and nothing more.
 public enum MailScripts {
-  public static let all = [mailAccounts, mailboxes, emails, email, emailMessageIds, emailBodies]
+  public static let all = [
+    mailAccounts, mailboxes, localMailboxes, emails, email, emailMessageIds, emailBodies,
+  ]
 
   /// Three reads, each of one property of every account at once: measured at 35 to 150 ms for
   /// seven accounts (#7), where asking account by account pays for each one.
@@ -50,8 +52,8 @@ public enum MailScripts {
       // Mail addresses a mailbox by its account and its full name, and writes exactly that when
       // asked to show a reference. A mailbox's own name is only its last part.
       const written = new RegExp(
-        '^Application\\("Mail"\\)\\.accounts\\.byId\\((".*?")\\)' +
-          '\\.mailboxes\\.byName\\((".*")\\)$',
+        '^Application\\("Mail"\\)\\.accounts\\.byId\\(("(?:[^"\\\\]|\\\\.)*")\\)' +
+          '\\.mailboxes\\.byName\\(("(?:[^"\\\\]|\\\\.)*")\\)$',
         "s"
       );
       const addressed = (mailbox) => {
@@ -406,6 +408,87 @@ public enum MailScripts {
             size: saying(() => attachment.fileSize()),
           })),
         },
+      });
+    }
+    """#)
+
+  /// The mailboxes Mail keeps on this Mac under no mail account, as Mail addresses them, which is
+  /// by a full name alone. They are read as an account's are, and apart from every account's.
+  public static let localMailboxes = StaticScript(
+    name: "local_mailboxes",
+    source: #"""
+    function run(argumentsJSON) {
+      const mail = Application("Mail");
+
+      // Mail addresses a mailbox it keeps under no account by its full name alone, and writes
+      // exactly that when asked to show a reference. A mailbox's own name is only its last part.
+      const written = new RegExp(
+        '^Application\\("Mail"\\)\\.mailboxes\\.byName\\(("(?:[^"\\\\]|\\\\.)*")\\)$',
+        "s"
+      );
+      const fullNameOf = (mailbox) => {
+        const match = written.exec(Automation.getDisplayString(mailbox));
+        return match === null ? null : JSON.parse(match[1]);
+      };
+
+      const fullNamesNow = () =>
+        mail.mailboxes().map((mailbox) => {
+          const fullName = fullNameOf(mailbox);
+          if (fullName === null) {
+            throw new Error("Mail wrote a mailbox reference in a form not known");
+          }
+          return fullName;
+        });
+      const fullNames = fullNamesNow();
+      const names = mail.mailboxes.name();
+      if (names.length !== fullNames.length) {
+        throw new Error("the mailboxes changed while they were being read");
+      }
+
+      // The names of the mailboxes a mailbox sits inside, innermost first, read one level at a time
+      // for every mailbox at once until no mailbox has a container left.
+      const containers = fullNames.map(() => []);
+      let level = mail.mailboxes.container;
+      for (let depth = 0; depth < 32; depth += 1) {
+        const parents = level.name();
+        if (parents.every((parent) => parent === null || parent === undefined)) break;
+        parents.forEach((parent, index) => {
+          if (parent !== null && parent !== undefined) containers[index].push(parent);
+        });
+        level = level.container;
+      }
+
+      // Every column above is its own read of every mailbox, so a mailbox added or removed in
+      // between would pair one mailbox's name with another's address. The addresses are read again,
+      // and an answer that moved is refused rather than returned.
+      if (JSON.stringify(fullNamesNow()) !== JSON.stringify(fullNames)) {
+        throw new Error("the mailboxes changed while they were being read");
+      }
+
+      // A role mailbox names each mailbox that has its job, in every account and in none. The ones
+      // addressed with no account are the local ones.
+      const roles = {};
+      const roleMailboxes = {
+        inbox: "inbox",
+        drafts: "draftsMailbox",
+        sent: "sentMailbox",
+        junk: "junkMailbox",
+        trash: "trashMailbox",
+      };
+      Object.keys(roleMailboxes).forEach((role) => {
+        roles[role] = mail[roleMailboxes[role]]
+          .mailboxes()
+          .map(fullNameOf)
+          .filter((fullName) => fullName !== null);
+      });
+
+      return JSON.stringify({
+        mailboxes: fullNames.map((fullName, index) => ({
+          fullName: fullName,
+          name: names[index],
+          containers: containers[index],
+        })),
+        roles: roles,
       });
     }
     """#)

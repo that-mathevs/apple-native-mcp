@@ -19,8 +19,9 @@ public enum MailboxRole: String, Equatable, Sendable, CaseIterable {
   case inbox, drafts, sent, junk, trash
 }
 
-/// A folder of emails inside one mail account, identified by that account and its path: every
-/// name from the outermost in. A joined path is ambiguous once a name holds the separator.
+/// A folder of emails, as its path: every name from the outermost in. A joined path is ambiguous
+/// once a name holds the separator. Which mail account it is in, or that it is a local mailbox
+/// in none, is known from what was asked, and is not carried here.
 public struct Mailbox: Equatable, Sendable {
   public let path: [String]
   public let role: MailboxRole?
@@ -168,6 +169,10 @@ public protocol MailStore: Sendable {
   /// one request at a time, and one covering every account is what hung it (brightline 304f384).
   func mailboxes(inMailAccount identifier: String) throws(MailUnreadable) -> [Mailbox]
 
+  /// The local mailboxes, which Mail keeps on this Mac under no mail account, in a read of their
+  /// own, so they are never filed under an account that is not one (felkru c769cc0).
+  func localMailboxes() throws(MailUnreadable) -> [Mailbox]
+
   /// One mailbox's emails received in a range, or all of them, newest first by when each was
   /// received, whatever order the mailbox keeps, and no more than `most` of them.
   func emails(
@@ -244,6 +249,10 @@ struct MailReading: Sendable {
 
   func mailboxes(inMailAccount identifier: String) -> Result<[Mailbox], NamedFailure> {
     reading { () throws(MailUnreadable) in try store.mailboxes(inMailAccount: identifier) }
+  }
+
+  func localMailboxes() -> Result<[Mailbox], NamedFailure> {
+    reading { () throws(MailUnreadable) in try store.localMailboxes() }
   }
 
   func emails(
