@@ -68,3 +68,7 @@ The five default labels: needs-triage, needs-info, ready-for-agent, ready-for-hu
 ### Domain docs
 
 Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### chartr mirror
+
+Where `.chartr/` exists, chartr reads each wayfinder map from `.plan/maps/`, a mirror of the map on GitHub Issues. After a session writes to a map or its tickets, or when chartr shows no map, run the `sync-chartr-with-pocock` skill.

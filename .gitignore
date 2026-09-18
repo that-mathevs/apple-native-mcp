@@ -10,7 +10,9 @@ coverage/
 .env
 .env.*
 
-# Local agent tooling, not part of the project
-.claude/
+# Local agent tooling, not part of the project. The project's own skills are.
+.claude/*
+!.claude/skills/
 .chartr/
 CHARTR.md
+.plan/
