@@ -19,7 +19,7 @@
     "spec": "vitest run",
     "spec:watch": "vitest",
     "spec:mac": "vitest run --config vitest.mac.config.ts",
-    "helper:build": "swift build -c release --package-path native",
+    "helper:build": "swift build -c release --package-path native && sh native/sign-development-build.sh native/.build/release/apple-native-mcp",
     "helper:spec": "swift test --package-path native",
     "check": "npm run typecheck && npm run lint && npm run spec && npm run helper:spec"
   },

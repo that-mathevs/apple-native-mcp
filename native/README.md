@@ -335,8 +335,22 @@ as an empty answer.
 ## Building it
 
 ```sh
-swift build -c release
+npm run helper:build
 ```
+
+That is `swift build -c release` and then `sign-development-build.sh`. A build from `swift build`
+is signed ad hoc, which identifies it by the hash of its code: to macOS it is a new program at
+every rebuild, and every permission granted to the last build is gone, Full Disk Access included.
+Name a signing identity of your own and the build is signed with it, which identifies it by its
+identifier and your certificate, and a rebuild changes neither:
+
+```sh
+HELPER_SIGNING_IDENTITY="Apple Development" npm run helper:build
+```
+
+`security find-identity -v -p codesigning` lists the identities in your keychain, and macOS may ask
+once to let `codesign` use the key. With none named the build stays ad hoc and the script says so.
+A release is never signed this way: CI signs it with Developer ID.
 
 The bundle identifier and the EventKit usage strings live in `Info.plist` and are linked into the
 executable's `__TEXT,__info_plist` section, so a bare executable still carries an identity macOS can
@@ -349,7 +363,8 @@ signed, hardened and notarised in CI
 By default the server launches only the installed helper at
 `~/Library/Application Support/apple-native-mcp/apple-native-mcp`, and only after it meets the
 code requirement ([ADR-0008](../docs/adr/0008-codesign-checks-the-code-requirement.md)). A build
-from `swift build` is ad-hoc signed and never meets it. To run one, name it with the developer
+from `npm run helper:build` is signed ad hoc, or with a developer's own identity, and never meets
+it. To run one, name it with the developer
 setting in the `env` block of the server's entry in the client's configuration:
 
 ```json
