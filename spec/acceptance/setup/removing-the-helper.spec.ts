@@ -11,6 +11,7 @@ const revoking = [
   "To take back what it was allowed, turn off:",
   "  Calendar: System Settings > Privacy & Security > Calendars > apple-native-mcp",
   "  Reminders: System Settings > Privacy & Security > Reminders > apple-native-mcp",
+  "  Contacts: System Settings > Privacy & Security > Contacts > apple-native-mcp",
 ];
 
 describe("removing the helper", () => {

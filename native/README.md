@@ -164,6 +164,23 @@ as unconfirmed too, where a read would simply be asked again. A calendar the sto
 refuses new events is `calendar_not_writable`, and a save EventKit refused is `event_not_saved`
 with what it said. Writing needs a full or a write-only calendar permission.
 
+Contacts are read through Contacts.framework, never by scripting the Contacts app, so a read never
+launches it and never asks for an Automation consent. `contacts_permission` and
+`contacts_permission_request` work as the calendar's do. `contacts` answers with every contact,
+unified across accounts, each with every part of its name, its nickname, organisation and job title,
+and every phone number, email address, postal address and URL it has. A fetch that fails, or stops
+partway, is `contacts_unreadable` with what the framework said: it is never an answer of nobody. A label is exactly what the store holds, Apple's own
+included (`_$!<Mobile>!$_`): which contacts a query finds, and how a label is said, are the
+server's rules.
+
+```json
+{"protocolVersion":1,"id":"7","request":"contacts"}
+```
+
+A contact has no note here. macOS keeps that field for apps Apple has entitled, and asking the
+framework for it without the entitlement fails the whole fetch, so the helper never does:
+`"include":["note"]` is understood and refused as `contact_note_unavailable`.
+
 ## Building it
 
 ```sh

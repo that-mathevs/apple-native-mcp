@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 
 import type { ListEventsDependencies } from "../application/calendar/list-events.js";
+import type { FindContactsDependencies } from "../application/contacts/find-contacts.js";
 import type { NamedFailure } from "../domain/failure.js";
 import { capabilityOff, isOn, type Settings } from "../domain/settings.js";
 import { createEventTool } from "./calendar/create-event-tool.js";
@@ -9,6 +10,7 @@ import { listCalendarsTool } from "./calendar/list-calendars-tool.js";
 import { listEventsTool } from "./calendar/list-events-tool.js";
 import { readEventTool } from "./calendar/read-event-tool.js";
 import { searchEventsTool } from "./calendar/search-events-tool.js";
+import { findContactsTool } from "./contacts/find-contacts-tool.js";
 import { listReminderListsTool } from "./reminders/list-reminder-lists-tool.js";
 import {
   listRemindersTool,
@@ -17,7 +19,9 @@ import {
 import { refusing } from "./result.js";
 import type { Tool } from "./tool.js";
 
-export type ServerDependencies = ListEventsDependencies & ListRemindersToolDependencies;
+export type ServerDependencies = ListEventsDependencies &
+  ListRemindersToolDependencies &
+  FindContactsDependencies;
 
 export const serverName = "apple-native-mcp";
 
@@ -101,6 +105,7 @@ export const buildServer = (dependencies: ServerDependencies): McpServer =>
       createEventTool(dependencies),
       listReminderListsTool(dependencies),
       listRemindersTool(dependencies),
+      findContactsTool(dependencies),
     ],
     dependencies.settings,
   );

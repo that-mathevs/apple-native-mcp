@@ -9,11 +9,15 @@ public struct Helper: Sendable {
   private let calendar: CalendarReading
   private let calendarWriting: CalendarWriting
   private let reminders: RemindersReading
+  private let contacts: ContactsReading
 
-  public init(calendarStore: CalendarStore, reminderStore: ReminderStore) {
+  public init(
+    calendarStore: CalendarStore, reminderStore: ReminderStore, contactStore: ContactStore
+  ) {
     self.calendar = CalendarReading(store: calendarStore)
     self.calendarWriting = CalendarWriting(store: calendarStore)
     self.reminders = RemindersReading(store: reminderStore)
+    self.contacts = ContactsReading(store: contactStore)
   }
 
   /// Answer one line. Always returns exactly one line of JSON, whatever arrives.
@@ -65,6 +69,14 @@ public struct Helper: Sendable {
           "unreadReminderLists": $0.unreadReminderLists.map(\.asFields),
         ]
       }
+    case .contactsPermission:
+      return ["result": contacts.permission().asFields(setting: contactsPermissionSetting)]
+    case .requestContactsPermission:
+      return ["result": contacts.requestPermission().asFields(setting: contactsPermissionSetting)]
+    case .contacts:
+      return answering(contacts.contacts()) { ["contacts": $0.map(\.asFields)] }
+    case .contactNote:
+      return ["failure": NamedFailure.contactNoteUnavailable.asFields]
     }
   }
 

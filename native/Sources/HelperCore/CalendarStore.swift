@@ -46,10 +46,6 @@ extension CalendarStore {
   func whenPermitted<Answer>(
     _ allows: KeyPath<Permission, Bool>, _ work: () -> Result<Answer, NamedFailure>
   ) -> Result<Answer, NamedFailure> {
-    let held = permission()
-    guard held[keyPath: allows] else {
-      return .failure(.calendarPermissionMissing(permission: held))
-    }
-    return work()
+    permission().whenItAllows(allows, else: NamedFailure.calendarPermissionMissing, work)
   }
 }

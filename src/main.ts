@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 import { calendarEventStore } from "./adapters/native/calendar-event-store.js";
+import { helperContactStore } from "./adapters/native/contact-store.js";
 import {
   codesignCodeRequirement,
   pinnedCodeRequirement,
@@ -99,6 +100,7 @@ const serve = async (): Promise<void> => {
   const server = buildServer({
     eventStore: calendarEventStore(helper),
     reminderStore: helperReminderStore(helper),
+    contactStore: helperContactStore(helper),
     now: () => new Date(),
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     settings,

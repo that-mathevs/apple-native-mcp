@@ -11,7 +11,9 @@ import HelperCore
 func servingTheSession() {
   exitingWithTheParent()
   serveSession(
-    Helper(calendarStore: EventKitCalendarStore(), reminderStore: EventKitReminderStore()))
+    Helper(
+      calendarStore: EventKitCalendarStore(), reminderStore: EventKitReminderStore(),
+      contactStore: FrameworkContactStore()))
 }
 
 /// Kept for the life of the process, or the watch would end with the function that started it.

@@ -21,6 +21,7 @@ const changeSentences: Record<HelperInstallation["change"], (version: string) =>
 const permissionNames: Record<Permission, string> = {
   calendar: "Calendar",
   reminders: "Reminders",
+  contacts: "Contacts",
 };
 
 const permissionLine = (permission: Permission, answer: Outcome<PermissionAnswer>): string => {

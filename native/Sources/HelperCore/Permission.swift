@@ -55,6 +55,18 @@ extension Permission {
   }
 }
 
+extension Permission {
+  /// Do the work only while this permission allows it, and otherwise refuse with the failure
+  /// that names what to change. Reading and writing ask for different things: a write-only
+  /// grant allows adding and no more.
+  func whenItAllows<Answer>(
+    _ allows: KeyPath<Permission, Bool>, else missing: (Permission) -> NamedFailure,
+    _ work: () -> Result<Answer, NamedFailure>
+  ) -> Result<Answer, NamedFailure> {
+    self[keyPath: allows] ? work() : .failure(missing(self))
+  }
+}
+
 /// Where the user turns calendar access on, named in full so a failure never sends them hunting.
 public let calendarPermissionSetting =
   "System Settings > Privacy & Security > Calendars > apple-native-mcp"
@@ -62,3 +74,7 @@ public let calendarPermissionSetting =
 /// Where the user turns reminders access on.
 public let remindersPermissionSetting =
   "System Settings > Privacy & Security > Reminders > apple-native-mcp"
+
+/// Where the user turns contacts access on.
+public let contactsPermissionSetting =
+  "System Settings > Privacy & Security > Contacts > apple-native-mcp"

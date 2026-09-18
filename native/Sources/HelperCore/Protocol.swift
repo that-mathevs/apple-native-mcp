@@ -21,6 +21,10 @@ struct Request: Equatable {
     case requestRemindersPermission
     case reminderLists
     case reminders(reminderLists: [String], includeCompleted: Bool)
+    case contactsPermission
+    case requestContactsPermission
+    case contacts
+    case contactNote
   }
 }
 
@@ -37,6 +41,9 @@ enum RequestName: String {
   case requestRemindersPermission = "reminders_permission_request"
   case reminderLists = "reminder_lists"
   case reminders = "reminders"
+  case contactsPermission = "contacts_permission"
+  case requestContactsPermission = "contacts_permission_request"
+  case contacts = "contacts"
 }
 
 /// What reading a line produced: a request the helper can answer, or a named failure to report
@@ -129,6 +136,18 @@ extension Request {
       let kind = Request.Kind.reminders(
         reminderLists: reminderLists, includeCompleted: includeCompleted)
       return .request(Request(id: id, kind: kind))
+    case .contactsPermission:
+      return .request(Request(id: id, kind: .contactsPermission))
+    case .requestContactsPermission:
+      return .request(Request(id: id, kind: .requestContactsPermission))
+    case .contacts:
+      // The one thing that may be asked for besides the contacts is the one thing that cannot
+      // be had. Asking for it is understood and refused by name; anything else is not a request.
+      switch fields["include"] as? [String] ?? [] {
+      case []: return .request(Request(id: id, kind: .contacts))
+      case ["note"]: return .request(Request(id: id, kind: .contactNote))
+      default: return .failure(id: id, .requestMalformed(line: line))
+      }
     }
   }
 }

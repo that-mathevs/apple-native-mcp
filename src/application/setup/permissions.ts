@@ -1,7 +1,7 @@
 import type { Outcome } from "../../domain/failure.js";
 
 /** The permissions the helper holds, one per store it guards. */
-export const permissionsAskedBySetup = ["calendar", "reminders"] as const;
+export const permissionsAskedBySetup = ["calendar", "reminders", "contacts"] as const;
 
 export type Permission = (typeof permissionsAskedBySetup)[number];
 
@@ -12,6 +12,7 @@ export type Permission = (typeof permissionsAskedBySetup)[number];
 export const permissionSettings: Readonly<Record<Permission, string>> = {
   calendar: "System Settings > Privacy & Security > Calendars > apple-native-mcp",
   reminders: "System Settings > Privacy & Security > Reminders > apple-native-mcp",
+  contacts: "System Settings > Privacy & Security > Contacts > apple-native-mcp",
 };
 
 /** What macOS allows the helper, in the helper's own words (native/README.md). */

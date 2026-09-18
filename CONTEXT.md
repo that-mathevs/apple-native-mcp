@@ -216,8 +216,18 @@ The free-text note field on a contact, which needs an Apple-granted entitlement 
 server never reads. It appears only in the scenario where asking for it fails cleanly.
 _Avoid_: comment, description
 
+**Query**:
+The text a contact is looked for by: a name, a phone number, or part of an email address. A
+**match** says how the query found a contact: for a name, exact, whole word or word prefix, and
+never letters inside a word; otherwise by phone number or by email address. Every contact a query
+finds is returned, best match first, and none is ever chosen for the caller.
+_Avoid_: search term, lookup, candidate, hit, fuzzy match
+
 **Normalised phone number**:
-A phone number in E.164. A phone number becomes a **handle** only once it matches one in the message
+A phone number in E.164. Only a number that states its country, with a plus and its **calling
+code**, has one: a bare national number is never given a country. The number **as written** is
+what the contact holds, spacing and all. A **trunk prefix** is the zero dialled inside a country
+and dropped outside it. A phone number becomes a **handle** only once it matches one in the message
 store.
 _Avoid_: formatted number, raw number
 

@@ -43,8 +43,12 @@ describe("running setup", () => {
 
     const { printed } = await runningSetup();
 
-    expect(permissions.askedFor).toStrictEqual(["calendar", "reminders"]);
-    expect(printed.slice(1)).toStrictEqual(["Calendar: granted.", "Reminders: granted."]);
+    expect(permissions.askedFor).toStrictEqual(["calendar", "reminders", "contacts"]);
+    expect(printed.slice(1)).toStrictEqual([
+      "Calendar: granted.",
+      "Reminders: granted.",
+      "Contacts: granted.",
+    ]);
   });
 
   // Setup changes no setting itself: the only thing it can do to a permission is ask for it.

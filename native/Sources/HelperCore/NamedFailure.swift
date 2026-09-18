@@ -41,6 +41,12 @@ public enum FailureCode: String, Equatable, Sendable {
   case reminderListUnknown = "reminder_list_unknown"
   /// No reminder list answered within the time budget.
   case remindersTimedOut = "reminders_timed_out"
+  /// macOS has not allowed the helper to read the contacts.
+  case contactsPermissionMissing = "contacts_permission_missing"
+  /// The contact note was asked for, which macOS keeps for apps Apple has entitled.
+  case contactNoteUnavailable = "contact_note_unavailable"
+  /// The contact store would not be read.
+  case contactsUnreadable = "contacts_unreadable"
 }
 
 extension NamedFailure {
@@ -143,4 +149,27 @@ extension NamedFailure {
       sentence: "No reminder list answered within \(Int(seconds)) seconds, so nothing was read.",
       evidence: "\(reminderLists) reminder lists")
   }
+  static func contactsPermissionMissing(permission: Permission) -> NamedFailure {
+    NamedFailure(
+      code: .contactsPermissionMissing,
+      sentence: permission == .undecided
+        ? notAskedYet(for: "your contacts")
+        : "apple-native-mcp cannot read your contacts until it is allowed to, in "
+          + "\(contactsPermissionSetting).",
+      evidence: permission.rawValue)
+  }
+
+  static func contactsUnreadable(evidence: String) -> NamedFailure {
+    NamedFailure(
+      code: .contactsUnreadable,
+      sentence: "The contacts could not be read, so nobody was looked for. Nothing was found "
+        + "or ruled out.",
+      evidence: evidence)
+  }
+
+  static let contactNoteUnavailable = NamedFailure(
+    code: .contactNoteUnavailable,
+    sentence: "A contact's note cannot be read: macOS keeps it for apps Apple has entitled. "
+      + "Nothing was read.",
+    evidence: "note")
 }
