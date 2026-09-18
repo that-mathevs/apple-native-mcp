@@ -18,8 +18,12 @@ const stuckHelper = fileURLToPath(
   new URL("fixtures/a-helper-that-gets-stuck.mjs", import.meta.url),
 );
 
-/** Short, so the scenarios are quick; the server's own time budget is the same rule, longer. */
-const timeBudget = 200;
+/**
+ * Short, so the scenarios are quick; the server's own time budget is the same rule, longer. It
+ * covers starting the fake helper, a Node process, which on a loaded machine can take a few
+ * hundred milliseconds: at 200 the fresh helper once timed out too, in a full run.
+ */
+const timeBudget = 500;
 
 describe("a helper that takes too long to answer", () => {
   let log: string;
@@ -105,7 +109,7 @@ describe("a helper that takes too long to answer", () => {
   });
 
   it("given a read asked while the user is still answering a prompt, waits its turn rather than timing out and stopping the prompt", async () => {
-    slowOver("reminders_permission_request", timeBudget * 3);
+    slowOver("reminders_permission_request", timeBudget * 2);
 
     const [answer, read] = await Promise.all([
       helperPermissions(helper).askFor("reminders"),
@@ -118,7 +122,7 @@ describe("a helper that takes too long to answer", () => {
   });
 
   it("given a request that waits on the user, such as a permission prompt, waits past the time budget for their answer", async () => {
-    slowOver("reminders_permission_request", timeBudget * 3);
+    slowOver("reminders_permission_request", timeBudget * 2);
 
     const answer = await helperPermissions(helper).askFor("reminders");
 
