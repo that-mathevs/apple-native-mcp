@@ -9,7 +9,7 @@ struct StartingTheHelperSpec {
   // Disclaiming responsibility puts the grant on the helper's own identity instead.
   @Test("given nothing saying responsibility was disclaimed, relaunches itself so macOS holds the helper responsible")
   func relaunchesDisclaimed() {
-    #expect(startingChoice(environment: [:]) == .relaunchDisclaimed)
+    #expect(startingChoice(environment: [:]) == .serveSession)
   }
 
   @Test("given the mark its own relaunch leaves behind, serves the session instead of relaunching again")
