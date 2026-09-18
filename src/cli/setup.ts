@@ -23,6 +23,7 @@ const permissionNames: Record<Permission, string> = {
   reminders: "Reminders",
   contacts: "Contacts",
   notes: "Notes",
+  mail: "Mail",
 };
 
 const permissionLine = (permission: Permission, answer: Outcome<PermissionAnswer>): string => {

@@ -32,4 +32,8 @@ describe("the settings setup names", () => {
   it("name the setting for controlling Notes exactly as the helper does", async () => {
     expect(permissionSettings.notes).toBe(await helperSetting("notesPermissionSetting"));
   });
+
+  it("name the setting for controlling Mail exactly as the helper does", async () => {
+    expect(permissionSettings.mail).toBe(await helperSetting("mailPermissionSetting"));
+  });
 });
