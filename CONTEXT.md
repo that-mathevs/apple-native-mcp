@@ -360,9 +360,10 @@ _Avoid_: message, mail item, letter
 
 **Email reference**:
 What a read returns so a later operation can act on exactly that email: its Message-ID, its account
-and its mailbox path. Emails are never addressed by subject.
-The number Mail knows an email by while it runs is a **store identifier**: the server uses it to
-ask the mail store about the same email again, and it never appears in a result.
+and its mailbox path. Emails are never addressed by subject. The number Mail knows an email by while
+it runs is a **store identifier**. A reference carries it as where to look first, because finding an
+email by its Message-ID means scanning its mailbox, and it is never trusted: what is found under it
+is that email only when its Message-ID is the reference's.
 _Avoid_: email id, handle (that word is Messages')
 
 **Draft**:

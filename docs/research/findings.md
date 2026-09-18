@@ -2292,9 +2292,9 @@ outcome is marked `(after #7)`.
 
 #### opening an email
 
-- [ ] **MAIL-92** [acceptance] given an identifier that is not an email identifier, refuses before touching Mail · NN1 · chrischall `0860cf8`, `18660e4`, `88b58d0`
-- [ ] **MAIL-93** [acceptance] given an identifier from a search result, returns that email's full text and never a different email with a similar subject · NN3 · fpjnijweide `42c9e11`, `48cd701`
-- [ ] **MAIL-94** [acceptance] given attachments, reports each one's name, type and size · — · felkru `22aa354`
+- [x] **MAIL-92** [acceptance] given an identifier that is not an email identifier, refuses before touching Mail · NN1 · chrischall `0860cf8`, `18660e4`, `88b58d0`
+- [x] **MAIL-93** [acceptance] given an identifier from a search result, returns that email's full text and never a different email with a similar subject · NN3 · fpjnijweide `42c9e11`, `48cd701`
+- [x] **MAIL-94** [acceptance] given attachments, reports each one's name, type and size (the type only when Mail gives one: on macOS 26 Mail fails every read of it, #69) · — · felkru `22aa354`
 - [ ] **MAIL-95** [acceptance] given an HTML email, reports its links with their text · — · felkru `22aa354`
 - [ ] **MAIL-96** [acceptance] given a link longer than usual, still reports it · — · felkru `22aa354`
 
@@ -2308,8 +2308,8 @@ These scenarios hold for every read operation above.
 - [ ] **MAIL-45** [acceptance] given Mail is not running, still reports the emails, within the time budget · — · felkru `c769cc0`
 - [x] **MAIL-46** [acceptance] given Mail has no accounts, fails saying so rather than asking for a permission · NN5 · felkru `c769cc0`
 - [x] **MAIL-47** [acceptance] given the mail store does not answer within the time budget, fails saying it timed out rather than blaming a permission · NN5 · felkru `c769cc0`; nivra `0b616cd`, `2860fb6`
-- [ ] **MAIL-48** [acceptance] given an email body that imitates the end of a result or another email, reports it inside that one email's body · — · ANierbeck `d2b9bf5`
-- [ ] **MAIL-49** [acceptance] given an email with no sent date, reports the date as unknown rather than inventing one · NN3 · sicdigital `3c13e0d`
+- [x] **MAIL-48** [acceptance] given an email body that imitates the end of a result or another email, reports it inside that one email's body · — · ANierbeck `d2b9bf5`
+- [x] **MAIL-49** [acceptance] given an email with no sent date, reports the date as unknown rather than inventing one · NN3 · sicdigital `3c13e0d`
 
 #### any mail operation
 
