@@ -4,6 +4,7 @@ import { settingsFrom } from "../../src/domain/settings.js";
 import { buildServer, type ServerDependencies } from "../../src/mcp/server.js";
 import { FakeContactStore } from "./fake-contact-store.js";
 import { FakeEventStore } from "./fake-event-store.js";
+import { FakeMailStore } from "./fake-mail-store.js";
 import { FakeMessageStore } from "./fake-message-store.js";
 import { FakeNoteStore } from "./fake-note-store.js";
 import { FakeReminderStore } from "./fake-reminder-store.js";
@@ -17,6 +18,7 @@ export const aServer = (dependencies: Partial<ServerDependencies>): McpServer =>
     eventStore: new FakeEventStore(),
     reminderStore: new FakeReminderStore(),
     contactStore: new FakeContactStore(),
+    mailStore: new FakeMailStore(),
     messageStore: new FakeMessageStore(),
     noteStore: new FakeNoteStore(),
     now: () => new Date("2026-09-18T16:00:00Z"),

@@ -14,6 +14,7 @@ import {
 import { diskHelperFiles } from "./adapters/native/disk-helper-files.js";
 import { Helper } from "./adapters/native/helper.js";
 import { helperPermissions } from "./adapters/native/helper-permissions.js";
+import { helperMailStore } from "./adapters/native/mail-store.js";
 import { helperMessageStore } from "./adapters/native/message-store.js";
 import { helperNoteStore } from "./adapters/native/note-store.js";
 import { helperReminderStore } from "./adapters/native/reminder-store.js";
@@ -105,6 +106,7 @@ const serve = async (): Promise<void> => {
     messageStore: helperMessageStore(helper),
     contactStore: helperContactStore(helper),
     noteStore: helperNoteStore(helper),
+    mailStore: helperMailStore(helper),
     now: () => new Date(),
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     settings,

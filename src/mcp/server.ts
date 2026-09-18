@@ -3,6 +3,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 
 import type { ListEventsDependencies } from "../application/calendar/list-events.js";
 import type { FindContactsDependencies } from "../application/contacts/find-contacts.js";
+import type { ListMailAccountsDependencies } from "../application/mail/list-mail-accounts.js";
 import type { ListChatsDependencies } from "../application/messages/list-chats.js";
 import type { ReadChatDependencies } from "../application/messages/read-chat.js";
 import type { NotesDependencies } from "../application/notes/note-store.js";
@@ -14,6 +15,8 @@ import { listEventsTool } from "./calendar/list-events-tool.js";
 import { readEventTool } from "./calendar/read-event-tool.js";
 import { searchEventsTool } from "./calendar/search-events-tool.js";
 import { findContactsTool } from "./contacts/find-contacts-tool.js";
+import { listMailAccountsTool } from "./mail/list-mail-accounts-tool.js";
+import { listMailboxesTool } from "./mail/list-mailboxes-tool.js";
 import { listChatsTool } from "./messages/list-chats-tool.js";
 import { readChatTool } from "./messages/read-chat-tool.js";
 import { listNoteFoldersTool } from "./notes/list-note-folders-tool.js";
@@ -31,6 +34,7 @@ import type { Tool } from "./tool.js";
 export type ServerDependencies = ListEventsDependencies &
   ListRemindersToolDependencies &
   FindContactsDependencies &
+  ListMailAccountsDependencies &
   ListChatsDependencies &
   ReadChatDependencies &
   NotesDependencies;
@@ -119,6 +123,8 @@ export const buildServer = (dependencies: ServerDependencies): McpServer =>
       listRemindersTool(dependencies),
       searchRemindersTool(dependencies),
       findContactsTool(dependencies),
+      listMailAccountsTool(dependencies),
+      listMailboxesTool(dependencies),
       listChatsTool(dependencies),
       readChatTool(dependencies),
       listNoteFoldersTool(dependencies),
