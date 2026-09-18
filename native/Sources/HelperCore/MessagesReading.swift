@@ -4,6 +4,10 @@ import Foundation
 struct MessagesReading: Sendable {
   let store: MessageStore
 
+  func handles() -> Result<[String], NamedFailure> {
+    store.handles().mapError(NamedFailure.init(refusal:))
+  }
+
   func chats(limit: Int) -> Result<ChatsRead, NamedFailure> {
     store.chats(limit: limit).mapError(NamedFailure.init(refusal:))
   }

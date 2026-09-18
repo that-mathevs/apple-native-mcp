@@ -15,7 +15,10 @@ describe("the contact names messages are given", () => {
       }),
     );
 
-    const named = await contactNamesFrom(contactStore).namesOf(["+15551230001", "+15559990000"]);
+    const named = await contactNamesFrom(contactStore).namesOf(
+      ["+15551230001", "+15559990000"],
+      [],
+    );
 
     expect(named).toStrictEqual({ ok: true, value: new Map([["+15551230001", "Anna Reyes"]]) });
   });
@@ -24,16 +27,34 @@ describe("the contact names messages are given", () => {
     const contactStore = new FakeContactStore();
     contactStore.refuses(contactsRefused);
 
-    const named = await contactNamesFrom(contactStore).namesOf(["+15551230001"]);
+    const named = await contactNamesFrom(contactStore).namesOf(["+15551230001"], []);
 
     expect(named).toMatchObject({ ok: false, failure: { code: "contacts_permission_missing" } });
   });
 
+  // MSG-15 and upstream #58: one read of the whole address book per message took minutes.
   it("reads the contacts once, however many handles it names", async () => {
     const contactStore = new FakeContactStore();
+    const handles = ["+15551230001", "+15551230002", "a@b.example"];
 
-    await contactNamesFrom(contactStore).namesOf(["+15551230001", "+15551230002", "a@b.example"]);
+    await contactNamesFrom(contactStore).namesOf(handles, handles);
 
     expect(contactStore.reads).toBe(1);
+  });
+
+  it("given a bare number on a card, names a handle only when no stored handle in another country fits it", async () => {
+    const contactStore = new FakeContactStore();
+    contactStore.holds(
+      aContact("contact-anna", "Anna", "Reyes", {
+        phoneNumbers: [{ label: "mobile", written: "07700 900123" }],
+      }),
+    );
+
+    const named = await contactNamesFrom(contactStore).namesOf(
+      ["+337700900123"],
+      ["+447700900123", "+337700900123"],
+    );
+
+    expect(named).toStrictEqual({ ok: true, value: new Map() });
   });
 });

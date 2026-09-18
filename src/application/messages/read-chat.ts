@@ -1,7 +1,12 @@
 import type { Outcome } from "../../domain/failure.js";
 import { succeeded } from "../../domain/failure.js";
 import { defaultMessageLimit } from "../../domain/messages/message.js";
-import { type ContactNames, type Naming, naming } from "./contact-names.js";
+import {
+  type ContactNames,
+  type ContactNamesFound,
+  contactNamesFor,
+  sendersOf,
+} from "./contact-names.js";
 import type { MessagesRead, MessageStore } from "./message-store.js";
 
 export type ReadChatDependencies = {
@@ -10,7 +15,7 @@ export type ReadChatDependencies = {
 };
 
 /** A chat's messages, and the names the user's contacts give their senders. */
-export type ChatRead = MessagesRead & { readonly naming: Naming };
+export type ChatRead = MessagesRead & { readonly contactNames: Outcome<ContactNamesFound> };
 
 export type ReadChatRequest = {
   readonly chat: string;
@@ -20,10 +25,10 @@ export type ReadChatRequest = {
 };
 
 export const readChat = async (
-  { messageStore, contactNames }: ReadChatDependencies,
+  dependencies: ReadChatDependencies,
   { chat, limit, from, to }: ReadChatRequest,
 ): Promise<Outcome<ChatRead>> => {
-  const read = await messageStore.messages({
+  const read = await dependencies.messageStore.messages({
     chat,
     limit: limit ?? defaultMessageLimit,
     ...(from === undefined ? {} : { from }),
@@ -31,8 +36,8 @@ export const readChat = async (
   });
   if (!read.ok) return read;
 
-  const senders = read.value.messages.flatMap(({ handle }) =>
-    handle === undefined ? [] : [handle],
-  );
-  return succeeded({ ...read.value, naming: await naming(contactNames, senders) });
+  return succeeded({
+    ...read.value,
+    contactNames: await contactNamesFor(dependencies, sendersOf(read.value.messages)),
+  });
 };

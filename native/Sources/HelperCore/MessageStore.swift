@@ -26,6 +26,9 @@ public protocol MessageStore: Sendable {
   /// group events left out. Nothing when a chat is named that the store does not have.
   func messagesToSearch(within range: MessageRange, inChat identifier: String?, ceiling: Int)
     -> Result<MessagesScanned?, MessageStoreRefusal>
+
+  /// Every handle the store holds, each once, in order.
+  func handles() -> Result<[String], MessageStoreRefusal>
 }
 
 /// The user's message store, a SQLite database only ever read read-only, with prepared
@@ -143,6 +146,15 @@ public struct SQLiteMessageStore: MessageStore {
         return newestMessages(
           in: database, of: scope, within: range, limit: ceiling, until: deadline
         ).map { newest in MessagesScanned(messages: newest.messages, truncated: newest.truncated) }
+      }
+    }
+  }
+
+  public func handles() -> Result<[String], MessageStoreRefusal> {
+    opened().flatMap { database in
+      defer { sqlite3_close(database) }
+      return rows(in: database, "SELECT DISTINCT id FROM handle ORDER BY id", binding: []) {
+        row in row.text(0) ?? ""
       }
     }
   }

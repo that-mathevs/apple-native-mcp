@@ -4,7 +4,12 @@ import type { Message } from "../../domain/messages/message.js";
 import { greatestMatches, searchCeiling, searchDays } from "../../domain/messages/search.js";
 import { rankingBy, searchQueryFrom } from "../../domain/search-query.js";
 import { type Bound, rangeNotForwards, searchRangeOf } from "../../domain/search-range.js";
-import { type ContactNames, type Naming, naming } from "./contact-names.js";
+import {
+  type ContactNames,
+  type ContactNamesFound,
+  contactNamesFor,
+  sendersOf,
+} from "./contact-names.js";
 import type { MessageStore } from "./message-store.js";
 
 export type SearchMessagesDependencies = {
@@ -37,22 +42,23 @@ export type SearchCoverage = {
 export type MessagesFound = {
   readonly range: { readonly from: Date; readonly to: Date };
   readonly matches: readonly Message[];
-  /** The names the user's contacts give the matches' senders. */
-  readonly naming: Naming;
+  /** The contact names of the matches' senders. */
+  readonly contactNames: Outcome<ContactNamesFound>;
   readonly coverage: SearchCoverage;
 };
 
 const nothingScanned = (range: { from: Date; to: Date }): MessagesFound => ({
   range,
   matches: [],
-  naming: { names: new Map() },
+  contactNames: succeeded(new Map()),
   coverage: { scanned: 0, truncated: false, matched: 0, unsearched: 0 },
 });
 
 export const searchMessages = async (
-  { messageStore, contactNames, now, timeZone }: SearchMessagesDependencies,
+  dependencies: SearchMessagesDependencies,
   request: SearchMessagesRequest,
 ): Promise<Outcome<MessagesFound>> => {
+  const { messageStore, now, timeZone } = dependencies;
   const range = searchRangeOf(request, now(), timeZone, searchDays);
   if (range.to <= range.from) return failed(rangeNotForwards);
 
@@ -85,11 +91,10 @@ export const searchMessages = async (
 
   const oldest = messages.at(-1);
   const matches = ranked.slice(0, greatestMatches).map(({ message }) => message);
-  const senders = matches.flatMap(({ handle }) => (handle === undefined ? [] : [handle]));
   return succeeded({
     range,
     matches,
-    naming: await naming(contactNames, senders),
+    contactNames: await contactNamesFor(dependencies, sendersOf(matches)),
     coverage: {
       scanned: messages.length,
       truncated,

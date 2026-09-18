@@ -241,6 +241,16 @@ server reads the search query and ranks what matches; the helper only scans. A s
 after five seconds, answering with what it read and `truncated` set, so a slow store costs a search
 its reach and never the whole search.
 
+**The handles**
+
+```json
+{"protocolVersion":1,"id":"11","request":"handles"}
+{"id":"11","protocolVersion":1,"result":{"handles":["+447700900123","ben@example.com"]}}
+```
+
+Every handle the store holds, each once. The server judges a bare national number on a contact card
+against them: it names a handle only while no other handle has its digits in another country.
+
 The store is opened read-only, by path, and every value in a query is bound, never written into it.
 Before it is opened, the file is opened for reading once, because macOS refuses a protected file
 before SQLite sees it and only the error number tells a refusal from a store that is not there:

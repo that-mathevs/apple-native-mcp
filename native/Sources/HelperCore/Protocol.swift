@@ -30,6 +30,7 @@ struct Request: Equatable {
     case chats(limit: Int)
     case chatMessages(chat: String, range: MessageRange, limit: Int)
     case messagesToSearch(range: MessageRange, chat: String?, ceiling: Int)
+    case handles
     case notesPermission
     case requestNotesPermission
     case noteFolders
@@ -67,6 +68,7 @@ enum RequestName: String {
   case chats = "chats"
   case chatMessages = "chat_messages"
   case messagesToSearch = "messages_to_search"
+  case handles = "handles"
   case notesPermission = "notes_permission"
   case requestNotesPermission = "notes_permission_request"
   case noteFolders = "note_folders"
@@ -230,6 +232,8 @@ extension Request {
       let kind = Request.Kind.messagesToSearch(
         range: range, chat: chat as? String, ceiling: ceiling)
       return .request(Request(id: id, kind: kind))
+    case .handles:
+      return .request(Request(id: id, kind: .handles))
     case .notesPermission:
       return .request(Request(id: id, kind: .notesPermission))
     case .requestNotesPermission:

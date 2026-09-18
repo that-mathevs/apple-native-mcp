@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import type { Naming } from "../../application/messages/contact-names.js";
-import type { NamedFailure } from "../../domain/failure.js";
+import type { ContactNamesFound } from "../../application/messages/contact-names.js";
+import type { Outcome } from "../../domain/failure.js";
 import type { Message } from "../../domain/messages/message.js";
 import { failureRecord } from "../tool.js";
 
@@ -13,7 +13,7 @@ export const messageRecord = z.object({
   textUnreadable: failureRecord.optional(),
   direction: z.enum(["incoming", "outgoing"]),
   handle: z.string().optional(),
-  /** The name the user's contacts give the handle an incoming message came from. */
+  /** The contact name of the handle an incoming message came from. */
   name: z.string().optional(),
   timestamp: z.iso.datetime(),
   service: z.string(),
@@ -24,7 +24,7 @@ export const messageRecord = z.object({
 
 export const asMessageRecord = (
   message: Message,
-  naming: Naming,
+  contactNames: Outcome<ContactNamesFound>,
 ): z.infer<typeof messageRecord> => ({
   chat: message.chat,
   identifier: message.identifier,
@@ -33,23 +33,29 @@ export const asMessageRecord = (
     ? {}
     : { textUnreadable: { ...message.textUnreadable } }),
   direction: message.direction,
-  ...(message.handle === undefined ? {} : asHandleRecord(message.handle, naming)),
+  ...(message.handle === undefined ? {} : asHandleRecord(message.handle, contactNames)),
   timestamp: message.timestamp.toISOString(),
   service: message.service,
   ...(message.delivery === undefined ? {} : { delivery: { ...message.delivery } }),
 });
 
-/** A handle, and the name the user's contacts give it when exactly one contact holds it. */
+/** A handle, and its contact name when it has one. */
 export const handleRecord = z.object({ handle: z.string(), name: z.string().optional() });
 
 export const asHandleRecord = (
   handle: string,
-  naming: Naming,
+  contactNames: Outcome<ContactNamesFound>,
 ): z.infer<typeof handleRecord> => {
-  const name = "names" in naming ? naming.names.get(handle) : undefined;
+  const name = contactNames.ok ? contactNames.value.get(handle) : undefined;
   return name === undefined ? { handle } : { handle, name };
 };
 
-/** Why no handle carries a name, when the contacts could not be read. */
-export const namingCoverage = (naming: Naming): { namesUnavailable?: NamedFailure } =>
-  "unavailable" in naming ? { namesUnavailable: naming.unavailable } : {};
+/** Why no handle carries a contact name: the contacts could not be read (MSG-16). */
+export const contactNamesCoverage = {
+  contactNamesUnavailable: failureRecord.optional(),
+};
+
+export const asContactNamesCoverage = (
+  contactNames: Outcome<ContactNamesFound>,
+): { contactNamesUnavailable?: z.infer<typeof failureRecord> } =>
+  contactNames.ok ? {} : { contactNamesUnavailable: { ...contactNames.failure } };

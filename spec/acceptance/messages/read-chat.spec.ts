@@ -186,7 +186,7 @@ describe("reading a chat", () => {
 
     expect(result.structuredContent).toMatchObject({
       messages: [{ handle: "ben@example.com" }],
-      coverage: { namesUnavailable: { code: "contacts_permission_missing" } },
+      coverage: { contactNamesUnavailable: { code: "contacts_permission_missing" } },
     });
   });
 });

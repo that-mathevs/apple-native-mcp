@@ -290,6 +290,13 @@ Sent means the message left with no error; delivered means the store shows it re
 A **delivery error** is the code the store records when it couldn't.
 _Avoid_: success, ok
 
+**Contact name**:
+The name a handle carries in a read: the name its contact goes by, when exactly one contact holds the
+handle, and none otherwise. The reverse of name resolution, and never used to choose where anything
+is sent. When Contacts can't be read, a read still answers under handles and says the contact names
+were **unavailable**.
+_Avoid_: display name, caller ID, sender name
+
 **Wrong number**:
 A never-used address belonging to someone the user reaches on another handle. A send to it is
 refused, naming the contact rather than the handle.

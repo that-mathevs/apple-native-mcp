@@ -54,6 +54,16 @@ struct ReadingArchivedTextSpec {
     #expect(text(of: anArchive(of: link)) == .success("https://example.com/route"))
   }
 
+  // An inline reply keeps the message it answers in a column of its own; its archived text is
+  // what was written in reply. Messages' own reply attributes are checked on a real Mac by the
+  // Mac-only contract, since reading them needs Full Disk Access (#40).
+  @Test("given a reply to another message, reads the reply's own text")
+  func readsAReply() {
+    let reply = written("Yes, I'll bring it").marked("__kIMMessagePartAttributeName", as: 1)
+
+    #expect(text(of: anArchive(of: reply)) == .success("Yes, I'll bring it"))
+  }
+
   @Test("given a message the user edited, reads the text as it now stands")
   func readsAnEditedMessage() {
     #expect(text(of: anArchive(of: written("See you at 7").edited())) == .success("See you at 7"))

@@ -101,12 +101,14 @@ const serve = async (): Promise<void> => {
     () => server.server.getClientVersion()?.name ?? "your MCP client",
   );
 
+  const contactStore = helperContactStore(helper);
+
   const server = buildServer({
     eventStore: calendarEventStore(helper),
     reminderStore: helperReminderStore(helper),
     messageStore: helperMessageStore(helper),
-    contactStore: helperContactStore(helper),
-    contactNames: contactNamesFrom(helperContactStore(helper)),
+    contactStore,
+    contactNames: contactNamesFrom(contactStore),
     noteStore: helperNoteStore(helper),
     mailStore: helperMailStore(helper),
     now: () => new Date(),

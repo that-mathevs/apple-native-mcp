@@ -112,4 +112,12 @@ export const helperMessageStore = (helper: Helper): MessageStore => ({
     };
     return succeeded({ messages: (messages ?? []).map(asMessage), truncated: truncated === true });
   },
+
+  handles: async (): Promise<Outcome<readonly string[]>> => {
+    const answered = await helper.ask({ request: "handles" });
+    if (!answered.ok) return failed(answered.failure);
+
+    const { handles } = answered.value as { handles?: string[] };
+    return succeeded(handles ?? []);
+  },
 });

@@ -81,6 +81,16 @@ export const aMessageStore = ({ name, build }: MessageStoreUnderTest): void => {
       expect(typeof read.value.truncated).toBe("boolean");
     });
 
+    it("answers the handles it holds, each once", async () => {
+      const { messageStore } = await build();
+
+      const read = await messageStore.handles();
+
+      expect(read.ok).toBe(true);
+      if (!read.ok) return;
+      expect(new Set(read.value).size).toBe(read.value.length);
+    });
+
     it("given a chat to search that no chat has, refuses it as unknown", async () => {
       const { messageStore } = await build();
 
@@ -197,6 +207,16 @@ export const aMessageStoreThatCanBeLoaded = ({
         ok: true,
         value: { messages: [{ identifier: "there" }], truncated: false },
       });
+    });
+
+    it("answers every handle its chats' participants use, each once", async () => {
+      const { messageStore, holding } = await build();
+      await holding(
+        [aChat("one", "2026-09-18T12:00:00Z"), aChat("two", "2026-09-18T12:00:00Z")],
+        [],
+      );
+
+      expect(await messageStore.handles()).toStrictEqual({ ok: true, value: ["+15551230001"] });
     });
   });
 };

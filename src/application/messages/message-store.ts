@@ -54,4 +54,6 @@ export type MessageStore = {
   messages: (wanted: MessagesWanted) => Promise<Outcome<MessagesRead>>;
   /** Each with its text read as read_chat reads it, so a search sees what a reader would. */
   messagesToSearch: (wanted: MessagesToSearch) => Promise<Outcome<MessagesScanned>>;
+  /** Every handle the store holds, which a bare number on a contact card is judged against. */
+  handles: () => Promise<Outcome<readonly string[]>>;
 };

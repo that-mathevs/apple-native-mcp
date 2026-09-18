@@ -6,10 +6,16 @@ import {
 } from "../../application/messages/list-chats.js";
 import type { Chat } from "../../domain/messages/chat.js";
 import { greatestChatLimit } from "../../domain/messages/chat.js";
-import type { Naming } from "../../application/messages/contact-names.js";
+import type { ContactNamesFound } from "../../application/messages/contact-names.js";
+import type { Outcome } from "../../domain/failure.js";
 import { refusing, reporting } from "../result.js";
-import { failureRecord, tool, type Tool } from "../tool.js";
-import { asHandleRecord, handleRecord, namingCoverage } from "./records.js";
+import { tool, type Tool } from "../tool.js";
+import {
+  asContactNamesCoverage,
+  asHandleRecord,
+  contactNamesCoverage,
+  handleRecord,
+} from "./records.js";
 
 const chatRecord = z.object({
   identifier: z.string(),
@@ -18,10 +24,13 @@ const chatRecord = z.object({
   lastTimestamp: z.iso.datetime(),
 });
 
-const asRecord = (chat: Chat, naming: Naming): z.infer<typeof chatRecord> => ({
+const asRecord = (
+  chat: Chat,
+  contactNames: Outcome<ContactNamesFound>,
+): z.infer<typeof chatRecord> => ({
   identifier: chat.identifier,
   kind: chat.kind,
-  participants: chat.participants.map((handle) => asHandleRecord(handle, naming)),
+  participants: chat.participants.map((handle) => asHandleRecord(handle, contactNames)),
   lastTimestamp: chat.lastTimestamp.toISOString(),
 });
 
@@ -43,7 +52,7 @@ export const listChatsTool = (dependencies: ListChatsDependencies): Tool =>
     },
     output: {
       chats: z.array(chatRecord),
-      coverage: z.object({ truncated: z.boolean(), namesUnavailable: failureRecord.optional() }),
+      coverage: z.object({ truncated: z.boolean(), ...contactNamesCoverage }),
     },
     annotations: { readOnlyHint: true, openWorldHint: false },
     capability: undefined,
@@ -51,10 +60,10 @@ export const listChatsTool = (dependencies: ListChatsDependencies): Tool =>
       const listed = await listChats(dependencies, request);
       if (!listed.ok) return refusing(listed.failure);
 
-      const { chats, truncated, naming } = listed.value;
+      const { chats, truncated, contactNames } = listed.value;
       return reporting({
-        chats: chats.map((chat) => asRecord(chat, naming)),
-        coverage: { truncated, ...namingCoverage(naming) },
+        chats: chats.map((chat) => asRecord(chat, contactNames)),
+        coverage: { truncated, ...asContactNamesCoverage(contactNames) },
       });
     },
   });

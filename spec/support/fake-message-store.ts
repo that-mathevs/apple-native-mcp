@@ -52,6 +52,7 @@ export class FakeMessageStore implements MessageStore {
   #messages: readonly Message[] = [];
   #failure: NamedFailure | undefined;
   #ceiling: number | undefined;
+  #handles: readonly string[] | undefined;
 
   holdsChats(...chats: readonly Chat[]): void {
     this.#chats = chats;
@@ -59,6 +60,11 @@ export class FakeMessageStore implements MessageStore {
 
   holdsMessages(...messages: readonly Message[]): void {
     this.#messages = messages;
+  }
+
+  /** Every handle the store holds, beyond those its chats and messages already name. */
+  holdsHandles(...handles: readonly string[]): void {
+    this.#handles = handles;
   }
 
   /** Scan no more than this many, whatever ceiling a search asks for. */
@@ -120,6 +126,17 @@ export class FakeMessageStore implements MessageStore {
         truncated: newestFirst.length > scanning,
       }),
     );
+  }
+
+  handles(): Promise<Outcome<readonly string[]>> {
+    if (this.#failure) return Promise.resolve(failed(this.#failure));
+
+    const named = [
+      ...(this.#handles ?? []),
+      ...this.#chats.flatMap(({ participants }) => participants),
+      ...this.#messages.flatMap(({ handle }) => (handle === undefined ? [] : [handle])),
+    ];
+    return Promise.resolve(succeeded([...new Set(named)]));
   }
 
   #knows(chat: string): boolean {

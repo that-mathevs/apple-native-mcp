@@ -139,7 +139,7 @@ describe("listing chats", () => {
 
     expect(result.structuredContent).toMatchObject({
       chats: [{ participants: [{ handle: "+15551230001" }, { handle: "ben@example.com" }] }],
-      coverage: { namesUnavailable: { code: "contacts_permission_missing" } },
+      coverage: { contactNamesUnavailable: { code: "contacts_permission_missing" } },
     });
   });
 
@@ -163,5 +163,25 @@ describe("listing chats", () => {
     expect(result.structuredContent).toMatchObject({
       chats: [{ participants: [{ handle: "+15551230001", name: "Anna Reyes" }] }],
     });
+  });
+
+  it("given no chats, asks the contacts for nothing, and so never says contact names were unavailable", async () => {
+    contactNames.refuses(contactsRefused);
+
+    const result = await listChats();
+
+    expect(result.structuredContent).toStrictEqual({ chats: [], coverage: { truncated: false } });
+    expect(contactNames.reads).toBe(0);
+  });
+
+  // #17: a bare national number on a card names a handle only while no stored handle in another
+  // country has its digits. The contacts are asked with every handle the store holds.
+  it("asks the contacts with every handle the message store holds, so a bare number is never guessed", async () => {
+    messageStore.holdsChats(withAnna);
+    messageStore.holdsHandles("+15551230001", "+445551230001");
+
+    await listChats();
+
+    expect(contactNames.storedHandlesAsked).toStrictEqual(["+15551230001", "+445551230001"]);
   });
 });

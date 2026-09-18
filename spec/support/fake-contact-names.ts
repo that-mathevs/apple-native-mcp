@@ -8,6 +8,8 @@ import { failed, succeeded } from "../../src/domain/failure.js";
  */
 export class FakeContactNames implements ContactNames {
   reads = 0;
+  /** The handles the message store held, as the last read passed them. */
+  storedHandlesAsked: readonly string[] = [];
 
   readonly #names = new Map<string, string>();
   #failure: NamedFailure | undefined;
@@ -20,8 +22,12 @@ export class FakeContactNames implements ContactNames {
     this.#failure = failure;
   }
 
-  namesOf(handles: readonly string[]): Promise<Outcome<ReadonlyMap<string, string>>> {
+  namesOf(
+    handles: readonly string[],
+    storedHandles: readonly string[],
+  ): Promise<Outcome<ReadonlyMap<string, string>>> {
     this.reads += 1;
+    this.storedHandlesAsked = storedHandles;
     if (this.#failure) return Promise.resolve(failed(this.#failure));
 
     const named = handles.flatMap((handle) => {

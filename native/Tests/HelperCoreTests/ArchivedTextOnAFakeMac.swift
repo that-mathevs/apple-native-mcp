@@ -50,6 +50,14 @@ extension NSMutableAttributedString {
     return self
   }
 
+  /// Any attribute Messages keeps on the whole text, with a number as its value.
+  func marked(_ attribute: String, as value: Int) -> NSMutableAttributedString {
+    addAttribute(
+      NSAttributedString.Key(attribute), value: NSNumber(value: value),
+      range: NSRange(location: 0, length: length))
+    return self
+  }
+
   /// The mark Messages puts on a message the user edited after sending it.
   func edited() -> NSMutableAttributedString {
     addAttribute(

@@ -1,28 +1,45 @@
-import type { NamedFailure, Outcome } from "../../domain/failure.js";
+import type { Outcome } from "../../domain/failure.js";
+import { succeeded } from "../../domain/failure.js";
+import type { MessageStore } from "./message-store.js";
+
+/** Each handle a contact name was found for, with that name. */
+export type ContactNamesFound = ReadonlyMap<string, string>;
 
 /**
- * The names the user's contacts give handles. Messages asks through this port and never reaches
- * into Contacts itself; which contact a handle belongs to is the Contacts context's rule.
+ * The contact names the user's contacts give handles. Messages asks through this port and never
+ * reaches into Contacts itself: which contact a handle belongs to is the Contacts context's rule,
+ * judged against every handle the message store holds.
  */
 export type ContactNames = {
-  /** The handles a contact names, each with that name; a handle no one contact holds has none. */
-  namesOf: (handles: readonly string[]) => Promise<Outcome<ReadonlyMap<string, string>>>;
+  namesOf: (
+    handles: readonly string[],
+    storedHandles: readonly string[],
+  ) => Promise<Outcome<ContactNamesFound>>;
 };
 
-/** The names a read could put beside its handles, or why it could put none. */
-export type Naming =
-  | { readonly names: ReadonlyMap<string, string> }
-  | { readonly unavailable: NamedFailure };
+export type ContactNamesDependencies = {
+  readonly messageStore: MessageStore;
+  readonly contactNames: ContactNames;
+};
 
 /**
- * Name every handle a read found, reading the contacts once for all of them (MSG-15) and never
- * keeping them for the next read (MSG-C12). Contacts that cannot be read cost the names, never
- * the read (MSG-16).
+ * The contact names for every handle a read found, reading the contacts once for all of them
+ * (MSG-15) and keeping nothing for the next read (MSG-C12). A read that found no handle asks for
+ * nothing. Contacts that cannot be read cost the names, never the read (MSG-16).
  */
-export const naming = async (
-  contactNames: ContactNames,
+export const contactNamesFor = async (
+  { messageStore, contactNames }: ContactNamesDependencies,
   handles: Iterable<string>,
-): Promise<Naming> => {
-  const named = await contactNames.namesOf([...new Set(handles)]);
-  return named.ok ? { names: named.value } : { unavailable: named.failure };
+): Promise<Outcome<ContactNamesFound>> => {
+  const wanted = [...new Set(handles)];
+  if (wanted.length === 0) return succeeded(new Map());
+
+  const stored = await messageStore.handles();
+  if (!stored.ok) return stored;
+
+  return await contactNames.namesOf(wanted, stored.value);
 };
+
+/** The handles a read's messages came from. */
+export const sendersOf = (messages: readonly { readonly handle?: string }[]): string[] =>
+  messages.flatMap(({ handle }) => (handle === undefined ? [] : [handle]));
