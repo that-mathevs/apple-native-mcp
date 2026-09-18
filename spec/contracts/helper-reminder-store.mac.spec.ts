@@ -20,7 +20,7 @@ const helperPath = fileURLToPath(
 const helper = new Helper(() => Promise.resolve(succeeded(helperPath)));
 
 beforeAll(async () => {
-  await helper.ask({ request: "reminders_permission_request" });
+  await helper.ask({ request: "reminders_permission_request" }, { waitsOnTheUser: true });
 }, 120_000);
 
 afterAll(() => {
