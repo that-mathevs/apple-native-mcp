@@ -21,3 +21,19 @@ export const mailIsBusyAfter = async (
   const small = await mailStore.mailAccounts();
   return !small.ok && ranOutOfTime(small.failure);
 };
+
+/**
+ * What something is named with when it was never asked about because Mail had stopped answering:
+ * a mail account, a mailbox, the local mailboxes. It says what showed Mail to be busy.
+ */
+export const notAskedOfABusyMail = (
+  { code, what, again }: { readonly code: string; readonly what: string; readonly again: string },
+  stoppedAt: string,
+  failure: NamedFailure,
+): NamedFailure => ({
+  code,
+  sentence:
+    `Mail stopped answering before ${what}, so it was left alone: Mail can stay busy for ` +
+    `minutes. ${again} again later.`,
+  evidence: `${stoppedAt}: ${failure.code}`,
+});

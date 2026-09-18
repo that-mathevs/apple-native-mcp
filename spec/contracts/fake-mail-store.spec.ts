@@ -35,6 +35,7 @@ aMailStore({
       anEmail("Middle", { receivedAt: "2026-09-18T08:00:00Z", body: "Two." }),
       anEmail("Older still", { receivedAt: "2026-08-01T09:00:00Z", body: "Nought." }),
     );
+    mailStore.holdsLocalMailboxes({ path: ["Tax returns"] }, { path: ["Tax returns", "2025"] });
     return Promise.resolve({ mailStore });
   },
 });

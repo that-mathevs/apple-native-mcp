@@ -14,7 +14,7 @@ export const mailboxNeedsItsMailAccount: NamedFailure = {
   code: "mailbox-needs-its-mail-account",
   sentence:
     "Nothing was read: a mailbox is named by its mail account and its path together. Name the " +
-    "mail account too.",
+    "mail account too. A local mailbox, which has no mail account, cannot be looked in yet.",
 };
 
 export const mailboxUnknown = (
@@ -24,6 +24,7 @@ export const mailboxUnknown = (
   code: "mailbox-unknown",
   sentence:
     `Nothing was read: the mail account ${mailAccount.name} has no mailbox with that path. ` +
-    "List the mailboxes to find it.",
+    "List the mailboxes to find it. A local mailbox, which belongs to no mail account, cannot " +
+    "be looked in yet.",
   evidence: path.join("/"),
 });

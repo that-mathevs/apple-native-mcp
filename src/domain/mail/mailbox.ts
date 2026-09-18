@@ -9,7 +9,8 @@ export const mailboxRoles = ["inbox", "drafts", "sent", "junk", "trash"] as cons
 export type MailboxRole = (typeof mailboxRoles)[number];
 
 /**
- * A folder of emails inside one mail account, identified by its account and its path.
+ * A folder of emails inside one mail account, identified by that mail account and its path. A
+ * mailbox under no mail account is a `LocalMailbox`.
  *
  * The path is a list of names, outermost first. Forks joined it into one string, which is
  * ambiguous as soon as a name contains the separator (findings MAIL-C14).
@@ -28,6 +29,13 @@ export type Mailbox = {
 export const samePath = (left: readonly string[], right: readonly string[]): boolean =>
   left.length === right.length &&
   left.every((name, index) => name.normalize("NFC") === right[index]?.normalize("NFC"));
+
+/**
+ * A mailbox Mail keeps on this Mac under no mail account. It is identified by its path alone, and
+ * is reported apart from every mail account's mailboxes: forks filed these under an account
+ * called "On My Mac", which is no account (felkru c769cc0).
+ */
+export type LocalMailbox = Pick<Mailbox, "path" | "role">;
 
 /** What addresses a mailbox: its mail account and its path, which together never repeat. */
 export type MailboxAddress = Pick<Mailbox, "mailAccount" | "path">;

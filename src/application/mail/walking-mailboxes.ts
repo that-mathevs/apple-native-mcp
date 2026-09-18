@@ -10,7 +10,7 @@ import {
 } from "../../domain/mail/mailbox.js";
 import { searchCeiling, searchTimeBudgetSeconds } from "../../domain/mail/search.js";
 import type { SearchRange } from "../../domain/search-range.js";
-import { mailIsBusyAfter } from "./a-busy-mail.js";
+import { mailIsBusyAfter, notAskedOfABusyMail } from "./a-busy-mail.js";
 import { mailAccountNotAsked, type UnreadMailAccount } from "./each-mail-account.js";
 import type { MailStore } from "./mail-store.js";
 import { mailboxUnknown } from "./naming-a-mailbox.js";
@@ -57,13 +57,11 @@ type Stopped = { readonly mailbox: NamedFailure; readonly mailAccount: NamedFail
 // A Mail that has stopped answering (#7) ends the walk, rather than every mailbox after it
 // waiting out a whole time budget of its own.
 const mailStoppedAnswering = (stoppedAt: string, failure: NamedFailure): Stopped => ({
-  mailbox: {
-    code: "mailbox-not-asked",
-    sentence:
-      "Mail stopped answering before this mailbox was searched, so it was left alone: Mail " +
-      "can stay busy for minutes. Search again later.",
-    evidence: `${stoppedAt}: ${failure.code}`,
-  },
+  mailbox: notAskedOfABusyMail(
+    { code: "mailbox-not-asked", what: "this mailbox was searched", again: "Search" },
+    stoppedAt,
+    failure,
+  ),
   mailAccount: mailAccountNotAsked(stoppedAt, failure),
 });
 

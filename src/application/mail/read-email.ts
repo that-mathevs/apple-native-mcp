@@ -1,10 +1,6 @@
 import type { NamedFailure, Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
-import {
-  type EmailInFull,
-  type EmailReference,
-  greatestBody,
-} from "../../domain/mail/email.js";
+import { type EmailInFull, type EmailReference, greatestBody } from "../../domain/mail/email.js";
 import type { MailStore } from "./mail-store.js";
 
 export type ReadEmailDependencies = {

@@ -47,6 +47,7 @@ describe("listing mailboxes", () => {
           path: ["Receipts"],
         },
       ],
+      localMailboxes: [],
       unreadMailAccounts: [],
     });
   });
@@ -116,6 +117,7 @@ describe("listing mailboxes", () => {
     expect(result.isError).toBeUndefined();
     expect(result.structuredContent).toStrictEqual({
       mailboxes: [{ mailAccount: personalNamed, path: ["INBOX"], role: "inbox" }],
+      localMailboxes: [],
       unreadMailAccounts: [{ mailAccount: workNamed, failure: mailAccountTimedOut }],
     });
   });
@@ -226,6 +228,84 @@ describe("listing mailboxes", () => {
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
       failure: { code: "mail_permission_missing" },
+    });
+  });
+
+  // felkru c769cc0 and danielk-am ad3e9e9 reported these under an account called "On My Mac",
+  // which is no account, and whose name is whatever language the Mac speaks.
+  it("reports the local mailboxes apart from every mail account, each by its path", async () => {
+    mailStore.holdsMailAccounts(personal);
+    mailStore.holdsMailboxes(personal, { path: ["INBOX"], role: "inbox" });
+    mailStore.holdsLocalMailboxes({ path: ["Tax returns"] }, { path: ["Tax returns", "2025"] });
+
+    const result = await listMailboxes();
+
+    expect(result.structuredContent).toStrictEqual({
+      mailboxes: [{ mailAccount: personalNamed, path: ["INBOX"], role: "inbox" }],
+      localMailboxes: [{ path: ["Tax returns"] }, { path: ["Tax returns", "2025"] }],
+      unreadMailAccounts: [],
+    });
+  });
+
+  it("given a Mac with no mail account set up, still reports its local mailboxes", async () => {
+    mailStore.holdsLocalMailboxes({ path: ["Tax returns"] });
+
+    const result = await listMailboxes();
+
+    expect(result.structuredContent).toStrictEqual({
+      mailboxes: [],
+      localMailboxes: [{ path: ["Tax returns"] }],
+      unreadMailAccounts: [],
+    });
+  });
+
+  // brightline 304f384: one read that failed took the whole answer with it.
+  it("given the local mailboxes cannot be read, still reports every mail account's mailboxes and says why the local ones are missing", async () => {
+    mailStore.holdsMailAccounts(personal);
+    mailStore.holdsMailboxes(personal, { path: ["INBOX"], role: "inbox" });
+    mailStore.cannotReadLocalMailboxes(mailAccountTimedOut);
+
+    const result = await listMailboxes();
+
+    expect(result.isError).toBeUndefined();
+    expect(result.structuredContent).toStrictEqual({
+      mailboxes: [{ mailAccount: personalNamed, path: ["INBOX"], role: "inbox" }],
+      localMailboxes: [],
+      unreadMailAccounts: [],
+      localMailboxesUnread: mailAccountTimedOut,
+    });
+  });
+
+  // #7: a Mail that has stopped answering stays busy for minutes, so nothing more is asked of it.
+  it("given Mail stopped answering while the mail accounts were read, leaves the local mailboxes alone and says they were not asked for", async () => {
+    mailStore.holdsMailAccounts(personal, work);
+    mailStore.holdsMailboxes(personal, { path: ["INBOX"], role: "inbox" });
+    mailStore.cannotRead(work, mailAccountTimedOut);
+    mailStore.answersNothingAfterATimeout();
+    mailStore.holdsLocalMailboxes({ path: ["Tax returns"] });
+
+    const result = await listMailboxes();
+
+    expect(mailStore.localMailboxesAsked).toBe(0);
+    expect(result.structuredContent).toMatchObject({
+      localMailboxes: [],
+      localMailboxesUnread: { code: "local-mailboxes-not-asked", evidence: "Work: mail_timed_out" },
+    });
+  });
+
+  // They belong to no mail account, so no mail account failing is a reason to lose them.
+  it("given no mail account could be read, still reports the local mailboxes and names every mail account it could not read", async () => {
+    mailStore.holdsMailAccounts(personal);
+    mailStore.cannotRead(personal, mailAccountTimedOut);
+    mailStore.holdsLocalMailboxes({ path: ["Tax returns"] });
+
+    const result = await listMailboxes();
+
+    expect(result.isError).toBeUndefined();
+    expect(result.structuredContent).toStrictEqual({
+      mailboxes: [],
+      localMailboxes: [{ path: ["Tax returns"] }],
+      unreadMailAccounts: [{ mailAccount: personalNamed, failure: mailAccountTimedOut }],
     });
   });
 });

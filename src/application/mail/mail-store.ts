@@ -1,7 +1,7 @@
 import type { Outcome } from "../../domain/failure.js";
 import type { MailAccount } from "../../domain/mail/mail-account.js";
 import type { Email, EmailInFull, EmailReference } from "../../domain/mail/email.js";
-import type { Mailbox, MailboxAddress } from "../../domain/mail/mailbox.js";
+import type { LocalMailbox, Mailbox, MailboxAddress } from "../../domain/mail/mailbox.js";
 import type { SearchRange } from "../../domain/search-range.js";
 
 /** Which emails of one mailbox to read: its newest ones, up to this many. */
@@ -60,6 +60,8 @@ export type EmailWanted = {
 export type MailStore = {
   mailAccounts: () => Promise<Outcome<readonly MailAccount[]>>;
   mailboxes: (mailAccount: MailAccount) => Promise<Outcome<readonly Mailbox[]>>;
+  /** The mailboxes kept on this Mac under no mail account, in a request of their own. */
+  localMailboxes: () => Promise<Outcome<readonly LocalMailbox[]>>;
   /** One mailbox to a request, for the reason one mail account is: Mail answers one at a time. */
   latestEmails: (wanted: LatestEmailsWanted) => Promise<Outcome<LatestEmails>>;
   emailsInRange: (wanted: EmailsInRangeWanted) => Promise<Outcome<EmailsInRange>>;

@@ -2240,7 +2240,7 @@ outcome is marked `(after #7)`.
 - [x] **MAIL-05** [acceptance] reports each mailbox under the account it belongs to · — · long-tail/zaclohrenz `277aac7`; upstream PR #73
 - [x] **MAIL-06** [acceptance] given two accounts that both have an inbox, reports each inbox under its own account · — · felkru `c769cc0`
 - [x] **MAIL-07** [acceptance] given nested mailboxes, reports each one with its path inside its account · — · gene-jelly `bb07be5`; morquis `5bee2f6`, `5c01104`, `6361803`, `8a9b013`
-- [ ] **MAIL-08** [acceptance] given local mailboxes on this Mac, reports them apart from any account · — · felkru `c769cc0`
+- [x] **MAIL-08** [acceptance] given local mailboxes on this Mac, reports them apart from any account · — · felkru `c769cc0`
 - [x] **MAIL-09** [acceptance] without being asked for counts, reports none rather than looking through emails: counting is slow on large accounts · — · morquis `5bee2f6`, `5c01104`, `6361803`, `8a9b013`
 
 #### counting unread mail

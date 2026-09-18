@@ -97,6 +97,22 @@ export const aMailStore = ({ name, build }: MailStoreUnderTest): void => {
         expect(new Set(roles).size).toBe(roles.length);
       }
     });
+    // felkru c769cc0 filed these under an account called "On My Mac", which is no account.
+    it("answers for the local mailboxes apart from every mail account's, each with a path of at least one name and no two with the same", async () => {
+      const { mailStore } = await build();
+
+      const local = await mailStore.localMailboxes();
+
+      if (!local.ok)
+        throw new Error(`the local mailboxes could not be read: ${local.failure.code}`);
+      const paths = local.value.map(({ path }) => JSON.stringify(path));
+      expect(new Set(paths).size).toBe(paths.length);
+      for (const mailbox of local.value) {
+        expect(mailbox.path.length).toBeGreaterThan(0);
+        expect(Object.keys(mailbox).filter((key) => key !== "role")).toStrictEqual(["path"]);
+      }
+    });
+
     /**
      * The first inbox that holds any email and can be read, with its newest emails. A mailbox too
      * large to read says so, which is an answer too: it is passed over for the next.

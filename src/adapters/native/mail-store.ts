@@ -18,7 +18,12 @@ import {
   type EmailReference,
 } from "../../domain/mail/email.js";
 import type { MailAccount } from "../../domain/mail/mail-account.js";
-import type { Mailbox, MailboxAddress, MailboxRole } from "../../domain/mail/mailbox.js";
+import type {
+  LocalMailbox,
+  Mailbox,
+  MailboxAddress,
+  MailboxRole,
+} from "../../domain/mail/mailbox.js";
 import type { Helper } from "./helper.js";
 
 /**
@@ -154,6 +159,19 @@ export const helperMailStore = (helper: Helper): MailStore => ({
     return succeeded(
       (mailboxes ?? []).map(({ path, role }) => ({
         mailAccount: { identifier, name },
+        path,
+        ...(role === null ? {} : { role }),
+      })),
+    );
+  },
+
+  localMailboxes: async (): Promise<Outcome<readonly LocalMailbox[]>> => {
+    const answered = await helper.ask({ request: "local_mailboxes" });
+    if (!answered.ok) return failed(answered.failure);
+
+    const { localMailboxes } = answered.value as { localMailboxes?: MailboxRecord[] };
+    return succeeded(
+      (localMailboxes ?? []).map(({ path, role }) => ({
         path,
         ...(role === null ? {} : { role }),
       })),

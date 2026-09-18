@@ -27,7 +27,7 @@ export const searchEmailsTool = (dependencies: SearchEmailsDependencies): Tool =
     title: "Search mail",
     description:
       "Emails whose subject or sender matches a search query, the best match first, across " +
-      "every mailbox but junk and trash. With no range it searches the last 30 days, and it " +
+      "every mailbox of every mail account but junk and trash: local mailboxes are not searched. With no range it searches the last 30 days, and it " +
       "always says the range it used, how far it reached and what it could not search. Words are " +
       'optional and rank the results, "quoted phrases" match as written, a leading - leaves ' +
       "out any email holding a word or phrase, and case and accents are ignored. Subjects and " +

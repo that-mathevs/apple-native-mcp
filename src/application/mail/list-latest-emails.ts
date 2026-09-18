@@ -1,10 +1,6 @@
 import type { NamedFailure, Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
-import {
-  defaultLatest,
-  newestFirst,
-  type ReferencedEmail,
-} from "../../domain/mail/email.js";
+import { defaultLatest, newestFirst, type ReferencedEmail } from "../../domain/mail/email.js";
 import { askingEachMailAccount, type UnreadMailAccount } from "./each-mail-account.js";
 import { samePath } from "../../domain/mail/mailbox.js";
 import type { LatestEmails as LatestEmailsRead, MailStore } from "./mail-store.js";

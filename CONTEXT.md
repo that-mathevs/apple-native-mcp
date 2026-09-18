@@ -346,12 +346,19 @@ mailboxes. Display names aren't unique.
 _Avoid_: account (unqualified), provider, mail source
 
 **Mailbox**:
-A folder of emails inside one mail account, identified by its account and its path, which together
-are its **mailbox address**. Mailboxes nest, and names repeat across accounts. A **role mailbox** is
-one Mail knows by its job: Inbox, Drafts, Sent, Junk or Trash, whose displayed names vary by
+A folder of emails. One inside a mail account is identified by that account and its path, which
+together are its **mailbox address**; a **local mailbox** belongs to no mail account, and is
+identified by its path alone. Mailboxes nest, and names repeat across accounts. A **role mailbox**
+is one Mail knows by its job: Inbox, Drafts, Sent, Junk or Trash, whose displayed names vary by
 provider and language. Mail knows no such job for an archive, so an archive mailbox is a mailbox
-like any other, with no role.
+like any other, with no role, and the job it gives its own Outbox is not one of these either.
 _Avoid_: folder, label, INBOX as a name
+
+**Local mailbox**:
+A mailbox Mail keeps on this Mac under no mail account, which Mail lists under "On My Mac", such
+as one the user made to file mail away, and Mail's own Outbox. It is identified by its path alone,
+and is always reported apart from every mail account's mailboxes.
+_Avoid_: On My Mac (that is what Mail calls the place, in the user's language), offline mailbox
 
 **Email**:
 One item in Mail, with a subject, correspondents, a date, a read state and a body. Always "email",

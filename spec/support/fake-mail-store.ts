@@ -20,7 +20,7 @@ import {
   newestFirst,
 } from "../../src/domain/mail/email.js";
 import type { MailAccount } from "../../src/domain/mail/mail-account.js";
-import type { Mailbox, MailboxAddress } from "../../src/domain/mail/mailbox.js";
+import type { LocalMailbox, Mailbox, MailboxAddress } from "../../src/domain/mail/mailbox.js";
 
 /** A mailbox as a scenario states it: the account is the one it is held under. */
 type MailboxHeld = Omit<Mailbox, "mailAccount">;
@@ -122,6 +122,11 @@ export class FakeMailStore implements MailStore {
   #nextStoreIdentifier = 1;
 
   readonly #unsearchable = new Map<string, NamedFailure>();
+  #localMailboxes: readonly LocalMailbox[] = [];
+  #localMailboxesFailure: NamedFailure | undefined;
+
+  /** How many times this store was asked for its local mailboxes. */
+  localMailboxesAsked = 0;
   readonly #unreferenceable = new Map<string, NamedFailure>();
   readonly #bodiesUnreadable = new Map<string, NamedFailure>();
   readonly #unreadableInFull = new Map<string, NamedFailure>();
@@ -229,6 +234,15 @@ export class FakeMailStore implements MailStore {
     this.#undated.set(mailboxKey({ mailAccount: { identifier, name }, path }), emails);
   }
 
+  holdsLocalMailboxes(...mailboxes: readonly LocalMailbox[]): void {
+    this.#localMailboxes = mailboxes;
+  }
+
+  /** The local mailboxes fail on their own, while every mail account answers. */
+  cannotReadLocalMailboxes(failure: NamedFailure): void {
+    this.#localMailboxesFailure = failure;
+  }
+
   /** A mailbox that fails on its own, while the account's others answer. */
   cannotSearch(
     { identifier, name }: MailAccount,
@@ -272,6 +286,12 @@ export class FakeMailStore implements MailStore {
     return this.#answering(
       failure ? failed(failure) : succeeded(this.#mailboxes.get(identifier) ?? []),
     );
+  }
+
+  localMailboxes(): Promise<Outcome<readonly LocalMailbox[]>> {
+    this.localMailboxesAsked += 1;
+    const failure = this.#failure ?? this.#localMailboxesFailure;
+    return Promise.resolve(failure ? failed(failure) : succeeded(this.#localMailboxes));
   }
 
   latestEmails({ mailbox, newest }: LatestEmailsWanted): Promise<Outcome<LatestEmails>> {
