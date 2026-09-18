@@ -132,12 +132,16 @@ class Session {
  * not going to be fixed by starting it a third time.
  */
 export class Helper {
-  readonly #path: string;
-  #session: Session | undefined;
+  readonly #helperToLaunch: () => Promise<Outcome<string>>;
+  #session: Promise<Outcome<Session>> | undefined;
   #nextId = 0;
 
-  constructor(path: string) {
-    this.#path = path;
+  /**
+   * @param helperToLaunch asked before every start, restarts included, for the path to launch or
+   * the failure saying why nothing may be launched (ADR-0003).
+   */
+  constructor(helperToLaunch: () => Promise<Outcome<string>>) {
+    this.#helperToLaunch = helperToLaunch;
   }
 
   /**
@@ -150,16 +154,25 @@ export class Helper {
 
   /** Ask for a read, which is asked again once if the helper died before answering. */
   async ask(request: HelperRequest): Promise<Outcome<Record<string, unknown>>> {
-    const first = await this.#running().ask(this.#identifier(), request);
+    const first = await this.#askRunning(request);
     if (first.ok || first.failure.code !== "helper-stopped") return first;
 
-    this.#session = undefined;
-    return await this.#running().ask(this.#identifier(), request);
+    return await this.#askRunning(request);
   }
 
   stop(): void {
-    this.#session?.end();
+    const session = this.#session;
     this.#session = undefined;
+    void session?.then((started) => {
+      if (started.ok) started.value.end();
+    });
+  }
+
+  async #askRunning(request: HelperRequest): Promise<Outcome<Record<string, unknown>>> {
+    const session = await this.#running();
+    if (!session.ok) return session;
+
+    return await session.value.ask(this.#identifier(), request);
   }
 
   #identifier(): string {
@@ -167,12 +180,22 @@ export class Helper {
     return String(this.#nextId);
   }
 
-  #running(): Session {
-    const session = this.#session;
-    if (session && session.stopped === undefined) return session;
+  /** The running session, or one started now; calls arriving together share one start. */
+  async #running(): Promise<Outcome<Session>> {
+    const current = this.#session;
+    if (current !== undefined) {
+      const session = await current;
+      if (session.ok && session.value.stopped === undefined) return session;
+      if (this.#session !== current) return await this.#running();
+    }
 
-    const started = new Session(this.#path);
-    this.#session = started;
-    return started;
+    const starting = this.#start();
+    this.#session = starting;
+    return await starting;
+  }
+
+  async #start(): Promise<Outcome<Session>> {
+    const path = await this.#helperToLaunch();
+    return path.ok ? succeeded(new Session(path.value)) : path;
   }
 }

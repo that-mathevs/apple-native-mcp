@@ -29,7 +29,18 @@ const isMissing = (error: unknown): boolean =>
  * there, so the path is never missing or half-written, and a grant tied to it survives.
  */
 export const diskHelperFiles = ({ shipped, fixed }: HelperFilePaths): HelperFiles => ({
-  shipped: (): Promise<Outcome<HelperFile>> => Promise.resolve(succeeded({ path: shipped })),
+  shipped: async (): Promise<Outcome<HelperFile>> => {
+    try {
+      await stat(shipped);
+      return succeeded({ path: shipped });
+    } catch (error) {
+      return failed({
+        code: "helper-not-shipped",
+        sentence: `This install carries no helper at ${shipped}, so nothing was installed.`,
+        evidence: String(error),
+      });
+    }
+  },
 
   installed: async (): Promise<Outcome<HelperFile | undefined>> => {
     try {

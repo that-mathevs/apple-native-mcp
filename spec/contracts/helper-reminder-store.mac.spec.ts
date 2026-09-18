@@ -4,6 +4,7 @@ import { afterAll, beforeAll } from "vitest";
 
 import { Helper } from "../../src/adapters/native/helper.js";
 import { helperReminderStore } from "../../src/adapters/native/reminder-store.js";
+import { succeeded } from "../../src/domain/failure.js";
 import { aReminderStore } from "./reminder-store.contract.js";
 
 /**
@@ -16,7 +17,7 @@ const helperPath = fileURLToPath(
   new URL("../../native/.build/release/apple-native-mcp", import.meta.url),
 );
 
-const helper = new Helper(helperPath);
+const helper = new Helper(() => Promise.resolve(succeeded(helperPath)));
 
 beforeAll(async () => {
   await helper.ask({ request: "reminders_permission_request" });

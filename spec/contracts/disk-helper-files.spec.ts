@@ -81,3 +81,18 @@ describe("the helper files on disk, reading a version", () => {
     });
   });
 });
+
+describe("the helper files on disk, finding the shipped helper", () => {
+  it("given an install that carries no helper, says so rather than blaming a signature", async () => {
+    const directory = await aDirectory();
+    const helperFiles = diskHelperFiles({
+      shipped: join(directory, "native", "bin", "apple-native-mcp"),
+      fixed: fixedPathIn(directory),
+    });
+
+    expect(await helperFiles.shipped()).toMatchObject({
+      ok: false,
+      failure: { code: "helper-not-shipped" },
+    });
+  });
+});

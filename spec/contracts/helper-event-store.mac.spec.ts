@@ -4,6 +4,7 @@ import { afterAll } from "vitest";
 
 import { calendarEventStore } from "../../src/adapters/native/calendar-event-store.js";
 import { Helper } from "../../src/adapters/native/helper.js";
+import { succeeded } from "../../src/domain/failure.js";
 import { anEventStore, anEventStoreThatListsCalendars } from "./event-store.contract.js";
 
 /**
@@ -17,7 +18,7 @@ const helperPath = fileURLToPath(
   new URL("../../native/.build/release/apple-native-mcp", import.meta.url),
 );
 
-const helper = new Helper(helperPath);
+const helper = new Helper(() => Promise.resolve(succeeded(helperPath)));
 
 afterAll(() => {
   helper.stop();

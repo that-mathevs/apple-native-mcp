@@ -169,6 +169,18 @@ attribute a prompt to. `Package.swift` passes the linker's `-sectcreate` for thi
 signed, hardened and notarised in CI
 ([ADR-0003](../docs/adr/0003-signed-helper-at-a-fixed-path.md)).
 
+## Running a development build
+
+By default the server launches only the installed helper at
+`~/Library/Application Support/apple-native-mcp/apple-native-mcp`, and only after it meets the
+code requirement ([ADR-0008](../docs/adr/0008-codesign-checks-the-code-requirement.md)). A build
+from `swift build` is ad-hoc signed and never meets it. To run one, name it with the developer
+setting in the `env` block of the server's entry in the client's configuration:
+
+```json
+"env": { "APPLE_NATIVE_MCP_HELPER": "/absolute/path/to/native/.build/release/apple-native-mcp" }
+```
+
 ## Running its specs
 
 ```sh
