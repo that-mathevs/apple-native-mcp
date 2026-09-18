@@ -30,6 +30,17 @@ const helperStopped = (evidence: string): NamedFailure => ({
   evidence,
 });
 
+const serverStopping: NamedFailure = {
+  code: "helper-stopped",
+  sentence: "The server is stopping, so the helper was not started.",
+};
+
+const notStarted = (evidence: string): NamedFailure => ({
+  code: "helper-not-started",
+  sentence: "The helper was not started: checking which helper to launch broke.",
+  evidence,
+});
+
 const unreadableAnswer = (evidence: string): NamedFailure => ({
   code: "helper-answer-unreadable",
   sentence: "The helper answered with something this server could not read.",
@@ -135,6 +146,7 @@ export class Helper {
   readonly #helperToLaunch: () => Promise<Outcome<string>>;
   #session: Promise<Outcome<Session>> | undefined;
   #nextId = 0;
+  #stopping = false;
 
   /**
    * @param helperToLaunch asked before every start, restarts included, for the path to launch or
@@ -160,7 +172,9 @@ export class Helper {
     return await this.#askRunning(request);
   }
 
+  /** End the helper, and start no other: a start already under way is ended when it lands. */
   stop(): void {
+    this.#stopping = true;
     const session = this.#session;
     this.#session = undefined;
     void session?.then((started) => {
@@ -182,6 +196,8 @@ export class Helper {
 
   /** The running session, or one started now; calls arriving together share one start. */
   async #running(): Promise<Outcome<Session>> {
+    if (this.#stopping) return failed(serverStopping);
+
     const current = this.#session;
     if (current !== undefined) {
       const session = await current;
@@ -194,8 +210,13 @@ export class Helper {
     return await starting;
   }
 
+  /** Never rejects: a start that breaks is a failure, so the next call checks afresh. */
   async #start(): Promise<Outcome<Session>> {
-    const path = await this.#helperToLaunch();
-    return path.ok ? succeeded(new Session(path.value)) : path;
+    try {
+      const path = await this.#helperToLaunch();
+      return path.ok ? succeeded(new Session(path.value)) : path;
+    } catch (error) {
+      return failed(notStarted(String(error)));
+    }
   }
 }

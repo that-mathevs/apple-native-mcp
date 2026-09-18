@@ -18,11 +18,9 @@ import { installHelper } from "./application/setup/install-helper.js";
 import { helperPathSetting, settingsFrom } from "./domain/settings.js";
 import { buildServer } from "./mcp/server.js";
 
-/**
- * The composition root: the one place an adapter meets a use case.
- *
- * The package root is one level up whether this runs from `src/` or from `dist/`.
- */
+// The composition root: the one place an adapter meets a use case.
+
+/** One level up, whether this runs from `src/` or from `dist/`. */
 const packageRoot = new URL("..", import.meta.url);
 
 const { version: serverVersion } = JSON.parse(
@@ -69,6 +67,8 @@ const helper = new Helper(
       helperFiles,
       codeRequirement,
       serverVersion,
+      // Asked only when a tool first needs the helper, by which time the client has said who
+      // it is in its initialize.
       client: server.server.getClientVersion()?.name ?? "your MCP client",
       ...(developmentBuild === undefined ? {} : { developmentBuild }),
     }),

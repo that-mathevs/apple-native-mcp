@@ -1,4 +1,5 @@
-import { chmod, copyFile, mkdir, readFile, rename, stat } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { chmod, constants, copyFile, mkdir, readFile, rename, rm, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import type { HelperFile, HelperFiles } from "../../application/setup/helper-files.js";
@@ -12,82 +13,83 @@ export type HelperFilePaths = {
   readonly fixed: string;
 };
 
-const versionUnreadable = (path: string, evidence?: string): Outcome<string> =>
-  failed({
-    code: "helper-version-unreadable",
-    sentence: `The helper at ${path} carries no version this server can read.`,
-    ...(evidence === undefined ? {} : { evidence }),
-  });
+/** A named failure carrying what the filesystem said. */
+const refusedBecause = <Value>(code: string, sentence: string, error: unknown): Outcome<Value> =>
+  failed({ code, sentence, evidence: String(error) });
 
 const isMissing = (error: unknown): boolean =>
   error instanceof Error && "code" in error && error.code === "ENOENT";
 
+/** A helper file at this path, nothing when there is none, or a failure when it can't be told. */
+const helperFileAt = async (path: string): Promise<Outcome<HelperFile | undefined>> => {
+  try {
+    await stat(path);
+    return succeeded({ path });
+  } catch (error) {
+    if (isMissing(error)) return succeeded(undefined);
+    return refusedBecause("helper-files-unreadable", `${path} could not be read.`, error);
+  }
+};
+
+const versionOf = async (helper: HelperFile): Promise<Outcome<string>> => {
+  const unreadable = `The helper at ${helper.path} carries no version this server can read.`;
+
+  let file: Buffer;
+  try {
+    file = await readFile(helper.path);
+  } catch (error) {
+    return refusedBecause("helper-version-unreadable", unreadable, error);
+  }
+
+  const infoPlist = embeddedInfoPlist(file);
+  const version =
+    infoPlist === undefined ? undefined : infoPlistString(infoPlist, "CFBundleShortVersionString");
+
+  return version === undefined
+    ? failed({ code: "helper-version-unreadable", sentence: unreadable })
+    : succeeded(version);
+};
+
 /**
- * The helper files as they are on disk.
- *
- * Installing copies the shipped helper next to the fixed path and renames it over whatever is
- * there, so the path is never missing or half-written, and a grant tied to it survives.
+ * Copy the helper beside the fixed path and rename it over whatever is there, so the path is
+ * never missing or half-written and a grant tied to it survives. The staged file has a name
+ * nobody can guess, is never written through a link planted at that name, and is gone again if
+ * anything fails.
  */
-export const diskHelperFiles = ({ shipped, fixed }: HelperFilePaths): HelperFiles => ({
-  shipped: async (): Promise<Outcome<HelperFile>> => {
-    try {
-      await stat(shipped);
-      return succeeded({ path: shipped });
-    } catch (error) {
-      return failed({
-        code: "helper-not-shipped",
-        sentence: `This install carries no helper at ${shipped}, so nothing was installed.`,
-        evidence: String(error),
-      });
-    }
-  },
-
-  installed: async (): Promise<Outcome<HelperFile | undefined>> => {
-    try {
-      await stat(fixed);
-      return succeeded({ path: fixed });
-    } catch (error) {
-      if (isMissing(error)) return succeeded(undefined);
-      return failed({
-        code: "helper-files-unreadable",
-        sentence: `The fixed path ${fixed} could not be read.`,
-        evidence: String(error),
-      });
-    }
-  },
-
-  versionOf: async (helper: HelperFile): Promise<Outcome<string>> => {
-    let file: Buffer;
-    try {
-      file = await readFile(helper.path);
-    } catch (error) {
-      return versionUnreadable(helper.path, String(error));
-    }
-
-    const infoPlist = embeddedInfoPlist(file);
-    const version =
-      infoPlist === undefined
-        ? undefined
-        : infoPlistString(infoPlist, "CFBundleShortVersionString");
-
-    return version === undefined ? versionUnreadable(helper.path) : succeeded(version);
-  },
-
-  install: async (helper: HelperFile): Promise<Outcome<HelperFile>> => {
-    const arriving = join(dirname(fixed), `.${String(process.pid)}.arriving`);
+const installAt =
+  (fixed: string) =>
+  async (helper: HelperFile): Promise<Outcome<HelperFile>> => {
+    const staged = join(dirname(fixed), `.${randomUUID()}.staged`);
 
     try {
       await mkdir(dirname(fixed), { recursive: true });
-      await copyFile(helper.path, arriving);
-      await chmod(arriving, 0o755);
-      await rename(arriving, fixed);
+      await copyFile(helper.path, staged, constants.COPYFILE_EXCL);
+      await chmod(staged, 0o755);
+      await rename(staged, fixed);
       return succeeded({ path: fixed });
     } catch (error) {
-      return failed({
-        code: "helper-install-failed",
-        sentence: `The helper could not be put at ${fixed}, so nothing was installed.`,
-        evidence: String(error),
-      });
+      await rm(staged, { force: true });
+      return refusedBecause(
+        "helper-install-failed",
+        `The helper could not be put at ${fixed}, so nothing was installed.`,
+        error,
+      );
     }
+  };
+
+/** The helper files as they are on disk. */
+export const diskHelperFiles = ({ shipped, fixed }: HelperFilePaths): HelperFiles => ({
+  shipped: async (): Promise<Outcome<HelperFile>> => {
+    const found = await helperFileAt(shipped);
+    if (!found.ok) return found;
+    if (found.value !== undefined) return succeeded(found.value);
+
+    return failed({
+      code: "helper-not-shipped",
+      sentence: `This install carries no helper at ${shipped}, so nothing was installed.`,
+    });
   },
+  installed: async (): Promise<Outcome<HelperFile | undefined>> => await helperFileAt(fixed),
+  versionOf,
+  install: installAt(fixed),
 });

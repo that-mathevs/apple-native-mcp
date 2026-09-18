@@ -1,6 +1,6 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -82,6 +82,37 @@ describe("the helper files on disk, reading a version", () => {
   });
 });
 
+/**
+ * A 64-bit Mach-O header with one __TEXT segment claiming more sections than the file could hold.
+ */
+const aProgramClaimingEverySection = (): Buffer => {
+  const file = Buffer.alloc(32 + 72);
+  file.writeUInt32LE(0xfeedfacf, 0);
+  file.writeUInt32LE(1, 16);
+  file.writeUInt32LE(72, 20);
+  file.writeUInt32LE(0x19, 32);
+  file.writeUInt32LE(72, 36);
+  file.write("__TEXT", 40, "latin1");
+  file.writeUInt32LE(0xffffffff, 32 + 64);
+  return file;
+};
+
+describe("the helper files on disk, reading a hostile file", () => {
+  it("given a program claiming more sections than it holds, answers at once that it carries no version", async () => {
+    // Only a helper file that met the code requirement is read, but whatever is read is read as
+    // if a stranger wrote it: a count taken on trust would loop four billion times.
+    const directory = await aDirectory();
+    const hostile = join(directory, "hostile");
+    await writeFile(hostile, aProgramClaimingEverySection());
+    const helperFiles = diskHelperFiles({ shipped: hostile, fixed: fixedPathIn(directory) });
+
+    expect(await helperFiles.versionOf({ path: hostile })).toMatchObject({
+      ok: false,
+      failure: { code: "helper-version-unreadable" },
+    });
+  }, 1000);
+});
+
 describe("the helper files on disk, finding the shipped helper", () => {
   it("given an install that carries no helper, says so rather than blaming a signature", async () => {
     const directory = await aDirectory();
@@ -94,5 +125,20 @@ describe("the helper files on disk, finding the shipped helper", () => {
       ok: false,
       failure: { code: "helper-not-shipped" },
     });
+  });
+});
+
+describe("the helper files on disk, installing", () => {
+  it("given the fixed path cannot take the helper, fails and leaves nothing half-written beside it", async () => {
+    const directory = await aDirectory();
+    const fixed = fixedPathIn(directory);
+    await mkdir(join(fixed, "in-the-way"), { recursive: true });
+    const shipped = await aHelperFileCarrying("1.2.3", directory);
+    const helperFiles = diskHelperFiles({ shipped, fixed });
+
+    const installed = await helperFiles.install({ path: shipped });
+
+    expect(installed).toMatchObject({ ok: false, failure: { code: "helper-install-failed" } });
+    expect(await readdir(dirname(fixed))).toStrictEqual(["apple-native-mcp"]);
   });
 });

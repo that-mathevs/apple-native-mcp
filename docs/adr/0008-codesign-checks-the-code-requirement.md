@@ -12,6 +12,14 @@ path is the one setup chose, so nothing a tool is sent reaches the command line.
 `/usr/bin/codesign` sits on the sealed system volume, so nothing the user can write replaces it. The
 dependency rule that allowed one process now names two.
 
+## What it does not close
+
+The check reads a path, and the path is launched or copied afterwards, so a process that can write
+the fixed path's folder can swap the file in between. That process runs as the user, and anything
+running as the user can already name its own development build in the client's configuration, or
+edit the server itself. The check keeps a stale or foreign helper from ever starting. It is not a
+defence against something already running as the user.
+
 ## Considered options
 
 - **A native Node addon calling `SecStaticCodeCheckValidity`:** no second process, but the npm

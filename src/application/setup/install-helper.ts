@@ -26,28 +26,27 @@ const shippedFailsCodeRequirement = (refusal: NamedFailure): NamedFailure => ({
   ...(refusal.evidence === undefined ? {} : { evidence: refusal.evidence }),
 });
 
-/** What the shipped helper, at this version, does to the installed one. */
-const changeTo = async (
+/** What the shipped helper, at this version, does to the installed one, and whether it copies. */
+type Decision = { readonly installation: HelperInstallation; readonly copies: boolean };
+
+const decide = async (
   { helperFiles, codeRequirement }: InstallHelperDependencies,
   shippedVersion: string,
   installed: HelperFile | undefined,
-): Promise<Outcome<HelperInstallation>> => {
-  if (installed === undefined) return succeeded({ change: "installed", version: shippedVersion });
+): Promise<Outcome<Decision>> => {
+  const copying = (change: Change): Outcome<Decision> =>
+    succeeded({ installation: { change, version: shippedVersion }, copies: true });
 
-  if (!(await codeRequirement.verify(installed)).ok) {
-    return succeeded({ change: "replaced", version: shippedVersion });
-  }
+  if (installed === undefined) return copying("installed");
+  if (!(await codeRequirement.verify(installed)).ok) return copying("replaced");
 
   const installedVersion = await helperFiles.versionOf(installed);
   if (!installedVersion.ok) return installedVersion;
 
-  if (isNewer(installedVersion.value, shippedVersion)) {
-    return succeeded({ change: "kept", version: installedVersion.value });
-  }
-  if (isNewer(shippedVersion, installedVersion.value)) {
-    return succeeded({ change: "updated", version: shippedVersion });
-  }
-  return succeeded({ change: "unchanged", version: installedVersion.value });
+  if (isNewer(shippedVersion, installedVersion.value)) return copying("updated");
+
+  const change = isNewer(installedVersion.value, shippedVersion) ? "kept" : "unchanged";
+  return succeeded({ installation: { change, version: installedVersion.value }, copies: false });
 };
 
 /**
@@ -73,14 +72,14 @@ export const installHelper = async (
   const installed = await helperFiles.installed();
   if (!installed.ok) return installed;
 
-  const installation = await changeTo(dependencies, shippedVersion.value, installed.value);
-  if (!installation.ok) return installation;
+  const decided = await decide(dependencies, shippedVersion.value, installed.value);
+  if (!decided.ok) return decided;
 
-  const { change } = installation.value;
-  if (change === "kept" || change === "unchanged") return installation;
+  const { installation, copies } = decided.value;
+  if (copies) {
+    const copied = await helperFiles.install(verified.value);
+    if (!copied.ok) return copied;
+  }
 
-  const copied = await helperFiles.install(verified.value);
-  if (!copied.ok) return copied;
-
-  return installation;
+  return succeeded(installation);
 };

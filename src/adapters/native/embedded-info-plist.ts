@@ -1,6 +1,6 @@
 /**
- * The Info.plist a bare executable carries in its __TEXT,__info_plist section, which is where
- * the helper's identity and version live (native/Package.swift). The code signature covers the
+ * The Info.plist a helper file carries in its __TEXT,__info_plist section, which is where the
+ * helper's identity and version live (native/Package.swift). The code signature covers the
  * section, so once a helper file meets the code requirement, what this reads is what was signed.
  *
  * Only the Mach-O layouts the helper is built as are read: a 64-bit executable, alone or inside a
@@ -36,15 +36,20 @@ const infoPlistSectionIn = (file: Buffer, slice: number): Buffer | undefined => 
   if (file.readUInt32LE(slice) !== machOMagic64) return undefined;
 
   const commands = file.readUInt32LE(slice + 16);
+  const commandsEnd = slice + machHeader64Size + file.readUInt32LE(slice + 20);
   let command = slice + machHeader64Size;
 
   for (let index = 0; index < commands; index += 1) {
-    if (file.length < command + 8) return undefined;
+    if (command + 8 > Math.min(commandsEnd, file.length)) return undefined;
     const kind = file.readUInt32LE(command);
     const size = file.readUInt32LE(command + 4);
 
     if (kind === segmentCommand64 && nameAt(file, command + 8) === "__TEXT") {
-      const sections = file.readUInt32LE(command + 64);
+      // A count is believed only as far as the command's own size holds that many sections.
+      const sections = Math.min(
+        file.readUInt32LE(command + 64),
+        Math.floor((size - segmentCommand64Size) / section64Size),
+      );
 
       for (let at = 0; at < sections; at += 1) {
         const section = command + segmentCommand64Size + at * section64Size;
@@ -56,7 +61,7 @@ const infoPlistSectionIn = (file: Buffer, slice: number): Buffer | undefined => 
       }
     }
 
-    if (size === 0) return undefined;
+    if (size < 8) return undefined;
     command += size;
   }
 

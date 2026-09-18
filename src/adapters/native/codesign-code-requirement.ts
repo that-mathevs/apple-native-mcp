@@ -19,6 +19,12 @@ export const pinnedCodeRequirement =
 const codesign = "/usr/bin/codesign";
 
 /**
+ * Every launch waits on the check, so a codesign that never answers must not hold the server:
+ * past this, the helper file is refused like any other that could not be checked.
+ */
+const checkTimeoutMs = 30_000;
+
+/**
  * The code requirement, checked by codesign.
  *
  * codesign is started by absolute path with an argument list, never through a shell. Anything
@@ -30,6 +36,7 @@ export const codesignCodeRequirement = (requirement: string): CodeRequirement =>
       execFile(
         codesign,
         ["--verify", "--strict", `-R=${requirement}`, helper.path],
+        { timeout: checkTimeoutMs },
         (error, _stdout, stderr) => {
           if (error === null) {
             resolve(succeeded(helper));

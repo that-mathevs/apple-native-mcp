@@ -13,9 +13,9 @@ describe("the release", () => {
   it("carries one version in the server's package and in the helper's Info.plist", async () => {
     const { version } = JSON.parse(await read("package.json")) as { version: string };
     const infoPlist = await read("native/Info.plist");
+    const helperVersion = /<key>CFBundleShortVersionString<\/key>\s*<string>([^<]*)<\/string>/u
+      .exec(infoPlist)?.[1];
 
-    expect(infoPlist).toContain(
-      `<key>CFBundleShortVersionString</key><string>${version}</string>`,
-    );
+    expect(helperVersion).toBe(version);
   });
 });
