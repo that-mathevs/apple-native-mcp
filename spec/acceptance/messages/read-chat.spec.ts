@@ -121,4 +121,39 @@ describe("reading a chat", () => {
       messages: [{ direction: "outgoing", delivery: { sent: false, delivered: false, error: 22 } }],
     });
   });
+
+  // #21: an archive a stranger wrote can be broken on purpose. It costs that one message its
+  // text, named, and never the rest of the chat.
+  it("given a message whose text could not be read, returns it without text, says why, and returns the rest", async () => {
+    const { identifier, chat, direction, handle, timestamp, service } = fromBen;
+    messageStore.holdsMessages(fromUser, {
+      identifier,
+      chat,
+      direction,
+      handle,
+      timestamp,
+      service,
+      textUnreadable: {
+        code: "message_text_unreadable",
+        sentence: "This message's text could not be read from the store, so it is left out.",
+        evidence: "the archive ends inside a value",
+      },
+    });
+
+    const result = await readChat({ chat: climbing });
+
+    expect(result.structuredContent).toMatchObject({
+      messages: [
+        {
+          identifier: "message-1",
+          text: null,
+          textUnreadable: {
+            code: "message_text_unreadable",
+            evidence: "the archive ends inside a value",
+          },
+        },
+        { identifier: "message-2", text: "I'm in" },
+      ],
+    });
+  });
 });

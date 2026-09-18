@@ -28,7 +28,7 @@ struct AskingForAChatSpec {
     #expect(
       helperReading(aClimbingChat).respond(to: asking(climbing))
         == #"""
-        {"id":"6","protocolVersion":1,"result":{"messages":[{"chat":"iMessage;+;chat001","delivery":null,"direction":"incoming","handle":"ben@example.com","identifier":"message-1","service":"iMessage","text":"Wall at 6?","timestamp":"2026-09-18T09:00:00Z"},{"chat":"iMessage;+;chat001","delivery":{"delivered":false,"error":null,"sent":true},"direction":"outgoing","handle":null,"identifier":"message-2","service":"iMessage","text":"I'm in","timestamp":"2026-09-18T09:05:00Z"}],"truncated":false}}
+        {"id":"6","protocolVersion":1,"result":{"messages":[{"chat":"iMessage;+;chat001","delivery":null,"direction":"incoming","handle":"ben@example.com","identifier":"message-1","service":"iMessage","text":"Wall at 6?","textUnreadable":null,"timestamp":"2026-09-18T09:00:00Z"},{"chat":"iMessage;+;chat001","delivery":{"delivered":false,"error":null,"sent":true},"direction":"outgoing","handle":null,"identifier":"message-2","service":"iMessage","text":"I'm in","textUnreadable":null,"timestamp":"2026-09-18T09:05:00Z"}],"truncated":false}}
         """#)
   }
 
@@ -158,5 +158,62 @@ struct AskingForAChatSpec {
     _ = helperReading(store).respond(to: #"{"protocolVersion":1,"id":"5","request":"chats","limit":5}"#)
 
     #expect(try Data(contentsOf: URL(fileURLWithPath: store.path)) == before)
+  }
+}
+
+// Upstream #62: a message Messages kept only in its archived rich text came back as mojibake or
+// "not readable". User story 25: every message's actual text, mentions, links and edits included.
+@Suite("reading a message's text")
+struct ReadingAMessagesTextSpec {
+  let climbing = "iMessage;+;chat001"
+  let asking = #"{"protocolVersion":1,"id":"6","request":"chat_messages","chat":"iMessage;+;chat001","limit":50}"#
+
+  func aChat(holding archive: Data, text: String? = nil) -> AMessageStoreFile {
+    AMessageStoreFile()
+      .chat(climbing, group: true, with: ["ben@example.com"])
+      .message(in: climbing, from: "ben@example.com", text: text, archive: archive, at: nineOClock)
+  }
+
+  @Test("given a message kept only in its archived rich text, reads the text from the archive")
+  func readsTextFromTheArchive() {
+    let archive = anArchive(of: written("Ben, bring the rope").mentioning(
+      "ben@example.com", at: NSRange(location: 0, length: 3)))
+
+    #expect(
+      helperReading(aChat(holding: archive)).respond(to: asking)
+        .contains(#""text":"Ben, bring the rope""#))
+  }
+
+  // morquis 96759b3: the plain text can be nothing but the placeholder for an attachment or a
+  // link, while the archive holds what the person wrote.
+  @Test("given plain text that is only a placeholder, reads the text from the archive instead")
+  func readsPastThePlaceholder() {
+    let archive = anArchive(of: written("https://example.com/route"))
+
+    #expect(
+      helperReading(aChat(holding: archive, text: "\u{FFFC}")).respond(to: asking)
+        .contains(#""text":"https://example.com/route""#))
+  }
+
+  @Test("given an archive it cannot read and no plain text, answers the message without text and says why, and reads the rest")
+  func namesAnUnreadableText() {
+    let broken = anArchive(of: written("Hey Ben")).cut(after: 30)
+    let store = aChat(holding: broken)
+      .message(in: climbing, from: "ben@example.com", text: "Still here", at: nineOClock.addingTimeInterval(60))
+
+    let response = helperReading(store).respond(to: asking)
+
+    #expect(response.contains(#""text":null,"textUnreadable":{"code":"message_text_unreadable""#))
+    #expect(response.contains("the archive ends"))
+    #expect(response.contains(#""text":"Still here""#))
+  }
+
+  @Test("given an archive it cannot read but plain text beside it, answers the plain text")
+  func fallsBackToThePlainText() {
+    let broken = anArchive(of: written("Hey Ben")).cut(after: 30)
+
+    let response = helperReading(aChat(holding: broken, text: "Hey Ben")).respond(to: asking)
+
+    #expect(response.contains(#""text":"Hey Ben","textUnreadable":null"#))
   }
 }

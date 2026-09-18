@@ -153,6 +153,7 @@ extension Message {
   var asFields: [String: Any] {
     [
       "identifier": identifier, "chat": chat, "text": text ?? NSNull(),
+      "textUnreadable": textUnreadable?.asFields ?? NSNull(),
       "direction": direction.rawValue, "handle": handle ?? NSNull(),
       "timestamp": Instant.written(timestamp), "service": service,
       "delivery": delivery?.asFields ?? NSNull(),

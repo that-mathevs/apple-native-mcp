@@ -4,7 +4,7 @@ import type {
   MessageStore,
   MessagesWanted,
 } from "../../application/messages/message-store.js";
-import type { Outcome } from "../../domain/failure.js";
+import type { NamedFailure, Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
 import type { Chat } from "../../domain/messages/chat.js";
 import type { Delivery, Message } from "../../domain/messages/message.js";
@@ -35,6 +35,7 @@ type MessageRecord = {
   readonly identifier: string;
   readonly chat: string;
   readonly text: string | null;
+  readonly textUnreadable: NamedFailure | null;
   readonly direction: Message["direction"];
   readonly handle: string | null;
   readonly timestamp: string;
@@ -56,6 +57,7 @@ const asMessage = (record: MessageRecord): Message => ({
   identifier: record.identifier,
   chat: record.chat,
   ...(record.text === null ? {} : { text: record.text }),
+  ...(record.textUnreadable === null ? {} : { textUnreadable: { ...record.textUnreadable } }),
   direction: record.direction,
   ...(record.handle === null ? {} : { handle: record.handle }),
   timestamp: new Date(record.timestamp),

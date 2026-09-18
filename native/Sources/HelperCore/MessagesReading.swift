@@ -30,3 +30,41 @@ extension NamedFailure {
     }
   }
 }
+
+/// A message's text, from what the store keeps of it.
+///
+/// The archived rich text comes first, because it is what Messages shows: the plain text can be
+/// nothing but the placeholder for an attachment or a link (MSG-75), and is left empty for many
+/// messages. The plain text stands in only when there is no archive or it cannot be read. When
+/// neither gives text, a broken archive is named rather than read as a message with nothing in it.
+struct MessageText: Equatable {
+  let text: String?
+  let unreadable: NamedFailure?
+
+  static let placeholder = "\u{FFFC}"
+
+  init(plain: String?, archive: Data?) {
+    let usablePlain = plain.flatMap { $0.isEmpty || $0 == Self.placeholder ? nil : $0 }
+
+    guard let archive else {
+      self.init(text: usablePlain, unreadable: nil)
+      return
+    }
+
+    switch ArchivedText.text(of: archive) {
+    case .success(let text):
+      self.init(text: text, unreadable: nil)
+    case .failure(let unreadable):
+      if let usablePlain {
+        self.init(text: usablePlain, unreadable: nil)
+      } else {
+        self.init(text: nil, unreadable: .messageTextUnreadable(reason: unreadable.reason))
+      }
+    }
+  }
+
+  private init(text: String?, unreadable: NamedFailure?) {
+    self.text = text
+    self.unreadable = unreadable
+  }
+}

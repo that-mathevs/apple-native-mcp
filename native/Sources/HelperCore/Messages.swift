@@ -40,6 +40,8 @@ public struct Message: Equatable, Sendable {
   public let chat: String
   /// Nothing when the store holds no text for it the helper could read.
   public let text: String?
+  /// Why its text could not be read, when it had some that could not.
+  public let textUnreadable: NamedFailure?
   public let direction: Direction
   /// The handle an incoming message came from. An outgoing one came from the user.
   public let handle: String?

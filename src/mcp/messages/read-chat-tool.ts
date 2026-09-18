@@ -11,6 +11,9 @@ const instant = z.iso.datetime({ offset: true });
 const messageRecord = z.object({
   identifier: z.string(),
   text: z.string().nullable(),
+  textUnreadable: z
+    .object({ code: z.string(), sentence: z.string(), evidence: z.string().optional() })
+    .optional(),
   direction: z.enum(["incoming", "outgoing"]),
   handle: z.string().optional(),
   timestamp: z.iso.datetime(),
@@ -34,6 +37,9 @@ const asRangeRecord = (from?: Date, to?: Date): z.infer<typeof rangeRecord> => (
 const asRecord = (message: Message): z.infer<typeof messageRecord> => ({
   identifier: message.identifier,
   text: message.text ?? null,
+  ...(message.textUnreadable === undefined
+    ? {}
+    : { textUnreadable: { ...message.textUnreadable } }),
   direction: message.direction,
   ...(message.handle === undefined ? {} : { handle: message.handle }),
   timestamp: message.timestamp.toISOString(),

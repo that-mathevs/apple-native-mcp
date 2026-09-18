@@ -1,3 +1,5 @@
+import type { NamedFailure } from "../failure.js";
+
 /** Which way a message went: from someone else to the user, or from the user. */
 export type Direction = "incoming" | "outgoing";
 
@@ -19,6 +21,8 @@ export type Message = {
   readonly chat: string;
   /** Nothing when the store holds no text for it that the helper could read. */
   readonly text?: string;
+  /** Why its text could not be read, when it had some: one message's failure, never the chat's. */
+  readonly textUnreadable?: NamedFailure;
   readonly direction: Direction;
   /** The handle an incoming message came from. An outgoing one came from the user. */
   readonly handle?: string;

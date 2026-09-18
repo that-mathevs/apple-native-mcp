@@ -42,6 +42,7 @@ outside evidence verbatim.
 | `message_store_not_found` | this Mac has no message store at all, which is not a missing permission |
 | `message_store_unreadable` | the message store is there but would not be read; the evidence is what the store said |
 | `chat_unknown` | a request named a chat the message store does not have; nothing is read |
+| `message_text_unreadable` | one message's archived text could not be read; reported on that message beside the rest of the chat, never instead of it, with the reason as the evidence |
 
 ## The protocol
 
@@ -205,7 +206,7 @@ participant. `truncated` says there were more.
 
 ```json
 {"protocolVersion":1,"id":"9","request":"chat_messages","chat":"iMessage;+;chat001","limit":50,"range":{"start":null,"end":null}}
-{"id":"9","protocolVersion":1,"result":{"messages":[{"chat":"iMessage;+;chat001","delivery":null,"direction":"incoming","handle":"ben@example.com","identifier":"…","service":"iMessage","text":"Wall at 6?","timestamp":"2026-09-18T09:00:00Z"}],"truncated":false}}
+{"id":"9","protocolVersion":1,"result":{"messages":[{"chat":"iMessage;+;chat001","delivery":null,"direction":"incoming","handle":"ben@example.com","identifier":"…","service":"iMessage","text":"Wall at 6?","textUnreadable":null,"timestamp":"2026-09-18T09:00:00Z"}],"truncated":false}}
 ```
 
 The chat's newest messages, oldest first. `range` may leave either bound open with `null` or by
@@ -214,8 +215,15 @@ does not move forwards. `delivery` says how far one of the user's messages got, 
 `delivered` and the delivery `error` the store recorded, and is `null` for an incoming one: a send
 that failed is not real traffic, and never reads as one that left. Reactions and group
 events such as a rename are left out: nobody wrote them to the chat. `handle` is where an incoming
-message came from, and `null` for the user's own. `text` is `null` when the store keeps no text the
-helper can read yet.
+message came from, and `null` for the user's own.
+
+`text` is the message's archived rich text when it has one, since that is what Messages shows, and
+the plain text only when there is no archive or it cannot be read: the plain text can be nothing
+but the placeholder for an attachment or a link. The archive is a typedstream, the format
+NSArchiver writes, and a stranger writes every byte of it, so `ArchivedText` walks its structure
+itself: bounded in size, depth and number of values, never following a reference back, and never
+handing it to an unarchiver, which would create whatever class it named. When neither gives text,
+`text` is `null` and `textUnreadable` says why, for that message alone.
 
 The store is opened read-only, by path, and every value in a query is bound, never written into it.
 Before it is opened, the file is opened for reading once, because macOS refuses a protected file
@@ -367,6 +375,6 @@ real Mac.
 
 | Path | Holds |
 |---|---|
-| `Sources/HelperCore/` | the protocol, the calendar, reminders, contacts, messages and mail rules, the named failures, the store ports, and `SQLiteMessageStore`, which reads a SQLite file and so is specified against ones the scenarios build |
+| `Sources/HelperCore/` | the protocol, the calendar, reminders, contacts, messages and mail rules, the named failures, the store ports, `SQLiteMessageStore`, which reads a SQLite file and so is specified against ones the scenarios build, and `ArchivedText`, specified against archives NSArchiver writes |
 | `Sources/Helper/` | the executable: the disclaimed relaunch, the stdio session, the EventKit adapters |
 | `Tests/HelperCoreTests/` | the scenarios, and the fake Mac they run against |

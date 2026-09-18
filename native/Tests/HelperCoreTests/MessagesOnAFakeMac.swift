@@ -70,7 +70,8 @@ final class AMessageStoreFile: @unchecked Sendable {
   /// the store keeps beside the messages.
   @discardableResult
   func message(
-    in chat: String, from handle: String? = nil, text: String? = nil, at instant: Date,
+    in chat: String, from handle: String? = nil, text: String? = nil, archive: Data? = nil,
+    at instant: Date,
     direction: Direction = .incoming, sent: Bool = true, delivered: Bool = false,
     deliveryError: Int = 0, reaction: Bool = false, groupEvent: Bool = false,
     service: String = "iMessage"
@@ -78,11 +79,11 @@ final class AMessageStoreFile: @unchecked Sendable {
     let guid = "message-\(nextMessage)"
     nextMessage += 1
     run(
-      "INSERT INTO message (guid, text, handle_id, service, date, is_from_me, is_sent, "
-        + "is_delivered, error, associated_message_type, item_type) VALUES (?, ?, "
+      "INSERT INTO message (guid, text, attributedBody, handle_id, service, date, is_from_me, "
+        + "is_sent, is_delivered, error, associated_message_type, item_type) VALUES (?, ?, ?, "
         + "COALESCE((SELECT ROWID FROM handle WHERE id = ?), 0), ?, ?, ?, ?, ?, ?, ?, ?)",
       [
-        guid, text, handle, service, storeDate(from: instant), direction == .outgoing ? 1 : 0,
+        guid, text, archive, handle, service, storeDate(from: instant), direction == .outgoing ? 1 : 0,
         sent ? 1 : 0, delivered ? 1 : 0, deliveryError, reaction ? 2000 : 0, groupEvent ? 1 : 0,
       ])
     run(
@@ -121,6 +122,10 @@ final class AMessageStoreFile: @unchecked Sendable {
       case let text as String: sqlite3_bind_text(prepared, position, text, -1, transient)
       case let number as Int: sqlite3_bind_int64(prepared, position, Int64(number))
       case let number as Int64: sqlite3_bind_int64(prepared, position, number)
+      case let data as Data:
+        _ = data.withUnsafeBytes { raw in
+          sqlite3_bind_blob(prepared, position, raw.baseAddress, Int32(data.count), transient)
+        }
       default: sqlite3_bind_null(prepared, position)
       }
     }

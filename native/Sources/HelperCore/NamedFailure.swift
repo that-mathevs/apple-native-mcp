@@ -71,6 +71,8 @@ public enum FailureCode: String, Equatable, Sendable {
   case mailUnreadable = "mail_unreadable"
   /// A request named a mail account the helper cannot find.
   case mailAccountUnknown = "mail_account_unknown"
+  /// One message's archived text could not be read.
+  case messageTextUnreadable = "message_text_unreadable"
 }
 
 extension NamedFailure {
@@ -307,5 +309,12 @@ extension NamedFailure {
     case AppleEventError.timedOut: return notesTimedOut(evidence: failure.evidence)
     default: return notesUnreadable(evidence: failure.evidence)
     }
+  }
+
+  static func messageTextUnreadable(reason: String) -> NamedFailure {
+    NamedFailure(
+      code: .messageTextUnreadable,
+      sentence: "This message's text could not be read from the store, so it is left out.",
+      evidence: reason)
   }
 }

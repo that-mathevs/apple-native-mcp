@@ -110,7 +110,7 @@ public struct SQLiteMessageStore: MessageStore {
           in: database,
           """
           SELECT m.guid, m.text, m.is_from_me, h.id, m.date, m.service, m.is_sent,
-            m.is_delivered, m.error
+            m.is_delivered, m.error, m.attributedBody
           FROM chat_message_join j
           JOIN message m ON m.ROWID = j.message_id
           LEFT JOIN handle h ON h.ROWID = m.handle_id AND m.is_from_me = 0
@@ -126,8 +126,10 @@ public struct SQLiteMessageStore: MessageStore {
           ]
         ) { row in
           let outgoing = row.integer(2) == 1
+          let text = MessageText(plain: row.text(1), archive: row.blob(9))
           return Message(
-            identifier: row.text(0) ?? "", chat: identifier, text: row.text(1),
+            identifier: row.text(0) ?? "", chat: identifier, text: text.text,
+            textUnreadable: text.unreadable,
             direction: outgoing ? .outgoing : .incoming, handle: row.text(3),
             timestamp: instant(fromStoreDate: row.integer(4)), service: row.text(5) ?? "",
             delivery: outgoing
@@ -210,6 +212,11 @@ private struct Row {
 
   func text(_ column: Int32) -> String? {
     sqlite3_column_text(statement, column).map { String(cString: $0) }
+  }
+
+  func blob(_ column: Int32) -> Data? {
+    guard let bytes = sqlite3_column_blob(statement, column) else { return nil }
+    return Data(bytes: bytes, count: Int(sqlite3_column_bytes(statement, column)))
   }
 }
 
