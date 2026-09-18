@@ -146,3 +146,89 @@ export const aReminderStore = ({ name, build }: ReminderStoreUnderTest): void =>
     });
   });
 };
+
+/**
+ * A store a scenario may create reminders in, and the one reminder list it may create them in.
+ *
+ * Against the real store that list is the one titled "scratch" and no other: v1 cannot delete a
+ * reminder, so whatever this suite creates stays where it was put. Every title begins "Contract
+ * check" so that it can be told from anything a person wrote.
+ */
+export type WritableReminderStoreUnderTest = {
+  readonly name: string;
+  readonly build: () => Promise<{
+    readonly reminderStore: ReminderStore;
+    readonly reminderList: string;
+  }>;
+};
+
+export const aReminderStoreThatCreatesReminders = ({
+  name,
+  build,
+}: WritableReminderStoreUnderTest): void => {
+  describe(`${name}, asked to create a reminder`, () => {
+    it("answers with the reminder as it now holds it, open, in the reminder list it was sent to", async () => {
+      const { reminderStore, reminderList } = await build();
+
+      const created = await reminderStore.create({
+        title: "Contract check: buy stamps",
+        reminderListIdentifier: reminderList,
+      });
+
+      expect(created).toMatchObject({
+        ok: true,
+        value: {
+          confirmed: true,
+          reminder: {
+            title: "Contract check: buy stamps",
+            isCompleted: false,
+            reminderList: { identifier: reminderList },
+          },
+        },
+      });
+    });
+
+    // Upstream #34 and #64: a due date was stored as a midnight, and came back a day early.
+    it("given a due date, holds it as that day with no time of day", async () => {
+      const { reminderStore, reminderList } = await build();
+
+      const created = await reminderStore.create({
+        title: "Contract check: bins out",
+        reminderListIdentifier: reminderList,
+        due: { day: { year: 2026, month: 9, day: 25 } },
+      });
+
+      expect(created).toMatchObject({
+        ok: true,
+        value: { reminder: { due: { day: { year: 2026, month: 9, day: 25 } } } },
+      });
+    });
+
+    // #20: a due time says when a reminder is due, not that the user wants to be interrupted.
+    it("given a due time, holds exactly that instant and adds no alert", async () => {
+      const { reminderStore, reminderList } = await build();
+      const at = new Date("2026-09-25T21:00:00Z");
+
+      const created = await reminderStore.create({
+        title: "Contract check: call Sam",
+        reminderListIdentifier: reminderList,
+        due: { at },
+      });
+
+      expect(created).toMatchObject({ ok: true, value: { reminder: { due: { at } }, alerts: 0 } });
+    });
+
+    // mjmcg d4ec06d: a reminder built out of a command line lost everything after a quote.
+    it("given a title full of quotes, backslashes, line breaks and script text, holds it exactly as given", async () => {
+      const { reminderStore, reminderList } = await build();
+      const hostile = 'Contract check: "; do shell script "true" \\ `id` $(id)\nsecond line';
+
+      const created = await reminderStore.create({
+        title: hostile,
+        reminderListIdentifier: reminderList,
+      });
+
+      expect(created).toMatchObject({ ok: true, value: { reminder: { title: hostile } } });
+    });
+  });
+};

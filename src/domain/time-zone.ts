@@ -57,11 +57,34 @@ export const dayIn = (timeZone: string, instant: Date): LocalDay => {
  * so a day that begins either side of a daylight-saving change still starts at its own
  * midnight.
  */
-export const startOfDay = (timeZone: string, day: LocalDay): Date => {
-  const midnightAsUtc = Date.UTC(day.year, day.month - 1, day.day);
+export const startOfDay = (timeZone: string, day: LocalDay): Date =>
+  instantAt(timeZone, { ...day, hour: 0, minute: 0, second: 0 });
 
-  const firstGuess = new Date(midnightAsUtc - offsetAt(new Date(midnightAsUtc), timeZone));
-  return new Date(midnightAsUtc - offsetAt(firstGuess, timeZone));
+/** A time as a clock on the wall shows it: a day, and a time of day, in no time zone. */
+export type WallClock = LocalDay & {
+  readonly hour: number;
+  readonly minute: number;
+  readonly second: number;
+};
+
+/**
+ * The instant a wall clock in the time zone shows this time, read the same way as a day's
+ * start: the offset at a first guess, then the offset at the instant that guess gives, so a time
+ * either side of a daylight-saving change keeps the offset in force at it.
+ */
+export const instantAt = (timeZone: string, time: WallClock): Date => {
+  const { year, month, day, hour, minute, second } = time;
+  const asUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+
+  const firstGuess = new Date(asUtc - offsetAt(new Date(asUtc), timeZone));
+  return new Date(asUtc - offsetAt(firstGuess, timeZone));
+};
+
+/** The wall-clock time a written one names, with no offset: `2026-09-25T17:00`, seconds or not. */
+export const wallClockWritten = (written: string): WallClock => {
+  const [date = "", clock = ""] = written.split("T");
+  const [hour = 0, minute = 0, second = 0] = clock.split(":").map(Number);
+  return { ...dayWritten(date), hour, minute, second };
 };
 
 const twoDigits = (value: number): string => String(value).padStart(2, "0");
@@ -105,3 +128,12 @@ export const writtenWallClock = (timeZone: string, instant: Date): string => {
 
   return `${day}T${clock}${writtenOffset(offset)}`;
 };
+
+/**
+ * The instant a written time names: with an offset or Z it is that instant, and without one it is
+ * the time the user's own clock shows, never UTC's (upstream #34).
+ */
+export const instantWritten = (timeZone: string, written: string): Date =>
+  /(?:Z|[+-]\d{2}:\d{2})$/u.test(written)
+    ? new Date(written)
+    : instantAt(timeZone, wallClockWritten(written));

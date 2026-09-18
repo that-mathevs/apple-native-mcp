@@ -53,21 +53,22 @@ export const asRequest = ({
   ...(offset === undefined ? {} : { offset }),
 });
 
+/** A reminder as every reminders tool reports it: never its notes (ADR-0006). */
+export const reminderRecordOutput = z.object({
+  identifier: z.string(),
+  title: z.string(),
+  isCompleted: z.boolean(),
+  due: z
+    .object({
+      date: z.iso.date(),
+      time: z.iso.datetime({ offset: true }).optional(),
+    })
+    .optional(),
+  reminderList: reminderListRecord,
+});
+
 export const reminderIndexOutput = {
-  reminders: z.array(
-    z.object({
-      identifier: z.string(),
-      title: z.string(),
-      isCompleted: z.boolean(),
-      due: z
-        .object({
-          date: z.iso.date(),
-          time: z.iso.datetime({ offset: true }).optional(),
-        })
-        .optional(),
-      reminderList: reminderListRecord,
-    }),
-  ),
+  reminders: z.array(reminderRecordOutput),
   coverage: z.object({
     reminderLists: z.number().int(),
     reminderListsUnread: z.array(reminderListRecord),
@@ -86,7 +87,7 @@ const dueRecord = (due: Due, timeZone: string): Record<string, string> =>
     ? { date: writtenDay(due.day) }
     : { date: writtenDay(dayIn(timeZone, due.at)), time: writtenWallClock(timeZone, due.at) };
 
-const reminderRecord = (reminder: Reminder, timeZone: string): Record<string, unknown> => ({
+export const reminderRecord = (reminder: Reminder, timeZone: string): Record<string, unknown> => ({
   identifier: reminder.identifier,
   title: reminder.title,
   isCompleted: reminder.isCompleted,

@@ -1,12 +1,15 @@
 import type {
+  CreatedReminder,
   ReminderStore,
   RemindersRead,
   RemindersWanted,
 } from "../../application/reminders/reminder-store.js";
 import type { Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
+import type { NewReminder } from "../../domain/reminders/new-reminder.js";
 import type { Due, Reminder, ReminderList } from "../../domain/reminders/reminder.js";
-import type { Helper } from "./helper.js";
+import { writtenDay } from "../../domain/time-zone.js";
+import { wentUnanswered, type Helper } from "./helper.js";
 
 /**
  * The reminder store as the helper answers it.
@@ -52,7 +55,46 @@ const asReminder = (record: ReminderRecord): Reminder => ({
   reminderList: asList(record.reminderList),
 });
 
+/** A due date goes to the helper as the day alone, and a due time as an instant. */
+const asDueRecord = (due: Due): { date: string } | { time: string } =>
+  "day" in due ? { date: writtenDay(due.day) } : { time: due.at.toISOString() };
+
 export const helperReminderStore = (helper: Helper): ReminderStore => ({
+  defaultReminderList: async (): Promise<Outcome<ReminderList | undefined>> => {
+    const answered = await helper.ask({ request: "default_reminder_list" });
+    if (!answered.ok) return failed(answered.failure);
+
+    const { reminderList } = answered.value as { reminderList?: ListRecord | null };
+    return succeeded(
+      reminderList === undefined || reminderList === null ? undefined : asList(reminderList),
+    );
+  },
+
+  create: async (reminder: NewReminder): Promise<Outcome<CreatedReminder>> => {
+    const answered = await helper.askOnce({
+      request: "create_reminder",
+      reminderListIdentifier: reminder.reminderListIdentifier,
+      title: reminder.title,
+      ...(reminder.due === undefined ? {} : { due: asDueRecord(reminder.due) }),
+    });
+
+    // The helper stopped, or was stopped, with the request in hand: it may have saved it.
+    if (!answered.ok && wentUnanswered(answered.failure)) return succeeded({ confirmed: false });
+    if (!answered.ok) return failed(answered.failure);
+
+    const { reminder: saved, confirmed, alerts } = answered.value as {
+      reminder: ReminderRecord;
+      confirmed: boolean;
+      alerts: number | null;
+    };
+
+    return succeeded({
+      reminder: asReminder(saved),
+      confirmed,
+      ...(alerts === null ? {} : { alerts }),
+    });
+  },
+
   reminderLists: async (): Promise<Outcome<readonly ReminderList[]>> => {
     const answered = await helper.ask({ request: "reminder_lists" });
     if (!answered.ok) return failed(answered.failure);

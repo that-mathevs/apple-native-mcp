@@ -74,3 +74,37 @@ extension Reminder {
     }
   }
 }
+
+/// A reminder that does not exist yet, and the reminder list it is to be created in. It carries no
+/// alert, and there is no way to give it one: a due time says when it is due (#20).
+public struct NewReminder: Equatable, Sendable {
+  public let title: String
+  public let reminderListIdentifier: String
+  public let due: Due?
+
+  public init(title: String, reminderListIdentifier: String, due: Due?) {
+    self.title = title
+    self.reminderListIdentifier = reminderListIdentifier
+    self.due = due
+  }
+}
+
+/// A reminder as the store holds it, and how many alerts it holds on it.
+public struct HeldReminder: Equatable, Sendable {
+  public let reminder: Reminder
+  public let alerts: Int
+
+  public init(reminder: Reminder, alerts: Int) {
+    self.reminder = reminder
+    self.alerts = alerts
+  }
+}
+
+/// What became of a new reminder. Confirmed means the store showed it afterwards; unconfirmed
+/// means it was saved and could not be found again, which is never a failure to retry.
+struct CreatedReminder: Equatable, Sendable {
+  let reminder: Reminder
+  let confirmed: Bool
+  /// How many alerts the store holds on it, known only when it could be read back.
+  let alerts: Int?
+}

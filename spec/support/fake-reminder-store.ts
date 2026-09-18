@@ -1,10 +1,12 @@
 import type {
+  CreatedReminder,
   ReminderStore,
   RemindersRead,
   RemindersWanted,
 } from "../../src/application/reminders/reminder-store.js";
 import type { NamedFailure, Outcome } from "../../src/domain/failure.js";
 import { failed, succeeded } from "../../src/domain/failure.js";
+import type { NewReminder } from "../../src/domain/reminders/new-reminder.js";
 import type { Reminder, ReminderList } from "../../src/domain/reminders/reminder.js";
 
 /** What the helper answers when the user refused reminders access, word for word. */
@@ -42,9 +44,32 @@ export class FakeReminderStore implements ReminderStore {
   #failure: NamedFailure | undefined;
   #slow: readonly ReminderList[] = [];
   readonly #notes = new Map<string, string>();
+  readonly created: NewReminder[] = [];
+  #defaultReminderList: ReminderList | undefined;
+  #answers = true;
+  #confirms = true;
 
   holdsReminderLists(...reminderLists: readonly ReminderList[]): void {
     this.#reminderLists = reminderLists;
+  }
+
+  /** The reminder list the user set in Reminders for new reminders. */
+  defaultsTo(reminderList: ReminderList): void {
+    this.#defaultReminderList = reminderList;
+  }
+
+  hasNoDefaultReminderList(): void {
+    this.#defaultReminderList = undefined;
+  }
+
+  /** It saves what it is given, and then cannot find it again. */
+  losesSightOfWhatItSaves(): void {
+    this.#confirms = false;
+  }
+
+  /** It takes the reminder and never says what became of it: a helper that died holding it. */
+  neverSaysWhatBecameOfAReminder(): void {
+    this.#answers = false;
   }
 
   holds(...reminders: readonly Reminder[]): void {
@@ -63,6 +88,43 @@ export class FakeReminderStore implements ReminderStore {
   /** Reminder lists too large, or too far away, to read within the time budget. */
   cannotReadInTime(...reminderLists: readonly ReminderList[]): void {
     this.#slow = reminderLists;
+  }
+
+  defaultReminderList(): Promise<Outcome<ReminderList | undefined>> {
+    return Promise.resolve(
+      this.#failure ? failed(this.#failure) : succeeded(this.#defaultReminderList),
+    );
+  }
+
+  create(reminder: NewReminder): Promise<Outcome<CreatedReminder>> {
+    if (this.#failure) return Promise.resolve(failed(this.#failure));
+
+    this.created.push(reminder);
+    if (!this.#answers) return Promise.resolve(succeeded({ confirmed: false }));
+
+    const reminderList = this.#reminderLists.find(
+      ({ identifier }) => identifier === reminder.reminderListIdentifier,
+    );
+    if (reminderList === undefined) {
+      return Promise.resolve(
+        failed({ code: "reminder_list_unknown", sentence: "The store has no such reminder list." }),
+      );
+    }
+
+    const saved: Reminder = {
+      identifier: `reminder-new-${String(this.created.length)}`,
+      title: reminder.title,
+      isCompleted: false,
+      reminderList,
+      ...(reminder.due === undefined ? {} : { due: reminder.due }),
+    };
+    this.#reminders = [...this.#reminders, saved];
+
+    return Promise.resolve(
+      succeeded(
+        this.#confirms ? { reminder: saved, confirmed: true, alerts: 0 } : { confirmed: false },
+      ),
+    );
   }
 
   reminderLists(): Promise<Outcome<readonly ReminderList[]>> {

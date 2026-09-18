@@ -27,3 +27,14 @@ export type Outcome<Value> = { readonly ok: true; readonly value: Value } | {
 export const succeeded = <Value>(value: Value): Outcome<Value> => ({ ok: true, value });
 
 export const failed = <Value>(failure: NamedFailure): Outcome<Value> => ({ ok: false, failure });
+
+/** Every refusal to create says first that nothing was created, so nobody tries to undo it. */
+export const nothingCreated = (
+  code: string,
+  sentence: string,
+  evidence?: string,
+): NamedFailure => ({
+  code,
+  sentence: `Nothing was created. ${sentence}`,
+  ...(evidence === undefined ? {} : { evidence }),
+});
