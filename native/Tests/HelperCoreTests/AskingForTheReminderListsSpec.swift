@@ -27,4 +27,15 @@ struct AskingForTheReminderListsSpec {
         {"failure":{"code":"reminders_permission_missing","evidence":"refused","sentence":"apple-native-mcp cannot read your reminders until it is allowed to, in System Settings > Privacy & Security > Reminders > apple-native-mcp."},"id":"3","protocolVersion":1}
         """#)
   }
+
+  // A tool never asks for a permission, and the setting is not there to turn on until macOS has
+  // asked once, so a permission nobody has asked for points at setup instead (#33).
+  @Test("given nobody has been asked for the reminders permission yet, says to run setup rather than naming a setting that is not there")
+  func pointsAtSetupWhileUndecided() {
+    #expect(
+      helperReading(aReminderStore().permission(.undecided).holding(groceries)).respond(to: asking)
+        == #"""
+        {"failure":{"code":"reminders_permission_missing","evidence":"undecided","sentence":"apple-native-mcp has not been asked for your reminders yet. Run `npx apple-native-mcp setup` to be asked."},"id":"3","protocolVersion":1}
+        """#)
+  }
 }

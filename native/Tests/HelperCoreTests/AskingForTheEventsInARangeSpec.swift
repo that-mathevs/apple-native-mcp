@@ -95,6 +95,17 @@ struct AskingForTheEventsInARangeSpec {
         """#)
   }
 
+  // A tool never asks for a permission, and the setting is not there to turn on until macOS has
+  // asked once, so a permission nobody has asked for points at setup instead (#33).
+  @Test("given nobody has been asked for the calendar permission yet, says to run setup rather than naming a setting that is not there")
+  func pointsAtSetupWhileUndecided() {
+    #expect(
+      helperReading(aCalendarStore().permission(.undecided)).respond(to: tuesday)
+        == #"""
+        {"failure":{"code":"calendar_permission_missing","evidence":"undecided","sentence":"apple-native-mcp has not been asked for your calendar yet. Run `npx apple-native-mcp setup` to be asked."},"id":"2","protocolVersion":1}
+        """#)
+  }
+
   // User story 6: one offline subscription must not take the whole read with it.
   @Test("given one calendar that would not answer, returns the rest and names that calendar beside them")
   func namesAnUnreadableCalendarBesideTheEvents() {

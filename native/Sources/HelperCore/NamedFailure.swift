@@ -67,9 +67,16 @@ extension NamedFailure {
   static func calendarPermissionMissing(permission: Permission) -> NamedFailure {
     NamedFailure(
       code: .calendarPermissionMissing,
-      sentence:
-        "apple-native-mcp cannot read your calendar until it is allowed to, in \(calendarPermissionSetting).",
+      sentence: permission == .undecided
+        ? notAskedYet(for: "your calendar")
+        : "apple-native-mcp cannot read your calendar until it is allowed to, in \(calendarPermissionSetting).",
       evidence: permission.rawValue)
+  }
+
+  /// A tool never asks for a permission, and its setting only appears once macOS has asked, so a
+  /// permission nobody has asked for points at setup rather than at a setting that is not there.
+  private static func notAskedYet(for store: String) -> String {
+    "apple-native-mcp has not been asked for \(store) yet. Run `npx apple-native-mcp setup` to be asked."
   }
 
   static func calendarUnreadable(title: String, evidence: String) -> NamedFailure {
@@ -89,8 +96,10 @@ extension NamedFailure {
   static func remindersPermissionMissing(permission: Permission) -> NamedFailure {
     NamedFailure(
       code: .remindersPermissionMissing,
-      sentence: "apple-native-mcp cannot read your reminders until it is allowed to, in "
-        + "\(remindersPermissionSetting).",
+      sentence: permission == .undecided
+        ? notAskedYet(for: "your reminders")
+        : "apple-native-mcp cannot read your reminders until it is allowed to, in "
+          + "\(remindersPermissionSetting).",
       evidence: permission.rawValue)
   }
 

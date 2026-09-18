@@ -31,9 +31,9 @@ outside evidence verbatim.
 | `protocol_version_unsupported` | the request named a version the helper does not speak |
 | `request_malformed` | the line was not a request the helper could read |
 | `request_unknown` | the line named a request the helper does not answer |
-| `calendar_permission_missing` | macOS has not allowed the helper to read the calendar; the sentence names the setting and where it is |
+| `calendar_permission_missing` | macOS has not allowed the helper to read the calendar; the sentence names the setting and where it is, or, while nobody has been asked, says to run `npx apple-native-mcp setup` |
 | `calendar_unreadable` | one calendar would not answer; reported beside the events rather than instead of them, so one offline subscription does not take the whole read with it |
-| `reminders_permission_missing` | macOS has not allowed the helper to read the reminders; the sentence names the setting and where it is |
+| `reminders_permission_missing` | macOS has not allowed the helper to read the reminders; the sentence names the setting and where it is, or, while nobody has been asked, says to run `npx apple-native-mcp setup` |
 | `reminder_list_unknown` | a request named a reminder list the helper cannot find, perhaps deleted since it was listed; nothing is read |
 
 ## The protocol
