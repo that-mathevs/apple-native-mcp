@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type { MessageStore } from "../../src/application/messages/message-store.js";
-import type { Chat, Message } from "../../src/domain/messages/chat.js";
+import type { Chat } from "../../src/domain/messages/chat.js";
+import type { Message } from "../../src/domain/messages/message.js";
 
 /**
  * What every message store promises, whichever way it reaches the store.

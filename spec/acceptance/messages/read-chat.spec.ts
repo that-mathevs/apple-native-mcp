@@ -24,6 +24,7 @@ const fromUser = {
   direction: "outgoing",
   timestamp: new Date("2026-09-18T15:05:00Z"),
   service: "iMessage",
+  delivery: { sent: true, delivered: true },
 } as const;
 
 describe("reading a chat", () => {
@@ -40,7 +41,7 @@ describe("reading a chat", () => {
 
   // Upstream #62 matched messages by handle alone, which dropped everything the user sent and
   // every group chat; a chat is the unit, and both sides of it are read (MSG-C3).
-  it("returns the chat's messages from both sides in time order, each with its text, direction, timestamp and service", async () => {
+  it("returns the chat's messages from both sides in time order, each with its text, direction, timestamp, service and, for the user's, how far it got", async () => {
     messageStore.holdsMessages(fromUser, fromBen);
 
     const result = await readChat({ chat: climbing });
@@ -62,6 +63,7 @@ describe("reading a chat", () => {
           direction: "outgoing",
           timestamp: "2026-09-18T15:05:00.000Z",
           service: "iMessage",
+          delivery: { sent: true, delivered: true },
         },
       ],
       coverage: { truncated: false },
@@ -103,5 +105,20 @@ describe("reading a chat", () => {
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({ failure: { code: "chat_unknown" } });
+  });
+
+  // ADR-0005: a failed send is not real traffic. Shown as a plain outgoing message, it would read
+  // as something the other person received.
+  it("given one of the user's sends that failed, says it was not sent and gives its delivery error", async () => {
+    messageStore.holdsMessages({
+      ...fromUser,
+      delivery: { sent: false, delivered: false, error: 22 },
+    });
+
+    const result = await readChat({ chat: climbing });
+
+    expect(result.structuredContent).toMatchObject({
+      messages: [{ direction: "outgoing", delivery: { sent: false, delivered: false, error: 22 } }],
+    });
   });
 });

@@ -15,6 +15,7 @@ final class AMessageStoreFile: @unchecked Sendable {
   let path: String
   private var database: OpaquePointer?
   private var nextMessage = 1
+  private var lockHolder: OpaquePointer?
 
   init() {
     let directory = FileManager.default.temporaryDirectory
@@ -22,7 +23,7 @@ final class AMessageStoreFile: @unchecked Sendable {
     try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     path = directory.appendingPathComponent("chat.db").path
 
-    sqlite3_open(path, &database)
+    precondition(sqlite3_open(path, &database) == SQLITE_OK, "the store could not be made")
     run(
       """
       CREATE TABLE handle (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL,
@@ -40,14 +41,19 @@ final class AMessageStoreFile: @unchecked Sendable {
       """)
   }
 
-  deinit { sqlite3_close(database) }
+  // The file is left in the system's temporary directory, which macOS clears: a scenario often
+  // hands the helper its path and lets this go, and the helper reads the file after.
+  deinit {
+    sqlite3_close(lockHolder)
+    sqlite3_close(database)
+  }
 
   /// A chat with these participants, as Messages stores it: 45 for one-to-one, 43 for a group.
   @discardableResult
   func chat(_ guid: String, group: Bool = false, with handles: [String]) -> AMessageStoreFile {
     run(
       "INSERT INTO chat (guid, style, chat_identifier) VALUES (?, ?, ?)",
-      [guid, group ? 43 : 45, guid])
+      [guid, group ? ChatKind.groupStyle : ChatKind.oneToOneStyle, guid])
     for handle in handles {
       run(
         "INSERT INTO handle (id, service) SELECT ?, 'iMessage' "
@@ -59,23 +65,25 @@ final class AMessageStoreFile: @unchecked Sendable {
     return self
   }
 
-  /// A message in a chat. By default one the other person sent, which is real traffic.
+  /// A message in a chat, incoming unless the scenario says otherwise. Sent, delivered and a
+  /// delivery error describe how far an outgoing one got; a reaction and a group event are rows
+  /// the store keeps beside the messages.
   @discardableResult
   func message(
     in chat: String, from handle: String? = nil, text: String? = nil, at instant: Date,
-    fromUser: Bool = false, sent: Bool = true, delivered: Bool = false, error: Int = 0,
-    reactingTo: Bool = false, groupEvent: Bool = false, service: String = "iMessage"
+    direction: Direction = .incoming, sent: Bool = true, delivered: Bool = false,
+    deliveryError: Int = 0, reaction: Bool = false, groupEvent: Bool = false,
+    service: String = "iMessage"
   ) -> AMessageStoreFile {
     let guid = "message-\(nextMessage)"
     nextMessage += 1
-    let nanoseconds = Int64((instant.timeIntervalSinceReferenceDate * 1_000_000_000).rounded())
     run(
       "INSERT INTO message (guid, text, handle_id, service, date, is_from_me, is_sent, "
         + "is_delivered, error, associated_message_type, item_type) VALUES (?, ?, "
         + "COALESCE((SELECT ROWID FROM handle WHERE id = ?), 0), ?, ?, ?, ?, ?, ?, ?, ?)",
       [
-        guid, text, handle, service, nanoseconds, fromUser ? 1 : 0, sent ? 1 : 0,
-        delivered ? 1 : 0, error, reactingTo ? 2000 : 0, groupEvent ? 1 : 0,
+        guid, text, handle, service, storeDate(from: instant), direction == .outgoing ? 1 : 0,
+        sent ? 1 : 0, delivered ? 1 : 0, deliveryError, reaction ? 2000 : 0, groupEvent ? 1 : 0,
       ])
     run(
       "INSERT INTO chat_message_join (chat_id, message_id, message_date) "
@@ -84,14 +92,26 @@ final class AMessageStoreFile: @unchecked Sendable {
     return self
   }
 
-  private func run(_ statements: String) {
-    sqlite3_exec(database, statements, nil, nil, nil)
+  /// Messages in the middle of writing: another connection holds the store's write lock and
+  /// keeps it for as long as this file lives.
+  func lockedByMessages() {
+    var writer: OpaquePointer?
+    precondition(sqlite3_open(path, &writer) == SQLITE_OK, failure)
+    precondition(sqlite3_exec(writer, "BEGIN EXCLUSIVE", nil, nil, nil) == SQLITE_OK, failure)
+    lockHolder = writer
   }
+
+  private func run(_ statements: String) {
+    precondition(sqlite3_exec(database, statements, nil, nil, nil) == SQLITE_OK, failure)
+  }
+
+  /// What went wrong with a fixture, so a typo fails the scenario rather than emptying the store.
+  private var failure: String { String(cString: sqlite3_errmsg(database)) }
 
   /// One statement, its values bound rather than written into it.
   private func run(_ statement: String, _ values: [Any?]) {
     var prepared: OpaquePointer?
-    sqlite3_prepare_v2(database, statement, -1, &prepared, nil)
+    precondition(sqlite3_prepare_v2(database, statement, -1, &prepared, nil) == SQLITE_OK, failure)
     defer { sqlite3_finalize(prepared) }
 
     let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
@@ -104,7 +124,7 @@ final class AMessageStoreFile: @unchecked Sendable {
       default: sqlite3_bind_null(prepared, position)
       }
     }
-    sqlite3_step(prepared)
+    precondition(sqlite3_step(prepared) == SQLITE_DONE, failure)
   }
 }
 

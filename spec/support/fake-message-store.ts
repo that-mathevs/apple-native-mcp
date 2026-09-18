@@ -6,7 +6,8 @@ import type {
 } from "../../src/application/messages/message-store.js";
 import type { NamedFailure, Outcome } from "../../src/domain/failure.js";
 import { failed, succeeded } from "../../src/domain/failure.js";
-import type { Chat, Message } from "../../src/domain/messages/chat.js";
+import type { Chat } from "../../src/domain/messages/chat.js";
+import type { Message } from "../../src/domain/messages/message.js";
 
 /** What the helper answers when it may not read the message store, word for word. */
 export const messageStorePermissionMissing: NamedFailure = {

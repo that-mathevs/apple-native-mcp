@@ -203,18 +203,26 @@ participant. `truncated` says there were more.
 
 ```json
 {"protocolVersion":1,"id":"9","request":"chat_messages","chat":"iMessage;+;chat001","limit":50,"range":{"start":null,"end":null}}
-{"id":"9","protocolVersion":1,"result":{"messages":[{"chat":"iMessage;+;chat001","direction":"incoming","handle":"ben@example.com","identifier":"…","service":"iMessage","text":"Wall at 6?","timestamp":"2026-09-18T09:00:00Z"}],"truncated":false}}
+{"id":"9","protocolVersion":1,"result":{"messages":[{"chat":"iMessage;+;chat001","delivery":null,"direction":"incoming","handle":"ben@example.com","identifier":"…","service":"iMessage","text":"Wall at 6?","timestamp":"2026-09-18T09:00:00Z"}],"truncated":false}}
 ```
 
 The chat's newest messages, oldest first. `range` may leave either bound open with `null` or by
-leaving it out; a bound that is written but is not an instant is refused. Reactions and group
+leaving it out; a bound that is written but is not an instant is refused, and so is a range that
+does not move forwards. `delivery` says how far one of the user's messages got, `sent`,
+`delivered` and the delivery `error` the store recorded, and is `null` for an incoming one: a send
+that failed is not real traffic, and never reads as one that left. Reactions and group
 events such as a rename are left out: nobody wrote them to the chat. `handle` is where an incoming
 message came from, and `null` for the user's own. `text` is `null` when the store keeps no text the
 helper can read yet.
 
 The store is opened read-only, by path, and every value in a query is bound, never written into it.
 Before it is opened, the file is opened for reading once, because macOS refuses a protected file
-before SQLite sees it and only the error number tells a refusal from a store that is not there.
+before SQLite sees it and only the error number tells a refusal from a store that is not there:
+`EPERM` is macOS's refusal, `ENOENT` a store that is not there, and anything else, the file's own
+access mode included, is unreadable. Without Full Disk Access, macOS may refuse even a path with no
+store behind it, since the folder itself is protected, so a missing permission is reported first
+(MSG-V13, unverified). A read waits a second for Messages' write lock, then fails rather than
+holding the session.
 
 ## Building it
 

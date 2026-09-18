@@ -5,6 +5,10 @@ import Foundation
 public enum ChatKind: String, Equatable, Sendable {
   case oneToOne = "one-to-one"
   case group
+
+  /// The store's own word for each kind (MSG-V2).
+  static let oneToOneStyle: Int64 = 45
+  static let groupStyle: Int64 = 43
 }
 
 /// A thread with participants, addressed by its identifier. The user is never a participant.
@@ -42,6 +46,17 @@ public struct Message: Equatable, Sendable {
   public let timestamp: Date
   /// The service that carried it: iMessage, SMS or RCS.
   public let service: String
+  /// How far an outgoing message got. An incoming one has none: it arrived.
+  public let delivery: Delivery?
+}
+
+/// How far one of the user's messages got. Sent means it left with no error, delivered that the
+/// store shows it reached the recipient, and a delivery error is the code the store recorded
+/// when it could not. A send that failed is not real traffic (ADR-0005), and says so.
+public struct Delivery: Equatable, Sendable {
+  public let sent: Bool
+  public let delivered: Bool
+  public let error: Int?
 }
 
 /// A chat's newest messages in time order, oldest first, and whether older ones were left.

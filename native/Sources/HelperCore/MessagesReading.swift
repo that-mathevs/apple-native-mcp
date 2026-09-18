@@ -23,7 +23,8 @@ struct MessagesReading: Sendable {
 extension NamedFailure {
   init(refusal: MessageStoreRefusal) {
     switch refusal {
-    case .permissionMissing(let evidence): self = .messageStorePermissionMissing(evidence: evidence)
+    case .permissionMissing(let evidence):
+      self = .messageStorePermissionMissing(evidence: evidence)
     case .notFound(let evidence): self = .messageStoreNotFound(evidence: evidence)
     case .unreadable(let evidence): self = .messageStoreUnreadable(evidence: evidence)
     }

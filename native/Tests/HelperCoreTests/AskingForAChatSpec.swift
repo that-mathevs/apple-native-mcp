@@ -18,17 +18,17 @@ struct AskingForAChatSpec {
     AMessageStoreFile()
       .chat(climbing, group: true, with: ["+15551230001", "ben@example.com"])
       .message(in: climbing, from: "ben@example.com", text: "Wall at 6?", at: nineOClock)
-      .message(in: climbing, text: "I'm in", at: nineOClock.addingTimeInterval(300), fromUser: true)
+      .message(in: climbing, text: "I'm in", at: nineOClock.addingTimeInterval(300), direction: .outgoing)
   }
 
   // Upstream #62 matched messages by handle alone, which dropped everything the user sent and
   // every group chat (MSG-C3, MSG-V1).
-  @Test("answers the chat's messages from both sides in time order, each with its direction, handle, timestamp and service")
+  @Test("answers the chat's messages from both sides in time order, each with its direction, handle, timestamp, service and, for the user's, how far it got")
   func answersBothSidesInTimeOrder() {
     #expect(
       helperReading(aClimbingChat).respond(to: asking(climbing))
         == #"""
-        {"id":"6","protocolVersion":1,"result":{"messages":[{"chat":"iMessage;+;chat001","direction":"incoming","handle":"ben@example.com","identifier":"message-1","service":"iMessage","text":"Wall at 6?","timestamp":"2026-09-18T09:00:00Z"},{"chat":"iMessage;+;chat001","direction":"outgoing","handle":null,"identifier":"message-2","service":"iMessage","text":"I'm in","timestamp":"2026-09-18T09:05:00Z"}],"truncated":false}}
+        {"id":"6","protocolVersion":1,"result":{"messages":[{"chat":"iMessage;+;chat001","delivery":null,"direction":"incoming","handle":"ben@example.com","identifier":"message-1","service":"iMessage","text":"Wall at 6?","timestamp":"2026-09-18T09:00:00Z"},{"chat":"iMessage;+;chat001","delivery":{"delivered":false,"error":null,"sent":true},"direction":"outgoing","handle":null,"identifier":"message-2","service":"iMessage","text":"I'm in","timestamp":"2026-09-18T09:05:00Z"}],"truncated":false}}
         """#)
   }
 
@@ -38,7 +38,7 @@ struct AskingForAChatSpec {
   func leavesOutReactions() {
     let store = aClimbingChat.message(
       in: climbing, from: "ben@example.com", text: "Loved “I'm in”",
-      at: nineOClock.addingTimeInterval(600), reactingTo: true)
+      at: nineOClock.addingTimeInterval(600), reaction: true)
 
     #expect(!helperReading(store).respond(to: asking(climbing)).contains("Loved"))
   }
@@ -79,6 +79,44 @@ struct AskingForAChatSpec {
 
     #expect(!response.contains("Wall at 6?"))
     #expect(response.contains("I'm in"))
+  }
+
+  @Test("given a range whose end is not after its start, refuses the request rather than answering with no messages")
+  func refusesABackwardsRange() {
+    for range in [
+      #","range":{"start":"2026-09-18T10:00:00Z","end":"2026-09-18T09:00:00Z"}"#,
+      #","range":{"start":"2026-09-18T10:00:00Z","end":"2026-09-18T10:00:00Z"}"#,
+    ] {
+      #expect(
+        helperReading(aClimbingChat).respond(to: asking(climbing, range: range))
+          .contains(#""code":"request_malformed""#))
+    }
+  }
+
+  // ADR-0005: a failed send is not real traffic. Shown as a plain outgoing message, it would read
+  // as something the other person received.
+  @Test("given one of the user's sends that failed, says it was not sent and gives its delivery error")
+  func marksAFailedSend() {
+    let store = aClimbingChat.message(
+      in: climbing, text: "Anyone?", at: nineOClock.addingTimeInterval(600), direction: .outgoing,
+      sent: false, deliveryError: 22)
+
+    #expect(
+      helperReading(store).respond(to: asking(climbing))
+        .contains(
+          #""delivery":{"delivered":false,"error":22,"sent":false},"direction":"outgoing""#
+        ))
+  }
+
+  @Test("given the user's send that was delivered, says it was sent and delivered, with no delivery error")
+  func marksADeliveredSend() {
+    let store = aClimbingChat.message(
+      in: climbing, text: "Here", at: nineOClock.addingTimeInterval(600), direction: .outgoing,
+      delivered: true)
+
+    #expect(
+      helperReading(store).respond(to: asking(climbing))
+        .contains(#""delivery":{"delivered":true,"error":null,"sent":true},"direction":"outgoing""#))
   }
 
   @Test("given a bound that is not an instant, refuses the request rather than reading without it")

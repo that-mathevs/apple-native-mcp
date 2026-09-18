@@ -6,7 +6,8 @@ import type {
 } from "../../application/messages/message-store.js";
 import type { Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
-import type { Chat, Message } from "../../domain/messages/chat.js";
+import type { Chat } from "../../domain/messages/chat.js";
+import type { Delivery, Message } from "../../domain/messages/message.js";
 import type { Helper } from "./helper.js";
 
 /**
@@ -38,7 +39,18 @@ type MessageRecord = {
   readonly handle: string | null;
   readonly timestamp: string;
   readonly service: string;
+  readonly delivery: {
+    readonly sent: boolean;
+    readonly delivered: boolean;
+    readonly error: number | null;
+  } | null;
 };
+
+const asDelivery = (record: NonNullable<MessageRecord["delivery"]>): Delivery => ({
+  sent: record.sent,
+  delivered: record.delivered,
+  ...(record.error === null ? {} : { error: record.error }),
+});
 
 const asMessage = (record: MessageRecord): Message => ({
   identifier: record.identifier,
@@ -48,6 +60,7 @@ const asMessage = (record: MessageRecord): Message => ({
   ...(record.handle === null ? {} : { handle: record.handle }),
   timestamp: new Date(record.timestamp),
   service: record.service,
+  ...(record.delivery === null ? {} : { delivery: asDelivery(record.delivery) }),
 });
 
 export const helperMessageStore = (helper: Helper): MessageStore => ({

@@ -1,5 +1,6 @@
 import type { Outcome } from "../../domain/failure.js";
-import type { Chat, Message } from "../../domain/messages/chat.js";
+import type { Chat } from "../../domain/messages/chat.js";
+import type { Message } from "../../domain/messages/message.js";
 
 /** The newest chats, and whether there were more than were asked for. */
 export type ChatsRead = {

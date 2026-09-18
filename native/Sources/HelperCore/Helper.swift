@@ -119,7 +119,14 @@ extension Message {
       "identifier": identifier, "chat": chat, "text": text ?? NSNull(),
       "direction": direction.rawValue, "handle": handle ?? NSNull(),
       "timestamp": Instant.written(timestamp), "service": service,
+      "delivery": delivery?.asFields ?? NSNull(),
     ]
+  }
+}
+
+extension Delivery {
+  var asFields: [String: Any] {
+    ["sent": sent, "delivered": delivered, "error": error ?? NSNull()]
   }
 }
 

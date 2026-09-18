@@ -1,4 +1,5 @@
-import type { Chat, Message } from "../../src/domain/messages/chat.js";
+import type { Chat } from "../../src/domain/messages/chat.js";
+import type { Message } from "../../src/domain/messages/message.js";
 import { FakeMessageStore } from "../support/fake-message-store.js";
 import { aMessageStore, aMessageStoreThatCanBeLoaded } from "./message-store.contract.js";
 

@@ -195,15 +195,18 @@ private func readMessageRange(_ field: Any?) -> MessageRange? {
   }
 
   guard let start = bound("start"), let end = bound("end") else { return nil }
+  // A range has to move forwards, as a calendar's does: one that ends at or before it starts
+  // would answer with no messages, which reads as a quiet chat.
+  if let start, let end, end <= start { return nil }
   return MessageRange(start: start, end: end)
 }
 
 /// The most a read of the message store answers with at once, whatever the server asks.
-let greatestMessagesLimit = 500
+let greatestReadLimit = 500
 
 /// A limit is required and must be one the helper answers: it never picks one for the server.
 private func readLimit(_ field: Any?) -> Int? {
-  guard let limit = field as? Int, (1...greatestMessagesLimit).contains(limit) else { return nil }
+  guard let limit = field as? Int, (1...greatestReadLimit).contains(limit) else { return nil }
   return limit
 }
 

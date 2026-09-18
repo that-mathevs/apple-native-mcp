@@ -1,5 +1,5 @@
 import type { Outcome } from "../../domain/failure.js";
-import { defaultMessageLimit } from "../../domain/messages/chat.js";
+import { defaultMessageLimit } from "../../domain/messages/message.js";
 import type { MessagesRead, MessageStore } from "./message-store.js";
 
 export type ReadChatDependencies = {

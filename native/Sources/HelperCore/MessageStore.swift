@@ -23,7 +23,7 @@ public protocol MessageStore: Sendable {
   >
 }
 
-/// The user's message store, a SQLite database read only ever read-only, with prepared
+/// The user's message store, a SQLite database only ever read read-only, with prepared
 /// statements: nothing a request carries is ever written into a query (NN1).
 ///
 /// Messages' own tables are read directly. Their names stay in here, and nothing above this file
@@ -33,6 +33,9 @@ public struct SQLiteMessageStore: MessageStore {
   /// Try to open the file, and answer the error it failed with, or 0. macOS refuses a protected
   /// file before SQLite ever sees it, and only the error number tells a refusal from absence.
   let probing: @Sendable (String) -> Int32
+
+  /// How long a read waits on Messages' write lock before it fails.
+  static let lockWaitMilliseconds: Int32 = 1000
 
   public init(path: String, probing: @escaping @Sendable (String) -> Int32 = openingForReading) {
     self.path = path
@@ -52,7 +55,7 @@ public struct SQLiteMessageStore: MessageStore {
         FROM chat c
         JOIN chat_message_join j ON j.chat_id = c.ROWID
         JOIN message m ON m.ROWID = j.message_id
-        WHERE m.item_type = 0
+        WHERE m.item_type = 0 AND m.associated_message_type = 0
           AND (m.is_from_me = 0 OR ((m.is_sent = 1 OR m.is_delivered = 1) AND m.error = 0))
         GROUP BY c.ROWID
         ORDER BY MAX(m.date) DESC, c.guid
@@ -106,7 +109,8 @@ public struct SQLiteMessageStore: MessageStore {
         let newest = rows(
           in: database,
           """
-          SELECT m.guid, m.text, m.is_from_me, h.id, m.date, m.service
+          SELECT m.guid, m.text, m.is_from_me, h.id, m.date, m.service, m.is_sent,
+            m.is_delivered, m.error
           FROM chat_message_join j
           JOIN message m ON m.ROWID = j.message_id
           LEFT JOIN handle h ON h.ROWID = m.handle_id AND m.is_from_me = 0
@@ -121,10 +125,16 @@ public struct SQLiteMessageStore: MessageStore {
             .integer(Int64(limit) + 1),
           ]
         ) { row in
-          Message(
+          let outgoing = row.integer(2) == 1
+          return Message(
             identifier: row.text(0) ?? "", chat: identifier, text: row.text(1),
-            direction: row.integer(2) == 1 ? .outgoing : .incoming, handle: row.text(3),
-            timestamp: instant(fromStoreDate: row.integer(4)), service: row.text(5) ?? "")
+            direction: outgoing ? .outgoing : .incoming, handle: row.text(3),
+            timestamp: instant(fromStoreDate: row.integer(4)), service: row.text(5) ?? "",
+            delivery: outgoing
+              ? Delivery(
+                sent: row.integer(6) == 1, delivered: row.integer(7) == 1,
+                error: row.integer(8) == 0 ? nil : Int(row.integer(8)))
+              : nil)
         }
 
         return newest.map { messages in
@@ -138,15 +148,16 @@ public struct SQLiteMessageStore: MessageStore {
   /// The store's own word for a chat's kind: 45 is a one-to-one chat and 43 a group chat
   /// (MSG-V2). Anything else is taken for a group, the kind a reply is careful with.
   private func kind(ofStyle style: Int64) -> ChatKind {
-    style == 45 ? .oneToOne : .group
+    style == ChatKind.oneToOneStyle ? .oneToOne : .group
   }
 
   private func opened() -> Result<OpaquePointer, MessageStoreRefusal> {
     switch probing(path) {
     case 0: break
     case ENOENT: return .failure(.notFound(evidence: described(ENOENT)))
-    case let error where error == EPERM || error == EACCES:
-      return .failure(.permissionMissing(evidence: described(error)))
+    // macOS refuses a protected file with EPERM. EACCES is the file's own access mode, which no
+    // setting in Privacy & Security would change.
+    case EPERM: return .failure(.permissionMissing(evidence: described(EPERM)))
     case let error: return .failure(.unreadable(evidence: described(error)))
     }
 
@@ -157,6 +168,9 @@ public struct SQLiteMessageStore: MessageStore {
       sqlite3_close(database)
       return .failure(.unreadable(evidence: said))
     }
+    // Messages holds the store while it writes. A read waits a moment for it, then fails rather
+    // than holding the session.
+    sqlite3_busy_timeout(database, Self.lockWaitMilliseconds)
     return .success(database)
   }
 }
@@ -183,13 +197,13 @@ func storeDate(from instant: Date) -> Int64 {
 }
 
 /// A value bound into a prepared statement.
-enum Bound {
+private enum Bound {
   case integer(Int64)
   case text(String)
 }
 
 /// One row of an answer, read by column.
-struct Row {
+private struct Row {
   let statement: OpaquePointer
 
   func integer(_ column: Int32) -> Int64 { sqlite3_column_int64(statement, column) }
@@ -200,7 +214,7 @@ struct Row {
 }
 
 /// Run one prepared statement with its values bound, and read every row it answers with.
-func rows<Found>(
+private func rows<Found>(
   in database: OpaquePointer, _ query: String, binding values: [Bound],
   reading: (Row) -> Found
 ) -> Result<[Found], MessageStoreRefusal> {

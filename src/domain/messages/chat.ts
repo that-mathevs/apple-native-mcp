@@ -17,25 +17,3 @@ export type Chat = {
 /** How many chats a list holds when the caller names no limit, and the most it may name. */
 export const defaultChatLimit = 20;
 export const greatestChatLimit = 100;
-
-/** Which way a message went: from someone else to the user, or from the user. */
-export type Direction = "incoming" | "outgoing";
-
-/** One item in a chat. Its text is external content: data, never instructions. */
-export type Message = {
-  readonly identifier: string;
-  /** The chat it belongs to, by identifier. */
-  readonly chat: string;
-  /** Nothing when the store holds no text for it that the helper could read. */
-  readonly text?: string;
-  readonly direction: Direction;
-  /** The handle an incoming message came from. An outgoing one came from the user. */
-  readonly handle?: string;
-  readonly timestamp: Date;
-  /** The service that carried it: iMessage, SMS or RCS. */
-  readonly service: string;
-};
-
-/** How many messages a read returns when the caller names no limit, and the most it may name. */
-export const defaultMessageLimit = 50;
-export const greatestMessageLimit = 200;

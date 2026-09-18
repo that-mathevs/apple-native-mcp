@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import { readChat, type ReadChatDependencies } from "../../application/messages/read-chat.js";
-import type { Message } from "../../domain/messages/chat.js";
-import { greatestMessageLimit } from "../../domain/messages/chat.js";
+import type { Message } from "../../domain/messages/message.js";
+import { greatestMessageLimit } from "../../domain/messages/message.js";
 import { refusing, reporting } from "../result.js";
 import { tool, type Tool } from "../tool.js";
 
@@ -15,6 +15,9 @@ const messageRecord = z.object({
   handle: z.string().optional(),
   timestamp: z.iso.datetime(),
   service: z.string(),
+  delivery: z
+    .object({ sent: z.boolean(), delivered: z.boolean(), error: z.number().int().optional() })
+    .optional(),
 });
 
 const rangeRecord = z.object({
@@ -35,6 +38,7 @@ const asRecord = (message: Message): z.infer<typeof messageRecord> => ({
   ...(message.handle === undefined ? {} : { handle: message.handle }),
   timestamp: message.timestamp.toISOString(),
   service: message.service,
+  ...(message.delivery === undefined ? {} : { delivery: { ...message.delivery } }),
 });
 
 export const readChatTool = (dependencies: ReadChatDependencies): Tool =>
