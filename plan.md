@@ -1,5 +1,10 @@
 # Plan: rebuild apple-mcp
 
+> **The v1 specification is [issue #30](https://github.com/that-mathevs/apple-native-mcp/issues/30).**
+> It supersedes this file's "Open decisions" and its "How each app is reached" table, and it is what
+> the build works from. This file stays for the **Non-negotiables**, the phase order, and the fork
+> and issue appendices that `docs/research/findings.md` cites. Where the two disagree, the spec wins.
+
 `supermemoryai/apple-mcp` was archived on 2026-01-01 with its bugs unfixed and a command-injection hole in the tools that send messages and create events. Around 25 forks have fixed pieces of it since, but no one has brought those fixes together. This plan collects what the forks learned and rebuilds the server from scratch with a clean architecture. Every behaviour is specified BDD-style before it is built.
 
 ## Goal
