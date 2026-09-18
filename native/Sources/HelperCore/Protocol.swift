@@ -39,6 +39,10 @@ struct Request: Equatable {
     case requestMailPermission
     case mailAccounts
     case mailboxes(mailAccount: String)
+    case latestEmails(mailbox: MailboxAddress, newest: Int)
+    case emailsInRange(mailbox: MailboxAddress, range: Range, ceiling: Int)
+    case emailMessageIds(mailbox: MailboxAddress, emails: [Int])
+    case emailBodies(mailbox: MailboxAddress, emails: [Int])
   }
 }
 
@@ -72,6 +76,10 @@ enum RequestName: String {
   case requestMailPermission = "mail_permission_request"
   case mailAccounts = "mail_accounts"
   case mailboxes = "mailboxes"
+  case latestEmails = "latest_emails"
+  case emailsInRange = "emails_in_range"
+  case emailMessageIds = "email_message_ids"
+  case emailBodies = "email_bodies"
 }
 
 /// What reading a line produced: a request the helper can answer, or a named failure to report
@@ -262,6 +270,33 @@ extension Request {
         return .failure(id: id, .requestMalformed(line: line))
       }
       return .request(Request(id: id, kind: .mailboxes(mailAccount: mailAccount)))
+    case .latestEmails:
+      guard
+        let mailbox = readMailboxAddress(fields),
+        let newest = fields["newest"] as? Int, (1...greatestLatestEmails).contains(newest)
+      else { return .failure(id: id, .requestMalformed(line: line)) }
+      return .request(Request(id: id, kind: .latestEmails(mailbox: mailbox, newest: newest)))
+    case .emailsInRange:
+      // The range is required: the server decides what no range means, and says so (#24).
+      guard
+        let mailbox = readMailboxAddress(fields),
+        let range = readRange(fields["range"]),
+        let ceiling = fields["ceiling"] as? Int, (1...greatestEmailCeiling).contains(ceiling)
+      else { return .failure(id: id, .requestMalformed(line: line)) }
+      let kind = Request.Kind.emailsInRange(mailbox: mailbox, range: range, ceiling: ceiling)
+      return .request(Request(id: id, kind: kind))
+    case .emailMessageIds:
+      guard
+        let mailbox = readMailboxAddress(fields),
+        let emails = fields["emails"] as? [Int], (1...greatestLatestEmails).contains(emails.count)
+      else { return .failure(id: id, .requestMalformed(line: line)) }
+      return .request(Request(id: id, kind: .emailMessageIds(mailbox: mailbox, emails: emails)))
+    case .emailBodies:
+      guard
+        let mailbox = readMailboxAddress(fields),
+        let emails = fields["emails"] as? [Int], (1...greatestEmailCeiling).contains(emails.count)
+      else { return .failure(id: id, .requestMalformed(line: line)) }
+      return .request(Request(id: id, kind: .emailBodies(mailbox: mailbox, emails: emails)))
     }
   }
 }
@@ -297,6 +332,22 @@ let greatestReadLimit = 500
 private func readLimit(_ field: Any?) -> Int? {
   guard let limit = field as? Int, (1...greatestReadLimit).contains(limit) else { return nil }
   return limit
+}
+
+/// The most emails one answer carries: the latest, and the Message-IDs read for an answer.
+let greatestLatestEmails = 100
+
+/// The most emails of one mailbox one read looks at, and the most whose bodies it is asked for.
+let greatestEmailCeiling = 5000
+
+/// A mailbox is named by its mail account and its path together, and never by a path alone: a
+/// path names a mailbox in every account that has one.
+private func readMailboxAddress(_ fields: [String: Any]) -> MailboxAddress? {
+  guard
+    let mailAccount = fields["mailAccount"] as? String, !mailAccount.isEmpty,
+    let path = fields["mailbox"] as? [String], !path.isEmpty, !path.contains("")
+  else { return nil }
+  return MailboxAddress(mailAccount: mailAccount, path: path)
 }
 
 /// A range arrives as two instants. The helper never invents one: deciding what "this week" means

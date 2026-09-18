@@ -22,7 +22,7 @@ struct ScriptingMailSpec {
   }
 
   // brightline 304f384: one script covering every account is what hung Mail.
-  @Test("asks about the one mail account it was asked about, handing its identifier over as an argument")
+  @Test("asks Mail about the one mail account it was asked about, whose identifier travels as data beside the script")
   func asksAboutOneMailAccount() throws {
     let runner = FakeScriptRunner().answering("mailboxes", with: #"{"mailboxes":[],"roles":{}}"#)
 
@@ -132,5 +132,120 @@ struct ScriptingMailSpec {
     _ = try ScriptedMailStore(runner: runner).mailAccounts()
 
     #expect(runner.budgets == [scriptTimeBudget])
+  }
+}
+
+@Suite("scripting a mailbox's emails")
+struct ScriptingAMailboxsEmailsSpec {
+  let invoices = MailboxAddress(mailAccount: "A1", path: ["Clients", "Invoices 2026/27"])
+
+  // Mail addresses a mailbox by its path joined with a slash, and #44 made a path join back to
+  // exactly that, so nothing about a mailbox has to be looked up again to read it.
+  @Test("asks about one mailbox by the full name Mail addresses it by, with the range as instants, how many emails are wanted and how long the script has")
+  func asksAboutOneMailbox() throws {
+    let runner = FakeScriptRunner().answering("emails", with: #"{"emails":[],"truncated":false,"undated":0}"#)
+    let range = HelperCore.Range(from: at("2026-09-01T00:00:00Z"), to: at("2026-09-18T00:00:00Z"))
+
+    _ = try ScriptedMailStore(runner: runner).emails(in: invoices, receivedIn: range, most: 50)
+
+    let asked = try #require(runner.runs.first?.arguments)
+    #expect(runner.runs.map(\.script) == ["emails"])
+    #expect(asked["mailAccount"] as? String == "A1")
+    #expect(asked["mailbox"] as? String == "Clients/Invoices 2026/27")
+    #expect(asked["from"] as? Double == 1_788_220_800_000)
+    #expect(asked["to"] as? Double == 1_789_689_600_000)
+    #expect(asked["most"] as? Int == 50)
+    #expect(asked["withinMilliseconds"] as? Int == 8000)
+  }
+
+  @Test("given no range, asks for the mailbox's newest emails whenever they were received")
+  func asksForTheNewestWithNoRange() throws {
+    let runner = FakeScriptRunner().answering("emails", with: #"{"emails":[],"truncated":false,"undated":0}"#)
+
+    _ = try ScriptedMailStore(runner: runner).emails(in: invoices, receivedIn: nil, most: 20)
+
+    let asked = try #require(runner.runs.first?.arguments)
+    #expect(asked["from"] is NSNull && asked["to"] is NSNull)
+  }
+
+  @Test("reads each email the script answers with, and whether there were more than were asked for")
+  func readsTheEmails() throws {
+    let runner = FakeScriptRunner().answering(
+      "emails",
+      with: #"""
+        {"emails":[{"storeIdentifier":41,"receivedAt":1789722000000,"subject":"Dinner","sender":"Grace Hopper <grace@example.test>","isRead":true}],"truncated":true,"undated":2}
+        """#)
+
+    #expect(
+      try ScriptedMailStore(runner: runner).emails(in: invoices, receivedIn: nil, most: 1)
+        == EmailsRead(
+          emails: [
+            Email(
+              storeIdentifier: 41, subject: "Dinner", sender: "Grace Hopper <grace@example.test>",
+              receivedAt: at("2026-09-18T09:00:00Z"), isRead: true)
+          ], truncated: true, undated: 2))
+  }
+
+  // The script reads one column, sees what the rest would cost, and stops there: a mailbox of
+  // 76,188 emails cannot be read by scripting within any time budget (#7).
+  @Test("given the script says the mailbox is too large to read in time, says so with how many emails it holds")
+  func reportsAMailboxTooLarge() {
+    let runner = FakeScriptRunner().answering(
+      "emails", with: #"{"mailboxTooLarge":{"emails":76188}}"#)
+
+    #expect(throws: MailUnreadable.mailboxTooLarge(emails: 76188, seconds: 8)) {
+      try ScriptedMailStore(runner: runner).emails(in: invoices, receivedIn: nil, most: 20)
+    }
+  }
+
+  @Test("given the script says the mail account has no such mailbox, says the mailbox is unknown")
+  func reportsAnUnknownMailbox() {
+    let runner = FakeScriptRunner().answering("emails", with: #"{"mailboxUnknown":true}"#)
+
+    #expect(throws: MailUnreadable.mailboxUnknown(path: ["Clients", "Invoices 2026/27"])) {
+      try ScriptedMailStore(runner: runner).emails(in: invoices, receivedIn: nil, most: 20)
+    }
+  }
+
+  @Test("reads the Message-IDs the script found, by store identifier, and no others")
+  func readsMessageIds() throws {
+    let runner = FakeScriptRunner().answering(
+      "email_message_ids", with: #"{"messageIds":{"41":"dinner@example.test"}}"#)
+
+    #expect(
+      try ScriptedMailStore(runner: runner).messageIds(ofEmails: [41, 404], in: invoices)
+        == [41: "dinner@example.test"])
+    #expect(runner.runs.first?.arguments["emails"] as? [Int] == [41, 404])
+  }
+
+  // A body read cannot be stopped once asked for, so the script is told to stop itself short of
+  // the time budget, with room for the read it is in the middle of.
+  @Test("asks for bodies with less time than the script has, so it stops itself rather than being given up on, and reads the bodies it answers with")
+  func readsBodies() throws {
+    let runner = FakeScriptRunner().answering("email_bodies", with: #"{"bodies":{"41":"At eight."}}"#)
+
+    #expect(
+      try ScriptedMailStore(runner: runner).bodies(ofEmails: [41, 42], in: invoices)
+        == [41: "At eight."])
+    let asked = try #require(runner.runs.first?.arguments)
+    #expect(asked["withinMilliseconds"] as? Int == 6000)
+    #expect(asked["longestBody"] as? Int == 200_000)
+  }
+
+  // Asked about a mailbox that is not there, Mail fails each email the way it fails one that has
+  // gone, which would make a whole answer vanish without a word.
+  @Test("given the script says the mail account has no such mailbox while reading Message-IDs or bodies, says the mailbox is unknown rather than that every email has gone")
+  func reportsAnUnknownMailboxForMoreOfSomeEmails() {
+    let runner = FakeScriptRunner()
+      .answering("email_message_ids", with: #"{"mailboxUnknown":true}"#)
+      .answering("email_bodies", with: #"{"mailboxUnknown":true}"#)
+    let store = ScriptedMailStore(runner: runner)
+
+    #expect(throws: MailUnreadable.mailboxUnknown(path: ["Clients", "Invoices 2026/27"])) {
+      try store.messageIds(ofEmails: [41], in: invoices)
+    }
+    #expect(throws: MailUnreadable.mailboxUnknown(path: ["Clients", "Invoices 2026/27"])) {
+      try store.bodies(ofEmails: [41], in: invoices)
+    }
   }
 }

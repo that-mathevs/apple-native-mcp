@@ -31,6 +31,54 @@ public struct Mailbox: Equatable, Sendable {
   }
 }
 
+/// One item in Mail, as an index lists it: never its body, which is someone else's text and is
+/// read only when it is asked for by name.
+public struct Email: Equatable, Sendable {
+  /// The number Mail knows the email by inside its mailbox while it runs: how the store is asked
+  /// about this email again, and nothing a person or an agent ever sees.
+  public let storeIdentifier: Int
+  public let subject: String
+  public let sender: String
+  public let receivedAt: Date
+  public let isRead: Bool
+
+  public init(
+    storeIdentifier: Int, subject: String, sender: String, receivedAt: Date, isRead: Bool
+  ) {
+    self.storeIdentifier = storeIdentifier
+    self.subject = subject
+    self.sender = sender
+    self.receivedAt = receivedAt
+    self.isRead = isRead
+  }
+}
+
+/// A mailbox's emails, newest first, whether there were more than were asked for, and how many
+/// the mailbox holds that Mail gives no received date: those cannot be placed in a range or among
+/// the latest, so they are counted rather than left out unmentioned.
+public struct EmailsRead: Equatable, Sendable {
+  public let emails: [Email]
+  public let truncated: Bool
+  public let undated: Int
+
+  public init(emails: [Email], truncated: Bool, undated: Int) {
+    self.emails = emails
+    self.truncated = truncated
+    self.undated = undated
+  }
+}
+
+/// Which mailbox: its mail account's identifier, and its path from the outermost name in.
+public struct MailboxAddress: Hashable, Sendable {
+  public let mailAccount: String
+  public let path: [String]
+
+  public init(mailAccount: String, path: [String]) {
+    self.mailAccount = mailAccount
+    self.path = path
+  }
+}
+
 /// Mail as the helper reaches it.
 public protocol MailStore: Sendable {
   /// What macOS currently allows. macOS can only say for an app that is running, so this may
@@ -47,6 +95,25 @@ public protocol MailStore: Sendable {
   /// The mailboxes of one mail account. There is no reading every account at once: Mail answers
   /// one request at a time, and one covering every account is what hung it (brightline 304f384).
   func mailboxes(inMailAccount identifier: String) throws(MailUnreadable) -> [Mailbox]
+
+  /// One mailbox's emails received in a range, or all of them, newest first by when each was
+  /// received, whatever order the mailbox keeps, and no more than `most` of them.
+  func emails(
+    in mailbox: MailboxAddress, receivedIn range: Range?, most: Int
+  ) throws(MailUnreadable) -> EmailsRead
+
+  /// The Message-ID of each of these emails, by store identifier. It costs ten times what any
+  /// other column does, so it is read apart, for the few emails that make an answer. An email
+  /// that has gone since it was listed is absent.
+  func messageIds(
+    ofEmails storeIdentifiers: [Int], in mailbox: MailboxAddress
+  ) throws(MailUnreadable) -> [Int: String]
+
+  /// The bodies of these emails that could be read in time, in the order given, by store
+  /// identifier. One the store did not reach is absent: not read, which is not empty.
+  func bodies(
+    ofEmails storeIdentifiers: [Int], in mailbox: MailboxAddress
+  ) throws(MailUnreadable) -> [Int: String]
 }
 
 /// Why Mail could not be read.
@@ -57,6 +124,10 @@ public enum MailUnreadable: Error, Equatable, Sendable {
   case didNotStart(evidence: String)
   /// No mail account has the identifier that was asked about.
   case mailAccountUnknown(identifier: String)
+  /// The mail account has no mailbox with the path that was asked about.
+  case mailboxUnknown(path: [String])
+  /// The mailbox holds too many emails to read within the time budget, so none was read.
+  case mailboxTooLarge(emails: Int, seconds: Int)
   /// Mail answered with a failure. It carries what Mail said, verbatim.
   case failed(evidence: String)
 }
@@ -95,6 +166,30 @@ struct MailReading: Sendable {
     reading { () throws(MailUnreadable) in try store.mailboxes(inMailAccount: identifier) }
   }
 
+  func emails(
+    in mailbox: MailboxAddress, receivedIn range: Range?, most: Int
+  ) -> Result<EmailsRead, NamedFailure> {
+    reading { () throws(MailUnreadable) in
+      try store.emails(in: mailbox, receivedIn: range, most: most)
+    }
+  }
+
+  func messageIds(
+    ofEmails storeIdentifiers: [Int], in mailbox: MailboxAddress
+  ) -> Result<[Int: String], NamedFailure> {
+    reading { () throws(MailUnreadable) in
+      try store.messageIds(ofEmails: storeIdentifiers, in: mailbox)
+    }
+  }
+
+  func bodies(
+    ofEmails storeIdentifiers: [Int], in mailbox: MailboxAddress
+  ) -> Result<[Int: String], NamedFailure> {
+    reading { () throws(MailUnreadable) in
+      try store.bodies(ofEmails: storeIdentifiers, in: mailbox)
+    }
+  }
+
   /// Mail is read only under a granted permission. Reading it while nobody has been asked is what
   /// makes macOS ask, and a tool never asks.
   private func reading<Read>(
@@ -120,6 +215,9 @@ extension MailUnreadable {
     case .timedOut(let seconds): .mailTimedOut(seconds: seconds)
     case .didNotStart(let evidence): .mailDidNotStart(evidence: evidence)
     case .mailAccountUnknown(let identifier): .mailAccountUnknown(identifier: identifier)
+    case .mailboxUnknown(let path): .mailboxUnknown(path: path)
+    case .mailboxTooLarge(let emails, let seconds):
+      .mailboxTooLarge(emails: emails, seconds: seconds)
     case .failed(let evidence): .mailUnreadable(evidence: evidence)
     }
   }
@@ -135,4 +233,24 @@ extension Mailbox {
   var asFields: [String: Any] {
     ["path": path, "role": role?.rawValue ?? NSNull()]
   }
+}
+
+extension Email {
+  var asFields: [String: Any] {
+    [
+      "storeIdentifier": storeIdentifier, "subject": subject, "sender": sender,
+      "receivedAt": Instant.written(receivedAt), "isRead": isRead,
+    ]
+  }
+}
+
+extension EmailsRead {
+  var asFields: [String: Any] {
+    ["emails": emails.map(\.asFields), "truncated": truncated, "undated": undated]
+  }
+}
+
+/// A JSON object is keyed by text, so a store identifier is written as its digits.
+func keyedByDigits(_ byStoreIdentifier: [Int: String]) -> [String: String] {
+  Dictionary(uniqueKeysWithValues: byStoreIdentifier.map { (String($0.key), $0.value) })
 }

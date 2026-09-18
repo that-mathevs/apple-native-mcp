@@ -144,6 +144,18 @@ public struct Helper: Sendable {
       return answering(mail.mailboxes(inMailAccount: mailAccount)) {
         ["mailboxes": $0.map(\.asFields)]
       }
+    case .latestEmails(let mailbox, let newest):
+      return answering(mail.emails(in: mailbox, receivedIn: nil, most: newest)) { $0.asFields }
+    case .emailsInRange(let mailbox, let range, let ceiling):
+      return answering(mail.emails(in: mailbox, receivedIn: range, most: ceiling)) { $0.asFields }
+    case .emailMessageIds(let mailbox, let emails):
+      return answering(mail.messageIds(ofEmails: emails, in: mailbox)) {
+        ["messageIds": keyedByDigits($0)]
+      }
+    case .emailBodies(let mailbox, let emails):
+      return answering(mail.bodies(ofEmails: emails, in: mailbox)) {
+        ["bodies": keyedByDigits($0)]
+      }
     }
   }
 

@@ -73,6 +73,10 @@ public enum FailureCode: String, Equatable, Sendable {
   case mailUnreadable = "mail_unreadable"
   /// A request named a mail account the helper cannot find.
   case mailAccountUnknown = "mail_account_unknown"
+  /// A request named a mailbox the mail account does not have.
+  case mailboxUnknown = "mailbox_unknown"
+  /// A mailbox holds too many emails to read within the time budget.
+  case mailboxTooLarge = "mailbox_too_large"
   /// One message's archived text could not be read.
   case messageTextUnreadable = "message_text_unreadable"
 }
@@ -227,6 +231,24 @@ extension NamedFailure {
       code: .mailAccountUnknown,
       sentence: "No mail account has that identifier, so no mailbox was read.",
       evidence: identifier)
+  }
+
+  static func mailboxUnknown(path: [String]) -> NamedFailure {
+    NamedFailure(
+      code: .mailboxUnknown,
+      sentence: "That mail account has no mailbox with that path, so no email was read.",
+      evidence: path.joined(separator: "/"))
+  }
+
+  // A column of a mailbox is read whole and cannot be stopped once asked for, and a read given up
+  // on leaves Mail busy for minutes (#7). So the refusal comes first, and says Mail is fine.
+  static func mailboxTooLarge(emails: Int, seconds: Int) -> NamedFailure {
+    NamedFailure(
+      code: .mailboxTooLarge,
+      sentence: "That mailbox holds \(emails) emails, too many to read within \(seconds) "
+        + "seconds, so none was read and Mail was left alone. A shorter range would not help: a "
+        + "mailbox is read whole whatever the range. Search it in Mail itself.",
+      evidence: "\(emails) emails")
   }
 
   static func mailUnreadable(evidence: String) -> NamedFailure {

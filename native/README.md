@@ -7,7 +7,7 @@ permission of its own and opens no protected file; it starts the helper and talk
 So far it answers for the calendar, with its calendars, the events in a range and one event in
 full; for the reminders, with the reminder lists and the reminders in them; for the contacts; for
 the messages, with the newest chats and a chat's messages; for Notes, with its note folders and
-notes; and for Mail, with its mail accounts and one account's mailboxes. Each has its own
+notes; and for Mail, with its mail accounts, one account's mailboxes and one mailbox's emails. Each has its own
 permission.
 
 ## What it does
@@ -324,6 +324,52 @@ A `role` is Mail's own answer, `inbox`, `drafts`, `sent`, `junk` or `trash`, rea
 mailboxes Mail keeps and never from a name, which varies by provider and by language. It is `null`
 where Mail gives none. Mail has no role mailbox for an archive, so an archive mailbox has no role.
 Mailboxes kept on this Mac under no mail account are not listed.
+
+**A mailbox's emails**
+
+```json
+{"protocolVersion":1,"id":"12","request":"latest_emails","mailAccount":"0F1E2D3C-…","mailbox":["INBOX"],"newest":20}
+{"protocolVersion":1,"id":"13","request":"emails_in_range","mailAccount":"0F1E2D3C-…","mailbox":["Clients","Invoices"],"range":{"start":"2026-08-20T04:00:00Z","end":"2026-09-19T04:00:00Z"},"ceiling":2000}
+{"id":"12","protocolVersion":1,"result":{"emails":[{"isRead":true,"receivedAt":"2026-09-18T09:00:00Z","sender":"Grace Hopper <grace@example.test>","storeIdentifier":41,"subject":"Dinner"}],"truncated":true,"undated":0}}
+```
+
+One mailbox to a request, named by its mail account and its path together, for the reason one
+mail account is. Emails come newest first by when each was received, whatever order the mailbox
+keeps, and never with a body. `newest` is at most 100 and `ceiling` at most 5000, and `truncated`
+says there were more. `undated` counts the emails Mail gives no received date: they cannot be
+placed in a range or among the latest, and are counted rather than given a date that was made up. `emails_in_range` needs its range: what no range means is the server's rule,
+which it states in every answer (#24).
+
+Every column of a mailbox is read whole, at about a fifth of a millisecond an email a column, and a
+read cannot be stopped once asked for. So the script reads one column, sees what the rest would
+cost, and a mailbox that would not finish inside the time budget is `mailbox_too_large` with how
+many emails it holds, answered while Mail is still answering. That is around six thousand emails:
+one of 5,045 reads in under seven seconds and one of 76,369 is refused. Nothing is asked of a
+mailbox before that first column, because even counting its emails took 6.6 seconds on the large
+one (#7). A path the account does not have is `mailbox_unknown`. A mailbox Mail keeps no emails
+in, such as an IMAP account's Notes, fails every read of them, and answers with no emails.
+
+`storeIdentifier` is the number Mail knows an email by inside its mailbox while it runs. It is how
+the server asks for more of the same email, and it never reaches a tool's result.
+
+```json
+{"protocolVersion":1,"id":"14","request":"email_message_ids","mailAccount":"0F1E2D3C-…","mailbox":["INBOX"],"emails":[41,42]}
+{"id":"14","protocolVersion":1,"result":{"messageIds":{"41":"dinner@example.test"}}}
+{"protocolVersion":1,"id":"15","request":"email_bodies","mailAccount":"0F1E2D3C-…","mailbox":["INBOX"],"emails":[41,42]}
+{"id":"15","protocolVersion":1,"result":{"bodies":{"41":"At eight."}}}
+```
+
+A Message-ID costs ten times what any other column does, so it is read apart, email by email at
+about 20 milliseconds each, for the hundred emails at most that make an answer. An email that has
+gone since it was listed is absent. Mail writes a Message-ID without its angle brackets. The mailbox is
+asked for first, because Mail fails each email of a mailbox that is not there the way it fails one
+that has gone, and that is `mailbox_unknown`, not an answer with every email missing.
+
+Bodies are read only when the server asks, which it does only when a caller asked for bodies to
+be searched (#24). A body takes between a fifth of a second and a second, so the script stops
+itself two seconds short of the time budget, and an email that is absent from the answer was not
+read: that is not an empty body, and the server counts it as unsearched. A body is cut at 200,000
+characters, and never reaches a tool's result.
 
 A script gets eight seconds. One that outlives them is `mail_timed_out`, which says that Mail can
 stay busy for minutes (#7), and any other failure is `mail_unreadable` with the number and the
