@@ -208,6 +208,10 @@ swift test 2>&1 | grep '✔ Test "'
 
 ## What a spec does not cover
 
+The child ends when its parent does, watched on a queue of its own, so the server can stop even a
+stuck helper by ending the process it launched. That is a real process too, so it was checked by
+hand: ending the parent leaves no child behind (#61).
+
 `Disclaiming.relaunch()` cannot be specified without spawning a real process, so what is specified
 is the decision it serves: `startingChoice(environment:)`, which says whether this process should
 relaunch itself or serve the session. That the spawn attribute works at all was established by a

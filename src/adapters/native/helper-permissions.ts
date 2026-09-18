@@ -24,7 +24,8 @@ const isState = (state: unknown): state is PermissionState =>
  */
 export const helperPermissions = (helper: Helper): Permissions => ({
   askFor: async (permission: Permission): Promise<Outcome<PermissionAnswer>> => {
-    const answered = await helper.ask({ request: requests[permission] });
+    // Asking may put a prompt in front of the user, who takes as long as they take.
+    const answered = await helper.ask({ request: requests[permission] }, { waitsOnTheUser: true });
     if (!answered.ok) return answered;
 
     const { state, setting } = answered.value;

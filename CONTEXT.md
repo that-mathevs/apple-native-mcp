@@ -70,6 +70,12 @@ How far a read actually reached, such as how many items were scanned or how far 
 A result that stopped at a limit is **truncated**, and says so.
 _Avoid_: partial, incomplete, scan window
 
+**Time budget**:
+How long something may take before it is given up on with a named timeout: a read of every
+reminder list, or any request to the helper. A request that waits on the user, such as a permission
+prompt, has none.
+_Avoid_: deadline (that word is a due date's), timeout (that is the failure, not the budget)
+
 **Page**:
 One part of a truncated index. The next page is asked for by its **offset**, the number of items
 already returned, which a truncated result states. Anything that changes between two pages shifts
