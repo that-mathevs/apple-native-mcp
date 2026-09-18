@@ -4,10 +4,12 @@ import type { Message } from "../../domain/messages/message.js";
 import { greatestMatches, searchCeiling, searchDays } from "../../domain/messages/search.js";
 import { rankingBy, searchQueryFrom } from "../../domain/search-query.js";
 import { type Bound, rangeNotForwards, searchRangeOf } from "../../domain/search-range.js";
+import { type ContactNames, type Naming, naming } from "./contact-names.js";
 import type { MessageStore } from "./message-store.js";
 
 export type SearchMessagesDependencies = {
   readonly messageStore: MessageStore;
+  readonly contactNames: ContactNames;
   readonly now: () => Date;
   readonly timeZone: string;
 };
@@ -35,17 +37,20 @@ export type SearchCoverage = {
 export type MessagesFound = {
   readonly range: { readonly from: Date; readonly to: Date };
   readonly matches: readonly Message[];
+  /** The names the user's contacts give the matches' senders. */
+  readonly naming: Naming;
   readonly coverage: SearchCoverage;
 };
 
 const nothingScanned = (range: { from: Date; to: Date }): MessagesFound => ({
   range,
   matches: [],
+  naming: { names: new Map() },
   coverage: { scanned: 0, truncated: false, matched: 0, unsearched: 0 },
 });
 
 export const searchMessages = async (
-  { messageStore, now, timeZone }: SearchMessagesDependencies,
+  { messageStore, contactNames, now, timeZone }: SearchMessagesDependencies,
   request: SearchMessagesRequest,
 ): Promise<Outcome<MessagesFound>> => {
   const range = searchRangeOf(request, now(), timeZone, searchDays);
@@ -79,9 +84,12 @@ export const searchMessages = async (
     );
 
   const oldest = messages.at(-1);
+  const matches = ranked.slice(0, greatestMatches).map(({ message }) => message);
+  const senders = matches.flatMap(({ handle }) => (handle === undefined ? [] : [handle]));
   return succeeded({
     range,
-    matches: ranked.slice(0, greatestMatches).map(({ message }) => message),
+    matches,
+    naming: await naming(contactNames, senders),
     coverage: {
       scanned: messages.length,
       truncated,

@@ -3,8 +3,8 @@ import { z } from "zod";
 import { readChat, type ReadChatDependencies } from "../../application/messages/read-chat.js";
 import { greatestMessageLimit } from "../../domain/messages/message.js";
 import { refusing, reporting } from "../result.js";
-import { tool, type Tool } from "../tool.js";
-import { asMessageRecord, messageRecord } from "./records.js";
+import { failureRecord, tool, type Tool } from "../tool.js";
+import { asMessageRecord, messageRecord, namingCoverage } from "./records.js";
 
 const instant = z.iso.datetime({ offset: true });
 
@@ -42,7 +42,7 @@ export const readChatTool = (dependencies: ReadChatDependencies): Tool =>
       chat: z.string(),
       messages: z.array(messageRecord),
       range: rangeRecord.optional(),
-      coverage: z.object({ truncated: z.boolean() }),
+      coverage: z.object({ truncated: z.boolean(), namesUnavailable: failureRecord.optional() }),
     },
     annotations: { readOnlyHint: true, openWorldHint: false },
     capability: undefined,
@@ -55,13 +55,13 @@ export const readChatTool = (dependencies: ReadChatDependencies): Tool =>
       const read = await readChat(dependencies, { chat, limit, from, to });
       if (!read.ok) return refusing(read.failure);
 
-      const { messages, truncated } = read.value;
+      const { messages, truncated, naming } = read.value;
       const bounded = from !== undefined || to !== undefined;
       return reporting({
         chat,
-        messages: messages.map(asMessageRecord),
+        messages: messages.map((message) => asMessageRecord(message, naming)),
         ...(bounded ? { range: asRangeRecord(from, to) } : {}),
-        coverage: { truncated },
+        coverage: { truncated, ...namingCoverage(naming) },
       });
     },
   });

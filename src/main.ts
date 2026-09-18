@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
+import { contactNamesFrom } from "./adapters/contact-names.js";
 import { calendarEventStore } from "./adapters/native/calendar-event-store.js";
 import { helperContactStore } from "./adapters/native/contact-store.js";
 import {
@@ -105,6 +106,7 @@ const serve = async (): Promise<void> => {
     reminderStore: helperReminderStore(helper),
     messageStore: helperMessageStore(helper),
     contactStore: helperContactStore(helper),
+    contactNames: contactNamesFrom(helperContactStore(helper)),
     noteStore: helperNoteStore(helper),
     mailStore: helperMailStore(helper),
     now: () => new Date(),

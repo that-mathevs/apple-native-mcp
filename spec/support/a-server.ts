@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { settingsFrom } from "../../src/domain/settings.js";
 import { buildServer, type ServerDependencies } from "../../src/mcp/server.js";
+import { FakeContactNames } from "./fake-contact-names.js";
 import { FakeContactStore } from "./fake-contact-store.js";
 import { FakeEventStore } from "./fake-event-store.js";
 import { FakeMailStore } from "./fake-mail-store.js";
@@ -20,6 +21,7 @@ export const aServer = (dependencies: Partial<ServerDependencies>): McpServer =>
     contactStore: new FakeContactStore(),
     mailStore: new FakeMailStore(),
     messageStore: new FakeMessageStore(),
+    contactNames: new FakeContactNames(),
     noteStore: new FakeNoteStore(),
     now: () => new Date("2026-09-18T16:00:00Z"),
     timeZone: "America/New_York",

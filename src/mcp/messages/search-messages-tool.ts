@@ -7,8 +7,8 @@ import {
 import { longestQuery } from "../../domain/messages/search.js";
 import { asBound, bound } from "../bound.js";
 import { refusing, reporting } from "../result.js";
-import { tool, type Tool } from "../tool.js";
-import { asMessageRecord, messageRecord } from "./records.js";
+import { failureRecord, tool, type Tool } from "../tool.js";
+import { asMessageRecord, messageRecord, namingCoverage } from "./records.js";
 
 export const searchMessagesTool = (dependencies: SearchMessagesDependencies): Tool =>
   tool({
@@ -38,6 +38,7 @@ export const searchMessagesTool = (dependencies: SearchMessagesDependencies): To
         reachedBack: z.iso.datetime().optional(),
         matched: z.number().int(),
         unsearched: z.number().int(),
+        namesUnavailable: failureRecord.optional(),
       }),
     },
     annotations: { readOnlyHint: true, openWorldHint: false },
@@ -51,15 +52,16 @@ export const searchMessagesTool = (dependencies: SearchMessagesDependencies): To
       });
       if (!found.ok) return refusing(found.failure);
 
-      const { range, matches, coverage } = found.value;
+      const { range, matches, naming, coverage } = found.value;
       return reporting({
         range: { from: range.from.toISOString(), to: range.to.toISOString() },
-        messages: matches.map(asMessageRecord),
+        messages: matches.map((message) => asMessageRecord(message, naming)),
         coverage: {
           ...coverage,
           ...(coverage.reachedBack === undefined
             ? {}
             : { reachedBack: coverage.reachedBack.toISOString() }),
+          ...namingCoverage(naming),
         },
       });
     },

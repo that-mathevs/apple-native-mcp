@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
+import { FakeContactNames } from "../../support/fake-contact-names.js";
+import { contactsRefused } from "../../support/fake-contact-store.js";
 import { FakeMessageStore } from "../../support/fake-message-store.js";
 
 const climbing = "iMessage;+;chat001";
@@ -29,6 +31,7 @@ const fromUser = {
 
 describe("reading a chat", () => {
   let messageStore: FakeMessageStore;
+  let contactNames: FakeContactNames;
   let client: Client;
 
   const readChat = async (args: Record<string, unknown>): ReturnType<Client["callTool"]> =>
@@ -36,7 +39,8 @@ describe("reading a chat", () => {
 
   beforeEach(async () => {
     messageStore = new FakeMessageStore();
-    client = await connectedTo(aServer({ messageStore }));
+    contactNames = new FakeContactNames();
+    client = await connectedTo(aServer({ messageStore, contactNames }));
   });
 
   // Upstream #62 matched messages by handle alone, which dropped everything the user sent and
@@ -159,6 +163,30 @@ describe("reading a chat", () => {
         },
         { identifier: "message-2", text: "I'm in" },
       ],
+    });
+  });
+
+  it("names the sender of each incoming message the user's contacts hold", async () => {
+    messageStore.holdsMessages(fromUser, fromBen);
+    contactNames.knows("ben@example.com", "Ben Okafor");
+
+    const result = await readChat({ chat: climbing });
+
+    expect(result.structuredContent).toMatchObject({
+      messages: [{ handle: "ben@example.com", name: "Ben Okafor" }, { direction: "outgoing" }],
+    });
+  });
+
+  // MSG-16: messages are still read when it is Contacts that cannot be.
+  it("given contacts cannot be read, returns the messages under their handles and says names were unavailable", async () => {
+    messageStore.holdsMessages(fromBen);
+    contactNames.refuses(contactsRefused);
+
+    const result = await readChat({ chat: climbing });
+
+    expect(result.structuredContent).toMatchObject({
+      messages: [{ handle: "ben@example.com" }],
+      coverage: { namesUnavailable: { code: "contacts_permission_missing" } },
     });
   });
 });

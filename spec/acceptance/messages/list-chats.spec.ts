@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
+import { FakeContactNames } from "../../support/fake-contact-names.js";
+import { contactsRefused } from "../../support/fake-contact-store.js";
 import {
   FakeMessageStore,
   messageStoreNotFound,
@@ -26,6 +28,7 @@ const climbing = {
 
 describe("listing chats", () => {
   let messageStore: FakeMessageStore;
+  let contactNames: FakeContactNames;
   let client: Client;
 
   const listChats = async (args: Record<string, unknown> = {}): ReturnType<Client["callTool"]> =>
@@ -33,7 +36,8 @@ describe("listing chats", () => {
 
   beforeEach(async () => {
     messageStore = new FakeMessageStore();
-    client = await connectedTo(aServer({ messageStore }));
+    contactNames = new FakeContactNames();
+    client = await connectedTo(aServer({ messageStore, contactNames }));
   });
 
   // User story 24: a reply meant for one person must not land in a group by accident.
@@ -105,6 +109,59 @@ describe("listing chats", () => {
 
     expect(result.structuredContent).toMatchObject({
       failure: { code: "message_store_unreadable", evidence: "file is not a database" },
+    });
+  });
+
+  it("names each participant the user's contacts hold, and leaves the rest as handles", async () => {
+    messageStore.holdsChats(climbing);
+    contactNames.knows("+15551230001", "Anna Reyes");
+
+    const result = await listChats();
+
+    expect(result.structuredContent).toMatchObject({
+      chats: [
+        {
+          participants: [
+            { handle: "+15551230001", name: "Anna Reyes" },
+            { handle: "ben@example.com" },
+          ],
+        },
+      ],
+    });
+  });
+
+  // MSG-16: upstream answered "nobody by that name" when it was Contacts that could not be read.
+  it("given contacts cannot be read, still lists the chats under their handles and says names were unavailable", async () => {
+    messageStore.holdsChats(climbing);
+    contactNames.refuses(contactsRefused);
+
+    const result = await listChats();
+
+    expect(result.structuredContent).toMatchObject({
+      chats: [{ participants: [{ handle: "+15551230001" }, { handle: "ben@example.com" }] }],
+      coverage: { namesUnavailable: { code: "contacts_permission_missing" } },
+    });
+  });
+
+  // MSG-15 and upstream #58: one read of the whole address book per participant took minutes.
+  it("reads the contacts once for the whole list, however many participants it names", async () => {
+    messageStore.holdsChats(withAnna, climbing);
+
+    await listChats();
+
+    expect(contactNames.reads).toBe(1);
+  });
+
+  // MSG-C12: a contact added a moment ago must be named, so nothing is kept between calls.
+  it("given a contact added since the last call, names them: names are never kept between calls", async () => {
+    messageStore.holdsChats(withAnna);
+    await listChats();
+    contactNames.knows("+15551230001", "Anna Reyes");
+
+    const result = await listChats();
+
+    expect(result.structuredContent).toMatchObject({
+      chats: [{ participants: [{ handle: "+15551230001", name: "Anna Reyes" }] }],
     });
   });
 });

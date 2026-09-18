@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { Message } from "../../../src/domain/messages/message.js";
 import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
+import { FakeContactNames } from "../../support/fake-contact-names.js";
 import { FakeMessageStore } from "../../support/fake-message-store.js";
 
 // Upstream #62 searched with SQL LIKE over plain text alone, so every message kept only as
@@ -28,6 +29,7 @@ const withBen = "iMessage;-;ben@example.com";
 
 describe("searching messages", () => {
   let messageStore: FakeMessageStore;
+  let contactNames: FakeContactNames;
   let client: Client;
 
   const search = async (args: Record<string, unknown>): ReturnType<Client["callTool"]> =>
@@ -35,8 +37,9 @@ describe("searching messages", () => {
 
   beforeEach(async () => {
     messageStore = new FakeMessageStore();
+    contactNames = new FakeContactNames();
     client = await connectedTo(
-      aServer({ messageStore, now: () => noon, timeZone: "America/New_York" }),
+      aServer({ messageStore, contactNames, now: () => noon, timeZone: "America/New_York" }),
     );
   });
 
@@ -200,5 +203,16 @@ describe("searching messages", () => {
     const result = await search({ query: "rope", from: "2026-02-30" });
 
     expect(result.structuredContent).toMatchObject({ failure: { code: "arguments-invalid" } });
+  });
+
+  it("names the sender of each match the user's contacts hold", async () => {
+    messageStore.holdsMessages(aMessage("one", climbing, "rope", "2026-09-18T14:00:00Z"));
+    contactNames.knows("ben@example.com", "Ben Okafor");
+
+    const result = await search({ query: "rope" });
+
+    expect(result.structuredContent).toMatchObject({
+      messages: [{ handle: "ben@example.com", name: "Ben Okafor" }],
+    });
   });
 });
