@@ -1,5 +1,5 @@
 import type { EventStore, EventsInRange } from "../../src/application/calendar/event-store.js";
-import type { Occurrence } from "../../src/domain/calendar/event.js";
+import type { Calendar, Occurrence } from "../../src/domain/calendar/event.js";
 import type { Range } from "../../src/domain/calendar/range.js";
 import type { NamedFailure, Outcome } from "../../src/domain/failure.js";
 import { failed, succeeded } from "../../src/domain/failure.js";
@@ -22,7 +22,7 @@ export class FakeEventStore implements EventStore {
   readonly asked: Range[] = [];
 
   #occurrences: readonly Occurrence[] = [];
-  #calendarsUnread = 0;
+  #unreadCalendars: readonly string[] = [];
   #failure: NamedFailure | undefined;
 
   holds(...occurrences: readonly Occurrence[]): void {
@@ -31,7 +31,7 @@ export class FakeEventStore implements EventStore {
 
   /** A calendar that won't answer: a subscribed calendar whose server is unreachable. */
   cannotRead(...calendarIdentifiers: readonly string[]): void {
-    this.#calendarsUnread = calendarIdentifiers.length;
+    this.#unreadCalendars = calendarIdentifiers;
   }
 
   refuses(code: keyof typeof failures): void {
@@ -48,7 +48,19 @@ export class FakeEventStore implements EventStore {
     );
 
     return Promise.resolve(
-      succeeded({ occurrences: inRange, calendarsUnread: this.#calendarsUnread }),
+      succeeded({
+        occurrences: inRange,
+        calendars: this.#calendars(),
+        unreadCalendars: this.#unreadCalendars,
+      }),
     );
+  }
+
+  /** The calendars of everything held, in or out of the range: a store asks them all. */
+  #calendars(): readonly Calendar[] {
+    const byIdentifier = new Map(
+      this.#occurrences.map(({ calendar }) => [calendar.identifier, calendar] as const),
+    );
+    return [...byIdentifier.values()];
   }
 }

@@ -1,8 +1,9 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { settingsFrom } from "../../../src/domain/settings.js";
 import { buildServer } from "../../../src/mcp/server.js";
+import { connectedTo } from "../../support/connected-client.js";
 import { FakeEventStore } from "../../support/fake-event-store.js";
 
 // What an agent sees through the tool, with a fake event store behind it. Upstream
@@ -39,17 +40,14 @@ describe("listing events", () => {
   /** What an agent gets back: a record, and whether the call is a refusal. */
   const listEvents = async (
     args: Record<string, unknown> = {},
-  ): Promise<{ structuredContent?: Record<string, unknown>; isError?: boolean }> =>
+  ): ReturnType<Client["callTool"]> =>
     await client.callTool({ name: "list_events", arguments: args });
 
   beforeEach(async () => {
     eventStore = new FakeEventStore();
-    client = new Client({ name: "spec", version: "0" });
-
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-    const server = buildServer({ eventStore, now: () => noon, timeZone });
-
-    await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+    client = await connectedTo(
+      buildServer({ eventStore, now: () => noon, timeZone, settings: settingsFrom({}) }),
+    );
   });
 
   it("given a range, returns the events in it in order, each naming its calendar and account", async () => {

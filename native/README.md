@@ -62,6 +62,7 @@ helper speaks and the `id` it was asked under, or `null` when no identifier coul
     "location":"Room 2","notes":null,"originalStart":"2026-09-22T09:00:00Z",
     "calendar":{"identifier":"…","title":"Work","account":{"identifier":"…","title":"iCloud"}}
   }],
+  "calendars":[{"identifier":"…","title":"Work","account":{"identifier":"…","title":"iCloud"}}],
   "unreadableCalendars":[]
 }}
 ```
@@ -72,6 +73,11 @@ in it. A series is expanded into its occurrences, each carrying the series' even
 the `originalStart` that addresses it within the series; an event belonging to no series has
 `originalStart: null`. Events come back in the order they start. The helper never invents a range:
 deciding what "this week" means belongs to the server, which knows the user's time zone.
+
+Each entry of `unreadableCalendars` is a named failure carrying the `calendar` that would not
+answer. `calendars` is every calendar that was asked, including one holding nothing in the range. The
+server counts the calendars the user's settings keep from an agent, and it counts calendars rather
+than events so that the count says nothing about when an excluded calendar is busy.
 
 ## Building it
 

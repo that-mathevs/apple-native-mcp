@@ -42,8 +42,15 @@ extension EventsInRange {
     [
       "range": range.asFields,
       "events": events.map(\.asFields),
+      "calendars": calendars.map(\.asFields),
       "unreadableCalendars": unreadableCalendars.map(\.asFields),
     ]
+  }
+}
+
+extension UnreadableCalendar {
+  var asFields: [String: Any] {
+    failure.asFields.merging(["calendar": calendar.asFields]) { failureField, _ in failureField }
   }
 }
 

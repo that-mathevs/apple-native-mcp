@@ -17,10 +17,19 @@ message store, the note store, the mail store.
 _Avoid_: database, backend, provider
 
 **Capability**:
-A group of operations the user switches on together, such as sending messages. A **write
-capability** covers anything that changes a store or reaches another person, and is off until
-configured, and is set only in the client's configuration.
+Something the user switches on before the server will do it. A **write capability** covers one
+operation that changes a store or reaches another person, and is named after its tool, such as
+`send_message`. It is off until the settings name it, and switching one on never switches on
+another.
 _Avoid_: scope, permission (that word is macOS's), toggle, app switch
+
+**Settings**:
+What the user set for this server in the client's configuration: which write capabilities are on,
+and which calendars, accounts, folders and chats are kept from the agent, each by identifier. An
+**allowlist** keeps in only what it names; anything **excluded** is kept out, and excluding wins.
+Settings are never read from a file or from anything an agent sends, and settings that don't parse
+switch every write capability off.
+_Avoid_: config, options, preferences, environment, hidden (that word is Calendar's)
 
 **Confirmation**:
 The user's explicit approval of one specific send, showing the resolved recipient and the full body.

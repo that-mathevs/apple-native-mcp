@@ -9,7 +9,10 @@
 export type NamedFailure = {
   readonly code: string;
   readonly sentence: string;
-  /** Where to change a macOS permission, when that is what went wrong. */
+  /**
+   * The setting to change and where, when changing one would help: a macOS permission, or a
+   * line in the client's configuration.
+   */
   readonly setting?: string;
   /** What the app, the store or the helper said, unchanged. */
   readonly evidence?: string;

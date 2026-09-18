@@ -56,12 +56,23 @@ export const anEventStore = ({ name, build }: EventStoreUnderTest): void => {
       expect(read).toMatchObject({ ok: true, value: { occurrences: expect.any(Array) as unknown[] } });
     });
 
-    it("always says how many calendars it could not read, so a short answer is never mistaken for an empty diary", async () => {
+    it("always says which calendars it could not read, so a short answer is never mistaken for an empty diary", async () => {
       const { eventStore } = await build();
 
       const read = await eventStore.occurrencesIn(dayAround(noon));
 
-      expect(read).toMatchObject({ ok: true, value: { calendarsUnread: expect.any(Number) as number } });
+      expect(read).toMatchObject({ ok: true, value: { unreadCalendars: expect.any(Array) as unknown[] } });
+    });
+
+    it("always names the calendars it asked, so the calendars the settings leave out can be counted without counting their events", async () => {
+      const { eventStore } = await build();
+
+      const read = await eventStore.occurrencesIn(dayAround(noon));
+
+      expect(read).toMatchObject({
+        ok: true,
+        value: { calendars: expect.any(Array) as unknown[] },
+      });
     });
 
   });
@@ -102,5 +113,14 @@ export const anEventStoreThatCanBeLoaded = ({
       expect(read).toMatchObject({ ok: true, value: { occurrences: [] } });
     });
 
+    it("given a calendar holding nothing in the range, still names it among the calendars it asked", async () => {
+      const { eventStore, holding } = await build();
+      const nextWeek = new Date(noon.getTime() + 7 * 24 * 60 * 60 * 1000);
+      await holding(occurrence(nextWeek, "Retro"));
+
+      const read = await eventStore.occurrencesIn(dayAround(noon));
+
+      expect(read).toMatchObject({ ok: true, value: { calendars: [{ identifier: "cal-1" }] } });
+    });
   });
 };

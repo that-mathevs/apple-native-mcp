@@ -51,14 +51,16 @@ export const calendarEventStore = (helper: Helper): EventStore => ({
 
     if (!answered.ok) return failed(answered.failure);
 
-    const { events, unreadableCalendars } = answered.value as {
+    const { events, calendars, unreadableCalendars } = answered.value as {
       events?: EventRecord[];
-      unreadableCalendars?: unknown[];
+      calendars?: EventRecord["calendar"][];
+      unreadableCalendars?: { readonly calendar: EventRecord["calendar"] }[];
     };
 
     return succeeded({
       occurrences: (events ?? []).map(asOccurrence),
-      calendarsUnread: (unreadableCalendars ?? []).length,
+      calendars: (calendars ?? []).map(asCalendar),
+      unreadCalendars: (unreadableCalendars ?? []).map(({ calendar }) => calendar.identifier),
     });
   },
 });

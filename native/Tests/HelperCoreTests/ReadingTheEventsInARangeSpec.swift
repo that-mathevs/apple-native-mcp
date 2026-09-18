@@ -141,8 +141,21 @@ struct ReadingTheEventsInARangeSpec {
       aCalendarStore().unableToRead(teamFeed, saying: "The server responded with status 503"))
 
     let missed = reading.events(in: tuesday).answer.unreadableCalendars
-    #expect(missed.map(\.code) == [.calendarUnreadable])
-    #expect(missed.first?.sentence.contains("Team feed") == true)
-    #expect(missed.first?.evidence == "The server responded with status 503")
+    #expect(missed.map(\.calendar) == [teamFeed])
+    #expect(missed.map(\.failure.code) == [.calendarUnreadable])
+    #expect(missed.first?.failure.sentence.contains("Team feed") == true)
+    #expect(missed.first?.failure.evidence == "The server responded with status 503")
+  }
+
+  // The server counts the calendars the user's settings keep from an agent. It counts calendars
+  // and not events, so it has to hear about a calendar even when nothing in it falls in the range.
+  @Test("given a calendar holding nothing in the range, still names it among the calendars it asked")
+  func namesEveryCalendarItAsked() {
+    let reading = readingACalendar(
+      aCalendarStore().holding(
+        anEvent("Stand-up", from: "2026-09-22T09:00:00Z", to: "2026-09-22T09:15:00Z", in: work),
+        anEvent("Dentist", from: "2026-10-01T09:00:00Z", to: "2026-10-01T09:30:00Z", in: personal)))
+
+    #expect(reading.events(in: tuesday).answer.calendars == [work, personal])
   }
 }

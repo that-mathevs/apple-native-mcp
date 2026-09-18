@@ -1,10 +1,18 @@
-/// What a read of a range came to: the range it covered, the occurrences in it, and the calendars
-/// that would not answer. A calendar that could not be read is named rather than silently missing,
+/// What a read of a range came to: the range it covered, the occurrences in it, every calendar it
+/// asked, and the calendars that would not answer. A calendar that could not be read is named rather than silently missing,
 /// so an empty day is never mistaken for a free one.
+/// A calendar that would not answer, and what went wrong. The calendar travels with the failure so
+/// the server can tell which one it was without reading its title out of a sentence.
+struct UnreadableCalendar: Equatable, Sendable {
+  let calendar: Calendar
+  let failure: NamedFailure
+}
+
 struct EventsInRange: Equatable, Sendable {
   let range: Range
   let events: [Event]
-  let unreadableCalendars: [NamedFailure]
+  let calendars: [Calendar]
+  let unreadableCalendars: [UnreadableCalendar]
 }
 
 /// Reading the calendar: the rules that sit between the protocol and EventKit.
@@ -29,18 +37,23 @@ struct CalendarReading: Sendable {
       return .failure(.calendarPermissionMissing(permission: permission))
     }
 
+    let calendars = store.calendars()
     var found: [Event] = []
-    var unreadable: [NamedFailure] = []
-    for calendar in store.calendars() {
+    var unreadable: [UnreadableCalendar] = []
+    for calendar in calendars {
       do {
         found += try store.events(in: range, from: calendar).filter { $0.falls(in: range) }
       } catch {
-        unreadable.append(.calendarUnreadable(title: calendar.title, evidence: error.evidence))
+        unreadable.append(
+          UnreadableCalendar(
+            calendar: calendar,
+            failure: .calendarUnreadable(title: calendar.title, evidence: error.evidence)))
       }
     }
 
     return .success(
       EventsInRange(
-        range: range, events: found.inTheOrderTheyStart(), unreadableCalendars: unreadable))
+        range: range, events: found.inTheOrderTheyStart(), calendars: calendars,
+        unreadableCalendars: unreadable))
   }
 }
