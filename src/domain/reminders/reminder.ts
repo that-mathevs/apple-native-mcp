@@ -1,3 +1,5 @@
+import type { NamedFailure, Outcome } from "../failure.js";
+import { failed, succeeded } from "../failure.js";
 import type { LocalDay } from "../time-zone.js";
 
 /**
@@ -80,4 +82,53 @@ export const reminderListNamed = (
   if (byTitle.length === 1 && only) return { kind: "one", list: only };
 
   return byTitle.length === 0 ? { kind: "none" } : { kind: "several", lists: byTitle };
+};
+
+/**
+ * What was asked for and the lists that answer to it, as a record: a title is text the user
+ * wrote, so it is a field and never part of a sentence (ADR-0006).
+ */
+const evidence = (name: string, reminderLists: readonly ReminderList[]): string =>
+  JSON.stringify({ asked: name, reminderLists });
+
+/**
+ * The one reminder list a name means, or the refusal saying why there isn't one, which begins
+ * with what did not happen: nothing is ever read from, or created in, a list it guessed at.
+ */
+export const theReminderListNamed = (
+  reminderLists: readonly ReminderList[],
+  name: string,
+  whatDidNotHappen: string,
+): Outcome<ReminderList> => {
+  const named = reminderListNamed(reminderLists, name);
+  const refusal = (
+    code: string,
+    sentence: string,
+    lists: readonly ReminderList[],
+  ): NamedFailure => ({
+    code,
+    sentence: `${whatDidNotHappen} ${sentence}`,
+    evidence: evidence(name, lists),
+  });
+
+  switch (named.kind) {
+    case "one":
+      return succeeded(named.list);
+    case "none":
+      return failed(
+        refusal(
+          "reminder-list-unknown",
+          "No reminder list has that identifier or title.",
+          reminderLists,
+        ),
+      );
+    case "several":
+      return failed(
+        refusal(
+          "reminder-list-ambiguous",
+          "Reminder lists in more than one account have that title, so ask by identifier.",
+          named.lists,
+        ),
+      );
+  }
 };

@@ -1,5 +1,5 @@
 import type { NamedFailure, Outcome } from "../failure.js";
-import { failed, succeeded } from "../failure.js";
+import { failed, nothingCreated, succeeded } from "../failure.js";
 import { excludes, type Exclusion } from "../settings.js";
 import { isBefore, type LocalDay } from "../time-zone.js";
 import type { Calendar, Occurrence } from "./event.js";
@@ -31,17 +31,6 @@ export type GivenTime = {
   readonly firstDay?: LocalDay;
   readonly lastDay?: LocalDay;
 };
-
-/** Every refusal to create says first that nothing was created, so nobody tries to undo it. */
-export const nothingCreated = (
-  code: string,
-  sentence: string,
-  evidence?: string,
-): NamedFailure => ({
-  code,
-  sentence: `Nothing was created. ${sentence}`,
-  ...(evidence === undefined ? {} : { evidence }),
-});
 
 const timeInvalid = (sentence: string): NamedFailure =>
   nothingCreated("event-time-invalid", sentence);

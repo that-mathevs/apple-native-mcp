@@ -1,5 +1,5 @@
 import { FakeReminderStore } from "../support/fake-reminder-store.js";
-import { aReminderStore } from "./reminder-store.contract.js";
+import { aReminderStore, aReminderStoreThatCreatesReminders } from "./reminder-store.contract.js";
 
 // The fake stands in for the real store in every acceptance scenario, so it answers the same
 // contract here, loaded the way a Mac's reminders often are: open and completed ones, some due.
@@ -31,5 +31,16 @@ aReminderStore({
       },
     );
     return Promise.resolve({ reminderStore });
+  },
+});
+
+const scratch = { identifier: "list-scratch", title: "scratch", account: "iCloud" } as const;
+
+aReminderStoreThatCreatesReminders({
+  name: "the fake reminder store",
+  build: () => {
+    const reminderStore = new FakeReminderStore();
+    reminderStore.holdsReminderLists(scratch);
+    return Promise.resolve({ reminderStore, reminderList: scratch.identifier });
   },
 });

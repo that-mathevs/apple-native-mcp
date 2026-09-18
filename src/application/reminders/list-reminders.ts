@@ -1,10 +1,10 @@
-import type { NamedFailure, Outcome } from "../../domain/failure.js";
-import { failed, succeeded } from "../../domain/failure.js";
+import type { Outcome } from "../../domain/failure.js";
+import { succeeded } from "../../domain/failure.js";
 import {
   defaultLimit,
   openBeforeCompleted,
   pageOf,
-  reminderListNamed,
+  theReminderListNamed,
   type Reminder,
   type ReminderList,
 } from "../../domain/reminders/reminder.js";
@@ -36,27 +36,6 @@ export type ListRemindersDependencies = {
   readonly reminderStore: ReminderStore;
 };
 
-/**
- * What was asked for and the lists that answer to it, as a record: a title is text the user
- * wrote, so it is a field and never part of a sentence (ADR-0006).
- */
-const evidence = (name: string, reminderLists: readonly ReminderList[]): string =>
-  JSON.stringify({ asked: name, reminderLists });
-
-const unknownList = (name: string, reminderLists: readonly ReminderList[]): NamedFailure => ({
-  code: "reminder-list-unknown",
-  sentence: "Nothing was read: no reminder list has that identifier or title.",
-  evidence: evidence(name, reminderLists),
-});
-
-const ambiguousList = (name: string, reminderLists: readonly ReminderList[]): NamedFailure => ({
-  code: "reminder-list-ambiguous",
-  sentence:
-    "Nothing was read: reminder lists in more than one account have that title, so ask by " +
-    "identifier.",
-  evidence: evidence(name, reminderLists),
-});
-
 /** The reminder lists a request covers: the one it names, or all of them. */
 const reminderListsWanted = (
   reminderLists: readonly ReminderList[],
@@ -64,15 +43,8 @@ const reminderListsWanted = (
 ): Outcome<readonly ReminderList[]> => {
   if (name === undefined) return succeeded(reminderLists);
 
-  const named = reminderListNamed(reminderLists, name);
-  switch (named.kind) {
-    case "one":
-      return succeeded([named.list]);
-    case "none":
-      return failed(unknownList(name, reminderLists));
-    case "several":
-      return failed(ambiguousList(name, named.lists));
-  }
+  const named = theReminderListNamed(reminderLists, name, "Nothing was read.");
+  return named.ok ? succeeded([named.value]) : named;
 };
 
 export const listReminders = async (

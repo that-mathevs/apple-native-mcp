@@ -9,6 +9,7 @@ public struct Helper: Sendable {
   private let calendar: CalendarReading
   private let calendarWriting: CalendarWriting
   private let reminders: RemindersReading
+  private let remindersWriting: RemindersWriting
   private let contacts: ContactsReading
   private let messages: MessagesReading
   private let notes: NotesReading
@@ -21,6 +22,7 @@ public struct Helper: Sendable {
     self.calendar = CalendarReading(store: calendarStore)
     self.calendarWriting = CalendarWriting(store: calendarStore)
     self.reminders = RemindersReading(store: reminderStore)
+    self.remindersWriting = RemindersWriting(store: reminderStore)
     self.contacts = ContactsReading(store: contactStore)
     self.messages = MessagesReading(store: messageStore)
     self.notes = NotesReading(store: noteStore)
@@ -75,6 +77,18 @@ public struct Helper: Sendable {
         [
           "reminders": $0.reminders.map(\.asFields),
           "unreadReminderLists": $0.unreadReminderLists.map(\.asFields),
+        ]
+      }
+    case .defaultReminderList:
+      return answering(remindersWriting.defaultReminderList()) {
+        ["reminderList": $0.map { $0.asFields as Any } ?? NSNull()]
+      }
+    case .createReminder(let reminder):
+      return answering(remindersWriting.create(reminder)) {
+        [
+          "reminder": $0.reminder.asFields,
+          "confirmed": $0.confirmed,
+          "alerts": $0.alerts.map { $0 as Any } ?? NSNull(),
         ]
       }
     case .contactsPermission:

@@ -195,8 +195,8 @@ duration.
 _Avoid_: free slot, available slot, busy block
 
 **Duplicate**:
-An event whose title matches another overlapping the same time. Creating one is refused unless the
-user asks for it anyway.
+An event whose title matches another overlapping the same time, ignoring case and surrounding
+spaces. Creating one is refused unless the user asks for it anyway.
 _Avoid_: twin, copy, clash
 
 ### Reminders
@@ -220,8 +220,8 @@ time. A reminder whose due time has passed is **overdue**.
 _Avoid_: deadline, dueDate for both, reminder time
 
 **Duplicate**:
-A create whose title matches an open reminder in the same list. Refused unless the user asks for it
-anyway.
+A create whose title matches an open reminder in the same list, ignoring case and surrounding
+spaces. Refused unless the user asks for it anyway.
 _Avoid_: twin, copy
 
 ### Contacts

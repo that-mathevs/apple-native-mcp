@@ -60,6 +60,53 @@ final class EventKitReminderStore: ReminderStore, @unchecked Sendable {
       goneReminderLists: gone)
   }
 
+  func defaultReminderList() -> ReminderList? {
+    store.defaultCalendarForNewReminders().map(reminderList)
+  }
+
+  /// Built from what it was given and nothing more: no alarm is ever added (#20). Whether macOS
+  /// notifies at a due time with no alarm on it is its own question, REM-V4 in findings.md.
+  func save(_ new: NewReminder, in list: ReminderList) throws(ReminderNotSaved) -> Reminder {
+    guard let calendar = store.calendar(withIdentifier: list.identifier) else {
+      throw ReminderNotSaved(evidence: "No reminder list with identifier \(list.identifier)")
+    }
+
+    let saved = EKReminder(eventStore: store)
+    saved.title = new.title
+    saved.calendar = calendar
+    saved.dueDateComponents = new.due.map(components)
+
+    do {
+      try store.save(saved, commit: true)
+    } catch {
+      throw ReminderNotSaved(evidence: error.localizedDescription)
+    }
+    return reminder(saved)
+  }
+
+  func reminder(identifier: String) -> HeldReminder? {
+    guard let held = store.calendarItem(withIdentifier: identifier) as? EKReminder else {
+      return nil
+    }
+    return HeldReminder(reminder: reminder(held), alerts: held.alarms?.count ?? 0)
+  }
+
+  /// A due date is a day with no hour and no time zone, so no clock can move it. A due time is
+  /// the day and time the user's clock shows at that instant, in the user's time zone.
+  private func components(_ due: Due) -> DateComponents {
+    switch due {
+    case .date(let year, let month, let day):
+      return DateComponents(year: year, month: month, day: day)
+    case .time(let instant):
+      var calendar = Foundation.Calendar(identifier: .gregorian)
+      calendar.timeZone = .current
+      var parts = calendar.dateComponents(
+        [.year, .month, .day, .hour, .minute, .second], from: instant)
+      parts.timeZone = .current
+      return parts
+    }
+  }
+
   /// Completed reminders are left out in the fetch itself: years of them are what made
   /// upstream's reads time out (upstream #53).
   private func predicate(for calendar: EKCalendar, includingCompleted: Bool) -> NSPredicate {

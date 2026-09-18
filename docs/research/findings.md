@@ -634,17 +634,17 @@ _No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18
 
 #### creating a reminder
 
-- [ ] **REM-30** [acceptance] given a reminder list that exists, puts the reminder in that list and reports the list and the id the store gave it · NN3 · sicdigital `d5d5df0`; chrischall `6831a90`, `1a358d6`, `b6a4ec6`, `2846497`; upstream #26, PR #40
-- [ ] **REM-31** [acceptance] given no list, puts the reminder in the user's default reminder list · — · mjmcg `bde3e31`, `804b77d`; upstream #64
-- [ ] **REM-32** [acceptance] given a list that does not exist, refuses, creates no list and names the reminder lists there are · NN3 · KassebaumEngineering `1d47e74`; boutquin `8a5d2e0`; chrischall `6831a90`, `1a358d6`, `b6a4ec6`, `2846497`; danielk-am `ad3e9e9`, `9d9122c`; long-tail/Heming-Zhong `2dc6104`, `8f4cd41`; long-tail/brunnoaraujo `d8f5f19`; mjmcg `bde3e31`, `804b77d`; morquis `d76f3ec`; sicdigital `d5d5df0`; upstream #26, #53, #64, #34, #59, #10
-- [ ] **REM-33** [acceptance] given a due date and time, reports the reminder created only after reading it back from the store with that due date and time (after REM-V1) · NN3 · boutquin `8a5d2e0`; chrischall `6831a90`, `1a358d6`, `b6a4ec6`, `2846497`; danielk-am `ad3e9e9`, `9d9122c`; long-tail/Heming-Zhong `2dc6104`, `8f4cd41`; long-tail/brunnoaraujo `d8f5f19`; mjmcg `bde3e31`, `804b77d`; morquis `d76f3ec`; sicdigital `d5d5df0`; upstream #64, #34, #53, #26, #59, #10
+- [x] **REM-30** [acceptance] given a reminder list that exists, puts the reminder in that list and reports the list and the id the store gave it · NN3 · sicdigital `d5d5df0`; chrischall `6831a90`, `1a358d6`, `b6a4ec6`, `2846497`; upstream #26, PR #40
+- [x] **REM-31** [acceptance] given no list, puts the reminder in the user's default reminder list · — · mjmcg `bde3e31`, `804b77d`; upstream #64
+- [x] **REM-32** [acceptance] given a list that does not exist, refuses, creates no list and names the reminder lists there are · NN3 · KassebaumEngineering `1d47e74`; boutquin `8a5d2e0`; chrischall `6831a90`, `1a358d6`, `b6a4ec6`, `2846497`; danielk-am `ad3e9e9`, `9d9122c`; long-tail/Heming-Zhong `2dc6104`, `8f4cd41`; long-tail/brunnoaraujo `d8f5f19`; mjmcg `bde3e31`, `804b77d`; morquis `d76f3ec`; sicdigital `d5d5df0`; upstream #26, #53, #64, #34, #59, #10
+- [x] **REM-33** [acceptance] given a due date and time, reports the reminder created only after reading it back from the store with that due date and time (after REM-V1) · NN3 · boutquin `8a5d2e0`; chrischall `6831a90`, `1a358d6`, `b6a4ec6`, `2846497`; danielk-am `ad3e9e9`, `9d9122c`; long-tail/Heming-Zhong `2dc6104`, `8f4cd41`; long-tail/brunnoaraujo `d8f5f19`; mjmcg `bde3e31`, `804b77d`; morquis `d76f3ec`; sicdigital `d5d5df0`; upstream #64, #34, #53, #26, #59, #10
 - [ ] **REM-34** [acceptance] given notes, stores them on the reminder and reports them as read back from the store · NN3 · boutquin `8a5d2e0`; chrischall `6831a90`, `1a358d6`, `b6a4ec6`, `2846497`; long-tail/Heming-Zhong `2dc6104`, `8f4cd41`; long-tail/brunnoaraujo `d8f5f19`; upstream #64, #34
-- [ ] **REM-35** [acceptance] reports the stored due time in the user's local time with its offset, so a wrong time is visible at once · — · upstream #34
-- [ ] **REM-36** [acceptance] given a title full of quotes, backslashes and script syntax, stores that exact title · NN1 · mjmcg `d4ec06d`, `bde3e31`
+- [x] **REM-35** [acceptance] reports the stored due time in the user's local time with its offset, so a wrong time is visible at once · — · upstream #34
+- [x] **REM-36** [acceptance] given a title full of quotes, backslashes and script syntax, stores that exact title · NN1 · mjmcg `d4ec06d`, `bde3e31`
 - [ ] **REM-37** [acceptance] given a daily repeat and a due time, creates a reminder that repeats every day · — · faces-sh `7160b0a`, `bfd5b64`, `4587d0a`; upstream #64, #34, #53, #27
 - [ ] **REM-38** [acceptance] given a repeat but no due date, refuses: a repeat needs an anchor · — · faces-sh `7160b0a`, `bfd5b64`, `4587d0a`
-- [ ] **REM-39** [acceptance] given an open reminder with the same name, refuses and names the existing one so it can be changed instead · — · faces-sh `bcdc856`; upstream #27
-- [ ] **REM-40** [acceptance] given the caller says a second copy is wanted, creates it despite the same name · — · faces-sh `bcdc856`; upstream #27
+- [x] **REM-39** [acceptance] given an open reminder with the same name, refuses and names the existing one so it can be changed instead · — · faces-sh `bcdc856`; upstream #27
+- [x] **REM-40** [acceptance] given the caller says a second copy is wanted, creates it despite the same name · — · faces-sh `bcdc856`; upstream #27
 
 #### editing a reminder
 
@@ -674,7 +674,7 @@ _No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18
 
 #### a due date
 
-- [ ] **REM-50** [domain] given a date without a time, is due that whole day in the user's time zone with no time, not at midnight UTC (after REM-V1) · — · long-tail/Heming-Zhong `2dc6104`, `8f4cd41`; long-tail/brunnoaraujo `d8f5f19`; sicdigital `d5d5df0`; upstream #64, #34
+- [x] **REM-50** [domain] given a date without a time, is due that whole day in the user's time zone with no time, not at midnight UTC (after REM-V1) · — · long-tail/Heming-Zhong `2dc6104`, `8f4cd41`; long-tail/brunnoaraujo `d8f5f19`; sicdigital `d5d5df0`; upstream #64, #34
 - [ ] **REM-51** [domain] given text that is neither a date nor a date and time, refuses rather than guessing or creating an undated reminder · — · long-tail/Heming-Zhong `2dc6104`, `8f4cd41`; long-tail/brunnoaraujo `d8f5f19`; upstream #34
 
 #### a due time

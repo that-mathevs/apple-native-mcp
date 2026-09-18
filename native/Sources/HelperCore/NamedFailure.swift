@@ -41,6 +41,8 @@ public enum FailureCode: String, Equatable, Sendable {
   case reminderListUnknown = "reminder_list_unknown"
   /// No reminder list answered within the time budget.
   case remindersTimedOut = "reminders_timed_out"
+  /// The store would not save a new reminder.
+  case reminderNotSaved = "reminder_not_saved"
   /// macOS has not allowed the helper to read the contacts.
   case contactsPermissionMissing = "contacts_permission_missing"
   /// The contact note was asked for, which macOS keeps for apps Apple has entitled.
@@ -317,5 +319,12 @@ extension NamedFailure {
       sentence: "This message's text could not be read from the store, so it is answered "
         + "without it.",
       evidence: reason)
+  }
+
+  static func reminderNotSaved(evidence: String) -> NamedFailure {
+    NamedFailure(
+      code: .reminderNotSaved,
+      sentence: "The reminders store would not save the reminder, so nothing was created.",
+      evidence: evidence)
   }
 }

@@ -21,6 +21,8 @@ struct Request: Equatable {
     case requestRemindersPermission
     case reminderLists
     case reminders(reminderLists: [String], includeCompleted: Bool, matching: String?)
+    case defaultReminderList
+    case createReminder(NewReminder)
     case contactsPermission
     case requestContactsPermission
     case contacts
@@ -53,6 +55,8 @@ enum RequestName: String {
   case requestRemindersPermission = "reminders_permission_request"
   case reminderLists = "reminder_lists"
   case reminders = "reminders"
+  case defaultReminderList = "default_reminder_list"
+  case createReminder = "create_reminder"
   case contactsPermission = "contacts_permission"
   case requestContactsPermission = "contacts_permission_request"
   case contacts = "contacts"
@@ -170,6 +174,13 @@ extension Request {
         reminderLists: reminderLists, includeCompleted: includeCompleted,
         matching: matching as? String)
       return .request(Request(id: id, kind: kind))
+    case .defaultReminderList:
+      return .request(Request(id: id, kind: .defaultReminderList))
+    case .createReminder:
+      guard let reminder = readNewReminder(fields) else {
+        return .failure(id: id, .requestMalformed(line: line))
+      }
+      return .request(Request(id: id, kind: .createReminder(reminder)))
     case .contactsPermission:
       return .request(Request(id: id, kind: .contactsPermission))
     case .requestContactsPermission:
@@ -351,4 +362,33 @@ private func readEventTime(_ fields: [String: Any]) -> EventTime? {
     last >= first
   else { return nil }
   return .allDay(firstDay: first, lastDay: last)
+}
+
+/// A new reminder arrives as a reminder list, a title that says something, and at most one of a
+/// due date or a due time. Anything else is not a reminder the helper will guess at.
+private func readNewReminder(_ fields: [String: Any]) -> NewReminder? {
+  guard
+    let reminderListIdentifier = fields["reminderListIdentifier"] as? String,
+    !reminderListIdentifier.isEmpty,
+    let title = fields["title"] as? String,
+    !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+  else { return nil }
+
+  guard let dueField = fields["due"] else {
+    return NewReminder(title: title, reminderListIdentifier: reminderListIdentifier, due: nil)
+  }
+  guard let due = readDue(dueField) else { return nil }
+  return NewReminder(title: title, reminderListIdentifier: reminderListIdentifier, due: due)
+}
+
+/// `{"date":"2026-09-25"}`, a real day with no time of day, or `{"time":…}`, an instant.
+private func readDue(_ field: Any) -> Due? {
+  guard let due = field as? [String: Any], due.count == 1 else { return nil }
+
+  if let time = due["time"] as? String {
+    return Instant.read(time).map(Due.time)
+  }
+
+  guard let day = (due["date"] as? String).flatMap(Day.init) else { return nil }
+  return .date(year: day.year, month: day.month, day: day.day)
 }

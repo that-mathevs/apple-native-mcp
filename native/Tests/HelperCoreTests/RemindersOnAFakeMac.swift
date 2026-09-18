@@ -32,12 +32,17 @@ struct FakeReminderStore: ReminderStore {
     var timesAsked = 0
     var reminderListsRead: [[ReminderList]] = []
     var deadlines: [Date] = []
+    var saved: [NewReminder] = []
   }
 
   var permissionHeld: Permission = .granted
   var answersWhenAsked: Permission = .refused
   var heldReminderLists: [ReminderList] = []
   var held: [Reminder] = []
+  var defaultList: ReminderList?
+  var keepsWhatItSaves = true
+  var refusesToSave: String?
+
   /// Reminder lists too large, or too far away, to answer by any deadline.
   var slow: [ReminderList] = []
   /// Reminder lists deleted after they were listed and before they were read.
@@ -85,6 +90,56 @@ struct FakeReminderStore: ReminderStore {
   func holding(_ reminderLists: ReminderList...) -> FakeReminderStore {
     var store = self
     store.heldReminderLists += reminderLists
+    return store
+  }
+
+  func defaultReminderList() -> ReminderList? { defaultList }
+
+  func save(_ reminder: NewReminder, in reminderList: ReminderList) throws(ReminderNotSaved)
+    -> Reminder
+  {
+    if let said = refusesToSave { throw ReminderNotSaved(evidence: said) }
+    record.saved.append(reminder)
+    return Reminder(
+      identifier: "reminder:new:\(record.saved.count)", title: reminder.title, notes: nil,
+      isCompleted: false, due: reminder.due, reminderList: reminderList)
+  }
+
+  /// What it saved, read back as it would be: in the list it went to, with no alert on it.
+  func reminder(identifier: String) -> HeldReminder? {
+    guard keepsWhatItSaves,
+      let number = Int(identifier.split(separator: ":").last ?? ""),
+      record.saved.indices.contains(number - 1)
+    else { return nil }
+
+    let saved = record.saved[number - 1]
+    guard let list = heldReminderLists.first(where: {
+      $0.identifier == saved.reminderListIdentifier
+    }) else { return nil }
+
+    return HeldReminder(
+      reminder: Reminder(
+        identifier: identifier, title: saved.title, notes: nil, isCompleted: false,
+        due: saved.due, reminderList: list),
+      alerts: 0)
+  }
+
+  func defaultingTo(_ reminderList: ReminderList) -> FakeReminderStore {
+    var store = self
+    store.defaultList = reminderList
+    return store
+  }
+
+  /// It saves what it is given, and then cannot find it again.
+  func losingSightOfWhatItSaves() -> FakeReminderStore {
+    var store = self
+    store.keepsWhatItSaves = false
+    return store
+  }
+
+  func refusingToSave(saying evidence: String) -> FakeReminderStore {
+    var store = self
+    store.refusesToSave = evidence
     return store
   }
 
