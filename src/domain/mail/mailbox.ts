@@ -20,3 +20,18 @@ export type Mailbox = {
   /** Absent for a mailbox Mail knows no role for. */
   readonly role?: MailboxRole;
 };
+
+/**
+ * Whether two paths name the same mailbox. Names are compared in one Unicode form, because Mail
+ * hands them over decomposed and a client may send them composed, and otherwise exactly.
+ */
+export const samePath = (left: readonly string[], right: readonly string[]): boolean =>
+  left.length === right.length &&
+  left.every((name, index) => name.normalize("NFC") === right[index]?.normalize("NFC"));
+
+/** What addresses a mailbox: its mail account and its path, which together never repeat. */
+export type MailboxAddress = Pick<Mailbox, "mailAccount" | "path">;
+
+/** A mailbox address as a failure's evidence writes it: the account's name, then the path. */
+export const writtenAddress = ({ mailAccount, path }: MailboxAddress): string =>
+  `${mailAccount.name}/${path.join("/")}`;

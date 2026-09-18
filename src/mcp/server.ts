@@ -16,8 +16,10 @@ import { listEventsTool } from "./calendar/list-events-tool.js";
 import { readEventTool } from "./calendar/read-event-tool.js";
 import { searchEventsTool } from "./calendar/search-events-tool.js";
 import { findContactsTool } from "./contacts/find-contacts-tool.js";
+import { listLatestEmailsTool } from "./mail/list-latest-emails-tool.js";
 import { listMailAccountsTool } from "./mail/list-mail-accounts-tool.js";
 import { listMailboxesTool } from "./mail/list-mailboxes-tool.js";
+import { searchEmailsTool } from "./mail/search-emails-tool.js";
 import { listChatsTool } from "./messages/list-chats-tool.js";
 import { readChatTool } from "./messages/read-chat-tool.js";
 import { searchMessagesTool } from "./messages/search-messages-tool.js";
@@ -130,6 +132,8 @@ export const buildServer = (dependencies: ServerDependencies): McpServer =>
       findContactsTool(dependencies),
       listMailAccountsTool(dependencies),
       listMailboxesTool(dependencies),
+      listLatestEmailsTool(dependencies),
+      searchEmailsTool(dependencies),
       listChatsTool(dependencies),
       readChatTool(dependencies),
       searchMessagesTool(dependencies),

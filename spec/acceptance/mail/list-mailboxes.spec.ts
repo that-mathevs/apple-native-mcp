@@ -124,13 +124,36 @@ describe("listing mailboxes", () => {
     });
   });
 
-  // #7: after one request ran out of time, Mail answered nothing for another two to four
-  // minutes. Asking it about the next account would wait out a whole time budget for each one.
-  it("given a mail account that ran out of its time budget, leaves the accounts after it alone and names each as not asked", async () => {
+  // Measured while building #45: a mailbox of 76,000 emails ran out of its time budget, and Mail
+  // answered the very next request in a fifth of a second. One timeout is one slow account.
+  it("given a mail account that ran out of its time budget, still asks about the accounts after it", async () => {
+    const archive = { identifier: "account-archive", name: "Archive", emailAddresses: [] };
+    mailStore.holdsMailAccounts(personal, work, archive);
+    mailStore.cannotRead(work, mailAccountTimedOut);
+    mailStore.holdsMailboxes(archive, { path: ["INBOX"], role: "inbox" });
+
+    const result = await listMailboxes();
+
+    expect(mailStore.mailAccountsAsked).toStrictEqual([
+      "account-personal",
+      "account-work",
+      "account-archive",
+    ]);
+    expect(result.structuredContent).toMatchObject({
+      mailboxes: [{ mailAccount: { identifier: "account-archive" }, path: ["INBOX"] }],
+      unreadMailAccounts: [{ mailAccount: workNamed, failure: { code: "mail_timed_out" } }],
+    });
+  });
+
+  // #7: after a request Mail could not finish, it answered nothing for another two to four
+  // minutes. So after a timeout Mail is asked something small, and only a Mail that leaves that
+  // unanswered too is taken to be busy: a slow account next to another slow one is not.
+  it("given a mail account that ran out of its time budget and a Mail that then answers nothing, leaves the accounts after it alone and names each as not asked", async () => {
     const archive = { identifier: "account-archive", name: "Archive", emailAddresses: [] };
     mailStore.holdsMailAccounts(personal, work, archive);
     mailStore.holdsMailboxes(personal, { path: ["INBOX"], role: "inbox" });
     mailStore.cannotRead(work, mailAccountTimedOut);
+    mailStore.answersNothingAfterATimeout();
     mailStore.holdsMailboxes(archive, { path: ["INBOX"], role: "inbox" });
 
     const result = await listMailboxes();
@@ -183,7 +206,7 @@ describe("listing mailboxes", () => {
       failure: {
         code: "mail-accounts-unread",
         sentence: "None of the 2 mail accounts could be read, so no mailbox was listed.",
-        evidence: "Personal: mail_timed_out; Work: mail-account-not-asked",
+        evidence: "Personal: mail_timed_out; Work: mail_timed_out",
       },
     });
   });
