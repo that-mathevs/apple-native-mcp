@@ -43,7 +43,11 @@ export const searchEmailsTool = (dependencies: SearchEmailsDependencies): Tool =
         .string()
         .min(1)
         .optional()
-        .describe("One mail account's identifier, to search it alone. Defaults to every one."),
+        .describe(
+          "One mail account, to search it alone: its identifier, its exact name or one of its " +
+            "email addresses. A name or an address two mail accounts share is refused. " +
+            "Defaults to every one.",
+        ),
       mailbox: z
         .array(z.string().min(1))
         .min(1)

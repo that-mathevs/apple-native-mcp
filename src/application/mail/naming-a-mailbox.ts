@@ -3,7 +3,7 @@ import type { MailAccount } from "../../domain/mail/mail-account.js";
 
 /** How a caller names where to look: one mail account, and one mailbox inside it. */
 export type MailboxNamedByCaller = {
-  /** One mail account's identifier, to look in it alone. */
+  /** One mail account, by its identifier, its exact name or one of its email addresses. */
   readonly mailAccount?: string | undefined;
   /** One mailbox's path inside that mail account, to look in it alone. */
   readonly mailboxPath?: readonly string[] | undefined;
@@ -16,13 +16,6 @@ export const mailboxNeedsItsMailAccount: NamedFailure = {
     "Nothing was read: a mailbox is named by its mail account and its path together. Name the " +
     "mail account too.",
 };
-
-export const mailAccountUnknown = (identifier: string): NamedFailure => ({
-  code: "mail-account-unknown",
-  sentence:
-    "Nothing was read: no mail account has that identifier. List the mail accounts to find it.",
-  evidence: identifier,
-});
 
 export const mailboxUnknown = (
   mailAccount: MailAccount,

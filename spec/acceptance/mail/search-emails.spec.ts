@@ -211,6 +211,40 @@ describe("searching mail", () => {
     expect(mailStore.mailAccountsAsked).toStrictEqual(["account-work"]);
   });
 
+  // ANierbeck 3005df4: a person says "my work address", and never the identifier Mail made up.
+  it("given one of a mail account's email addresses in place of its identifier, searches that mail account alone", async () => {
+    mailStore.holdsMailAccounts(personal, work);
+    mailStore.holdsMailboxes(work, inbox);
+    mailStore.holdsEmails(
+      work,
+      inbox,
+      anEmail("Boiler room audit", { receivedAt: "2026-09-18T09:00:00Z" }),
+    );
+
+    const result = await searchEmails({ query: "boiler", mailAccount: "ada@work.example.test" });
+
+    expect(subjectsIn(result)).toStrictEqual(["Boiler room audit"]);
+    expect(mailStore.mailAccountsAsked).toStrictEqual(["account-work"]);
+  });
+
+  // sicdigital 791f5f2 keyed containers by their names, so two with one name became one, and
+  // whichever came first was searched.
+  it("given a name two mail accounts share, refuses and names both rather than searching either", async () => {
+    const alsoWork = { identifier: "account-work-old", name: "Work", emailAddresses: [] };
+    mailStore.holdsMailAccounts(personal, work, alsoWork);
+
+    const result = await searchEmails({ query: "boiler", mailAccount: "Work" });
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toMatchObject({
+      failure: {
+        code: "mail-account-ambiguous",
+        evidence: JSON.stringify({ asked: "Work", mailAccounts: [work, alsoWork] }),
+      },
+    });
+    expect(mailStore.mailAccountsAsked).toStrictEqual([]);
+  });
+
   it("given a mailbox, searches that mailbox alone, junk included when junk is the one named", async () => {
     mailStore.holdsMailboxes(personal, inbox, { path: ["Junk"], role: "junk" });
     mailStore.holdsEmails(
@@ -233,13 +267,18 @@ describe("searching mail", () => {
     expect(subjectsIn(result)).toStrictEqual(["Boiler prize"]);
   });
 
-  it("given an identifier no mail account has, refuses rather than searching every mail account", async () => {
-    const result = await searchEmails({ query: "boiler", mailAccount: "account-gone" });
+  // upstream #69: asked about an account it could not find, a fork searched them all.
+  it("given a name no mail account has, refuses, listing the mail accounts there are, rather than searching every mail account", async () => {
+    const result = await searchEmails({ query: "boiler", mailAccount: "Hotmail" });
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "mail-account-unknown", evidence: "account-gone" },
+      failure: {
+        code: "mail-account-unknown",
+        evidence: JSON.stringify({ asked: "Hotmail", mailAccounts: [personal] }),
+      },
     });
+    expect(mailStore.mailAccountsAsked).toStrictEqual([]);
   });
 
   it("given a path no mailbox of that mail account has, refuses rather than searching the others", async () => {

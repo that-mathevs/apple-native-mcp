@@ -19,7 +19,11 @@ const listLatestEmailsInput = {
     .string()
     .min(1)
     .optional()
-    .describe("One mail account's identifier, for its latest mail alone. Defaults to every one."),
+    .describe(
+      "One mail account, for its latest mail alone: its identifier, its exact name or one of " +
+        "its email addresses. A name or an address two mail accounts share is refused. " +
+        "Defaults to every one.",
+    ),
   mailbox: z
     .array(z.string().min(1))
     .min(1)

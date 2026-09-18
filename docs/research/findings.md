@@ -2233,7 +2233,7 @@ outcome is marked `(after #7)`.
 
 #### finding a mail account
 
-- [ ] **MAIL-04** [acceptance] given the account's email address instead of its name, finds the same account · — · ANierbeck `3005df4`
+- [x] **MAIL-04** [acceptance] given the account's email address instead of its name, finds the same account · — · ANierbeck `3005df4`
 
 #### listing mailboxes
 

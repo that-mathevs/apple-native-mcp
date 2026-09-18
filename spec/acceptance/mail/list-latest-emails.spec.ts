@@ -327,6 +327,24 @@ describe("listing the latest mail", () => {
     expect(mailStore.mailAccountsAsked).toStrictEqual(["account-work"]);
   });
 
+  // Upstream #30: there was no way to ask for one account's newest mail except by an identifier
+  // nobody knows.
+  it("given a mail account's exact name in place of its identifier, reports the latest mail of that mail account alone", async () => {
+    mailStore.holdsMailAccounts(personal, work);
+    mailStore.holdsMailboxes(personal, inbox);
+    mailStore.holdsMailboxes(work, inbox);
+    mailStore.holdsEmails(
+      work,
+      inbox,
+      anEmail("Standup notes", { receivedAt: "2026-09-18T08:00:00Z" }),
+    );
+
+    const result = await listLatestEmails({ mailAccount: "Work" });
+
+    expect(result.structuredContent).toMatchObject({ emails: [{ subject: "Standup notes" }] });
+    expect(mailStore.mailAccountsAsked).toStrictEqual(["account-work"]);
+  });
+
   it("given a mailbox, reports that mailbox's newest emails in place of the inbox's", async () => {
     mailStore.holdsMailAccounts(personal);
     mailStore.holdsMailboxes(personal, inbox, { path: ["Clients", "Invoices"] });
@@ -363,14 +381,17 @@ describe("listing the latest mail", () => {
     });
   });
 
-  it("given an identifier no mail account has, refuses rather than reading every mail account", async () => {
+  it("given a name no mail account has, refuses, listing the mail accounts there are, rather than reading every mail account", async () => {
     mailStore.holdsMailAccounts(personal);
 
-    const result = await listLatestEmails({ mailAccount: "account-gone" });
+    const result = await listLatestEmails({ mailAccount: "Hotmail" });
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "mail-account-unknown", evidence: "account-gone" },
+      failure: {
+        code: "mail-account-unknown",
+        evidence: JSON.stringify({ asked: "Hotmail", mailAccounts: [personal] }),
+      },
     });
   });
 

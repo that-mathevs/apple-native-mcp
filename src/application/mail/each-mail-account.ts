@@ -1,9 +1,8 @@
 import type { NamedFailure, Outcome } from "../../domain/failure.js";
 import { failed, succeeded } from "../../domain/failure.js";
-import type { MailAccount } from "../../domain/mail/mail-account.js";
+import { type MailAccount, theMailAccountNamed } from "../../domain/mail/mail-account.js";
 import { mailIsBusyAfter } from "./a-busy-mail.js";
 import type { MailStore } from "./mail-store.js";
-import { mailAccountUnknown } from "./naming-a-mailbox.js";
 
 /** A mail account that is missing from an answer, and why. */
 export type UnreadMailAccount = {
@@ -29,14 +28,16 @@ export const mailAccountNotAsked = (stoppedAt: string, failure: NamedFailure): N
 /** Nothing answering is a failure, never an empty answer that reads as "there is none". */
 const noneRead = (unread: readonly UnreadMailAccount[], nothing: string): NamedFailure => ({
   code: "mail-accounts-unread",
-  sentence:
-    `None of the ${String(unread.length)} mail accounts could be read, so ${nothing}.`,
+  sentence: `None of the ${String(unread.length)} mail accounts could be read, so ${nothing}.`,
   evidence: unread
     .map(({ mailAccount, failure }) => `${mailAccount.name}: ${failure.code}`)
     .join("; "),
 });
 
-/** Every mail account, or the one a caller named by its identifier, which has to be there. */
+/**
+ * Every mail account, or the one a caller named: by its identifier, its exact name or one of its
+ * email addresses. A name that means none, or more than one, is refused and nothing is read.
+ */
 export const mailAccountsToAsk = async (
   mailStore: MailStore,
   only: string | undefined,
@@ -44,8 +45,8 @@ export const mailAccountsToAsk = async (
   const every = await mailStore.mailAccounts();
   if (!every.ok || only === undefined) return every;
 
-  const named = every.value.filter(({ identifier }) => identifier === only);
-  return named.length === 0 ? failed(mailAccountUnknown(only)) : succeeded(named);
+  const named = theMailAccountNamed(every.value, only, "Nothing was read.");
+  return named.ok ? succeeded([named.value]) : named;
 };
 
 /**
