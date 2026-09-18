@@ -54,6 +54,31 @@ export default {
       to: { path: "(?:^|/)src/adapters/" },
     },
     {
+      name: "use-cases-do-not-know-about-the-cli",
+      comment:
+        "The setup command is one more way in, beside MCP. A use case works the same " +
+        "whoever calls it.",
+      severity: "error",
+      from: { path: "(?:^|/)src/application/" },
+      to: { path: "(?:^|/)src/cli/" },
+    },
+    {
+      name: "adapters-do-not-know-about-the-cli",
+      comment: "An adapter serves the use cases, and knows nothing of commands or what they print.",
+      severity: "error",
+      from: { path: "(?:^|/)src/adapters/" },
+      to: { path: "(?:^|/)src/cli/" },
+    },
+    {
+      name: "cli-does-not-reach-for-adapters",
+      comment:
+        "A command calls use cases, as a tool does. Reaching for an adapter would wire " +
+        "macOS into the edge and put a code path beyond the reach of the acceptance specs.",
+      severity: "error",
+      from: { path: "(?:^|/)src/cli/" },
+      to: { path: "(?:^|/)src/adapters/" },
+    },
+    {
       name: "contexts-meet-at-ports",
       comment:
         "Calendar, reminders, contacts, messages, notes and mail each keep their own " +

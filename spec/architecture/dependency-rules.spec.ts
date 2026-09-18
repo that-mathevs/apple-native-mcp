@@ -70,6 +70,24 @@ describe("the dependency rules", () => {
     ]);
   });
 
+  it("given a use case that imports the command line, refuses: setup is one more way in", async () => {
+    expect(await brokenRulesIn(fixture("use-cases-do-not-know-about-the-cli"))).toStrictEqual([
+      "use-cases-do-not-know-about-the-cli",
+    ]);
+  });
+
+  it("given an adapter that imports the command line, refuses: it serves use cases, not commands", async () => {
+    expect(await brokenRulesIn(fixture("adapters-do-not-know-about-the-cli"))).toStrictEqual([
+      "adapters-do-not-know-about-the-cli",
+    ]);
+  });
+
+  it("given a command that imports an adapter, refuses: only main wires macOS in", async () => {
+    expect(await brokenRulesIn(fixture("cli-does-not-reach-for-adapters"))).toStrictEqual([
+      "cli-does-not-reach-for-adapters",
+    ]);
+  });
+
   it("given a context reaching into another's rules, refuses: contexts meet at ports", async () => {
     expect(await brokenRulesIn(fixture("contexts-meet-at-ports"))).toStrictEqual([
       "contexts-meet-at-ports",
