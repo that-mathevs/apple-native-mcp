@@ -30,7 +30,7 @@ const remindersIn = async (
     includeCompleted,
   });
   if (!read.ok) throw new Error(`the reminders could not be read: ${read.failure.code}`);
-  return read.value;
+  return read.value.reminders;
 };
 
 export const aReminderStore = ({ name, build }: ReminderStoreUnderTest): void => {
@@ -70,6 +70,21 @@ export const aReminderStore = ({ name, build }: ReminderStoreUnderTest): void =>
       );
 
       expect(elsewhere).toStrictEqual([]);
+    });
+
+    it("always says which reminder lists did not answer in time, so a short answer is never read as the whole", async () => {
+      const { reminderStore } = await build();
+      const lists = await listsOf(reminderStore);
+
+      const read = await reminderStore.reminders({
+        reminderLists: lists.map(({ identifier }) => identifier),
+        includeCompleted: false,
+      });
+
+      expect(read).toMatchObject({
+        ok: true,
+        value: { unreadReminderLists: expect.any(Array) as unknown[] },
+      });
     });
 
     // EventKit reads "no calendars" as "every calendar", so asking for none has to mean none.

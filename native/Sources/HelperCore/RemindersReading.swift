@@ -1,6 +1,13 @@
+import Foundation
+
 /// Reading the reminders: the rules that sit between the protocol and EventKit.
 struct RemindersReading: Sendable {
+  /// How long the reminder lists have to answer, together. REM-V7 in findings.md measured a
+  /// library of thousands in well under this.
+  static let timeBudget: TimeInterval = 2
+
   let store: ReminderStore
+  var clock: @Sendable () -> Date = { Date() }
 
   func permission() -> Permission {
     store.permission()
@@ -22,7 +29,7 @@ struct RemindersReading: Sendable {
   /// reminder list: one deleted since it was listed is refused, not skipped, so a short answer is
   /// never presented as the whole of what was asked.
   func reminders(inReminderListsNamed identifiers: [String], includingCompleted: Bool) -> Result<
-    [Reminder], NamedFailure
+    RemindersRead, NamedFailure
   > {
     reminderLists().flatMap { known in
       var wanted: [ReminderList] = []
@@ -33,8 +40,23 @@ struct RemindersReading: Sendable {
         wanted.append(list)
       }
 
-      guard !wanted.isEmpty else { return .success([]) }
-      return .success(store.reminders(in: wanted, includingCompleted: includingCompleted))
+      guard !wanted.isEmpty else {
+        return .success(RemindersRead(reminders: [], unreadReminderLists: []))
+      }
+
+      let read = store.reminders(
+        in: wanted, includingCompleted: includingCompleted,
+        answeringBy: clock().addingTimeInterval(Self.timeBudget))
+
+      if let gone = read.goneReminderLists.first {
+        return .failure(.reminderListUnknown(identifier: gone.identifier))
+      }
+
+      // Nothing answering is a failure, never an empty answer that reads as "no reminders".
+      guard read.unreadReminderLists.count < wanted.count else {
+        return .failure(.remindersTimedOut(seconds: Self.timeBudget, reminderLists: wanted.count))
+      }
+      return .success(read)
     }
   }
 }

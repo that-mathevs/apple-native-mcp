@@ -25,38 +25,59 @@ final class EventKitReminderStore: ReminderStore, @unchecked Sendable {
     store.calendars(for: .reminder).map(reminderList)
   }
 
-  func reminders(in reminderLists: [ReminderList], includingCompleted: Bool) -> [Reminder] {
-    let calendars = reminderLists.compactMap { store.calendar(withIdentifier: $0.identifier) }
-    // EventKit reads no calendars as every calendar, which is never what an empty ask means.
-    guard !calendars.isEmpty else { return [] }
+  func reminders(
+    in reminderLists: [ReminderList], includingCompleted: Bool, answeringBy deadline: Date
+  ) -> RemindersRead {
+    let answers = Answers()
+    var fetches: [String: Any] = [:]
+    var gone: [ReminderList] = []
 
-    // Completed reminders are left out in the fetch itself: years of them are what made
-    // upstream's reads time out (upstream #53).
-    let predicate =
-      includingCompleted
-      ? store.predicateForReminders(in: calendars)
+    // One fetch per reminder list, all at once, so one large list cannot hold up the rest.
+    for list in reminderLists {
+      guard let calendar = store.calendar(withIdentifier: list.identifier) else {
+        gone.append(list)
+        continue
+      }
+      fetches[list.identifier] = store.fetchReminders(
+        matching: predicate(for: calendar, includingCompleted: includingCompleted)
+      ) { reminders in
+        answers.record(reminders ?? [], for: list.identifier)
+      }
+    }
+
+    let answered = answers.waitingFor(fetches.count, until: deadline)
+
+    // A fetch still running is cancelled rather than left to finish for nobody.
+    for (identifier, fetch) in fetches where answered[identifier] == nil {
+      store.cancelFetchRequest(fetch)
+    }
+
+    return RemindersRead(
+      reminders: reminderLists.flatMap { answered[$0.identifier] ?? [] }.map(reminder),
+      unreadReminderLists: reminderLists.filter {
+        answered[$0.identifier] == nil && !gone.contains($0)
+      },
+      goneReminderLists: gone)
+  }
+
+  /// Completed reminders are left out in the fetch itself: years of them are what made
+  /// upstream's reads time out (upstream #53).
+  private func predicate(for calendar: EKCalendar, includingCompleted: Bool) -> NSPredicate {
+    includingCompleted
+      ? store.predicateForReminders(in: [calendar])
       : store.predicateForIncompleteReminders(
-        withDueDateStarting: nil, ending: nil, calendars: calendars)
+        withDueDateStarting: nil, ending: nil, calendars: [calendar])
+  }
 
-    let fetched = DispatchSemaphore(value: 0)
-    nonisolated(unsafe) var found: [EKReminder] = []
-    store.fetchReminders(matching: predicate) { reminders in
-      found = reminders ?? []
-      fetched.signal()
-    }
-    fetched.wait()
-
-    return found.map { reminder in
-      // Which of EventKit's identifiers addresses a reminder for good waits on REM-V6 in
-      // findings.md; this is the one EventKit itself looks a reminder up by.
-      Reminder(
-        identifier: reminder.calendarItemIdentifier,
-        title: reminder.title ?? "",
-        notes: reminder.notes,
-        isCompleted: reminder.isCompleted,
-        due: reminder.dueDateComponents.flatMap(due),
-        reminderList: reminderList(reminder.calendar))
-    }
+  private func reminder(_ reminder: EKReminder) -> Reminder {
+    // Which of EventKit's identifiers addresses a reminder for good waits on REM-V6 in
+    // findings.md; this is the one EventKit itself looks a reminder up by.
+    Reminder(
+      identifier: reminder.calendarItemIdentifier,
+      title: reminder.title ?? "",
+      isCompleted: reminder.isCompleted,
+      due: reminder.dueDateComponents.flatMap(due),
+      reminderList: reminderList(reminder.calendar))
   }
 
   private func reminderList(_ calendar: EKCalendar) -> ReminderList {
@@ -78,5 +99,28 @@ final class EventKitReminderStore: ReminderStore, @unchecked Sendable {
     var calendar = Foundation.Calendar(identifier: .gregorian)
     calendar.timeZone = components.timeZone ?? .current
     return calendar.date(from: components).map(Due.time)
+  }
+}
+
+/// What the fetches have answered so far. EventKit answers on threads of its own, may answer
+/// after the deadline, and may never call back for a fetch that was cancelled, so waiting is on a
+/// condition this class owns rather than on anything that must be balanced.
+private final class Answers: @unchecked Sendable {
+  private let condition = NSCondition()
+  private var byReminderList: [String: [EKReminder]] = [:]
+
+  func record(_ reminders: [EKReminder], for identifier: String) {
+    condition.lock()
+    byReminderList[identifier] = reminders
+    condition.broadcast()
+    condition.unlock()
+  }
+
+  /// What has answered once this many have, or once the deadline passes, whichever is first.
+  func waitingFor(_ expected: Int, until deadline: Date) -> [String: [EKReminder]] {
+    condition.lock()
+    defer { condition.unlock() }
+    while byReminderList.count < expected, condition.wait(until: deadline) {}
+    return byReminderList
   }
 }

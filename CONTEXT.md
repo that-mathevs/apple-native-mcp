@@ -70,6 +70,13 @@ How far a read actually reached, such as how many items were scanned or how far 
 A result that stopped at a limit is **truncated**, and says so.
 _Avoid_: partial, incomplete, scan window
 
+**Page**:
+One part of a truncated index. The next page is asked for by its **offset**, the number of items
+already returned, which a truncated result states. Anything that changes between two pages shifts
+what the offset counts from: an item added or completed, or a container that answered for one page
+and not the other, which each page's coverage names.
+_Avoid_: batch, chunk, cursor, continuation token
+
 **Index and detail**:
 An index lists many items briefly; a detail read returns one item in full. Both are records, never
 prose.

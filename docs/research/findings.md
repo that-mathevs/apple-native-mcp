@@ -614,9 +614,9 @@ _No tool in v1 ([#18](https://github.com/that-mathevs/apple-native-mcp/issues/18
 - [x] **REM-13** [acceptance] given a list name that looks like a command-line flag, treats it as a list name · NN1 · mjmcg `d4ec06d`, `bde3e31`
 - [ ] **REM-14** [acceptance] given an iCloud list and a CalDAV list, reports reminders from both (after REM-V9) · — · felkru `12ad33f`; upstream #53, #26
 - [ ] **REM-15** [acceptance] given a reminder just created, includes it · NN3 · upstream #26, PR #40
-- [ ] **REM-16** [acceptance] given more reminders than the limit, reports the first ones and says more exist instead of presenting them as all · NN3 · boutquin `8a5d2e0`; KassebaumEngineering `1d47e74`; sicdigital `791f5f2`, `3cfb29d`; upstream #26, #53, #64, #10
-- [ ] **REM-17** [acceptance] given more reminders than one response holds, reports a page and how to get the next · — · mjmcg `2743d84`
-- [ ] **REM-18** [acceptance] given a list too large to read within the time budget, says which list was not read · NN3 · chrischall `6831a90`, `1a358d6`, `b6a4ec6`, `2846497`; upstream #53, #64, #59, #26, #10
+- [x] **REM-16** [acceptance] given more reminders than the limit, reports the first ones and says more exist instead of presenting them as all · NN3 · boutquin `8a5d2e0`; KassebaumEngineering `1d47e74`; sicdigital `791f5f2`, `3cfb29d`; upstream #26, #53, #64, #10
+- [x] **REM-17** [acceptance] given more reminders than one response holds, reports a page and how to get the next · — · mjmcg `2743d84`
+- [x] **REM-18** [acceptance] given a list too large to read within the time budget, says which list was not read · NN3 · chrischall `6831a90`, `1a358d6`, `b6a4ec6`, `2846497`; upstream #53, #64, #59, #26, #10
 - [ ] **REM-19** [acceptance] given thousands of completed reminders, answers within the time budget (after REM-V7) · — · upstream #53
 - [ ] **REM-20** [acceptance] given the store cannot be read, fails and says why rather than reporting no reminders · NN3 · boutquin `8a5d2e0`; mjmcg `88e26b9`, `d4ec06d`, `bde3e31`; upstream #26, #53
 - [x] **REM-21** [acceptance] given reminders access was denied, fails with a permission failure that names the Privacy & Security setting to change, rather than reporting no reminders · NN5 · danielk-am `ad3e9e9`, `9d9122c`; mjmcg `bde3e31`, `804b77d`; upstream #53, #26, #10, #59, #64
