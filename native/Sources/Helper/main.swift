@@ -13,7 +13,10 @@ func servingTheSession() {
   serveSession(
     Helper(
       calendarStore: EventKitCalendarStore(), reminderStore: EventKitReminderStore(),
-      contactStore: FrameworkContactStore()))
+      contactStore: FrameworkContactStore(),
+      messageStore: SQLiteMessageStore(
+        path: FileManager.default.homeDirectoryForCurrentUser
+          .appendingPathComponent("Library/Messages/chat.db").path)))
 }
 
 /// Kept for the life of the process, or the watch would end with the function that started it.

@@ -14,6 +14,7 @@ import {
 import { diskHelperFiles } from "./adapters/native/disk-helper-files.js";
 import { Helper } from "./adapters/native/helper.js";
 import { helperPermissions } from "./adapters/native/helper-permissions.js";
+import { helperMessageStore } from "./adapters/native/message-store.js";
 import { helperReminderStore } from "./adapters/native/reminder-store.js";
 import { helperToLaunch } from "./application/setup/helper-to-launch.js";
 import { installHelper } from "./application/setup/install-helper.js";
@@ -100,6 +101,7 @@ const serve = async (): Promise<void> => {
   const server = buildServer({
     eventStore: calendarEventStore(helper),
     reminderStore: helperReminderStore(helper),
+    messageStore: helperMessageStore(helper),
     contactStore: helperContactStore(helper),
     now: () => new Date(),
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,

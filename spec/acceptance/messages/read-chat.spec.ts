@@ -1,0 +1,107 @@
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { aServer } from "../../support/a-server.js";
+import { connectedTo } from "../../support/connected-client.js";
+import { FakeMessageStore } from "../../support/fake-message-store.js";
+
+const climbing = "iMessage;+;chat001";
+
+const fromBen = {
+  identifier: "message-1",
+  chat: climbing,
+  text: "Wall at 6?",
+  direction: "incoming",
+  handle: "ben@example.com",
+  timestamp: new Date("2026-09-18T15:00:00Z"),
+  service: "iMessage",
+} as const;
+
+const fromUser = {
+  identifier: "message-2",
+  chat: climbing,
+  text: "I'm in",
+  direction: "outgoing",
+  timestamp: new Date("2026-09-18T15:05:00Z"),
+  service: "iMessage",
+} as const;
+
+describe("reading a chat", () => {
+  let messageStore: FakeMessageStore;
+  let client: Client;
+
+  const readChat = async (args: Record<string, unknown>): ReturnType<Client["callTool"]> =>
+    await client.callTool({ name: "read_chat", arguments: args });
+
+  beforeEach(async () => {
+    messageStore = new FakeMessageStore();
+    client = await connectedTo(aServer({ messageStore }));
+  });
+
+  // Upstream #62 matched messages by handle alone, which dropped everything the user sent and
+  // every group chat; a chat is the unit, and both sides of it are read (MSG-C3).
+  it("returns the chat's messages from both sides in time order, each with its text, direction, timestamp and service", async () => {
+    messageStore.holdsMessages(fromUser, fromBen);
+
+    const result = await readChat({ chat: climbing });
+
+    expect(result.structuredContent).toStrictEqual({
+      chat: climbing,
+      messages: [
+        {
+          identifier: "message-1",
+          text: "Wall at 6?",
+          direction: "incoming",
+          handle: "ben@example.com",
+          timestamp: "2026-09-18T15:00:00.000Z",
+          service: "iMessage",
+        },
+        {
+          identifier: "message-2",
+          text: "I'm in",
+          direction: "outgoing",
+          timestamp: "2026-09-18T15:05:00.000Z",
+          service: "iMessage",
+        },
+      ],
+      coverage: { truncated: false },
+    });
+  });
+
+  it("given more messages than the limit, returns the newest in time order and says older ones were left", async () => {
+    messageStore.holdsMessages(fromUser, fromBen);
+
+    const result = await readChat({ chat: climbing, limit: 1 });
+
+    expect(result.structuredContent).toMatchObject({
+      messages: [{ identifier: "message-2" }],
+      coverage: { truncated: true },
+    });
+  });
+
+  // faces-sh 1fa9dc5: a read over a range said which range it had understood, so a short answer
+  // could be told from a quiet week.
+  it("given a range, returns only the messages inside it and says which range it read", async () => {
+    messageStore.holdsMessages(fromUser, fromBen);
+
+    const result = await readChat({
+      chat: climbing,
+      from: "2026-09-18T15:01:00Z",
+      to: "2026-09-18T16:00:00Z",
+    });
+
+    expect(result.structuredContent).toMatchObject({
+      messages: [{ identifier: "message-2" }],
+      range: { from: "2026-09-18T15:01:00.000Z", to: "2026-09-18T16:00:00.000Z" },
+    });
+  });
+
+  it("given a chat identifier no chat has, refuses rather than reporting no messages", async () => {
+    messageStore.holdsMessages(fromBen);
+
+    const result = await readChat({ chat: "iMessage;-;nobody" });
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toMatchObject({ failure: { code: "chat_unknown" } });
+  });
+});

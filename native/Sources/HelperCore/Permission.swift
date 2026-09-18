@@ -78,3 +78,8 @@ public let remindersPermissionSetting =
 /// Where the user turns contacts access on.
 public let contactsPermissionSetting =
   "System Settings > Privacy & Security > Contacts > apple-native-mcp"
+
+/// Where the user lets the helper read the message store. There is no prompt for this one: it
+/// can only be turned on here, by hand.
+public let messageStorePermissionSetting =
+  "System Settings > Privacy & Security > Full Disk Access > apple-native-mcp"

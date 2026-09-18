@@ -5,8 +5,8 @@ The helper is the Swift process that holds every macOS permission and reaches ev
 permission of its own and opens no protected file; it starts the helper and talks to it.
 
 So far it answers for the calendar, with its calendars, the events in a range and one event in
-full, and for the reminders, with the reminder lists and the reminders in them. Each has its own
-permission.
+full; for the reminders, with the reminder lists and the reminders in them; for the contacts; and
+for the messages, with the newest chats and a chat's messages. Each has its own permission.
 
 ## What it does
 
@@ -36,6 +36,10 @@ outside evidence verbatim.
 | `reminders_permission_missing` | macOS has not allowed the helper to read the reminders; the sentence names the setting and where it is, or, while nobody has been asked, says to run `npx apple-native-mcp setup` |
 | `reminder_list_unknown` | a request named a reminder list the helper cannot find, perhaps deleted since it was listed; nothing is read |
 | `reminders_timed_out` | no reminder list answered within the time budget; reported instead of an empty answer that would read as "no reminders" |
+| `message_store_permission_missing` | macOS has not allowed the helper to read the message store; the sentence names the Full Disk Access setting and where it is, which only the user can turn on |
+| `message_store_not_found` | this Mac has no message store at all, which is not a missing permission |
+| `message_store_unreadable` | the message store is there but would not be read; the evidence is what the store said |
+| `chat_unknown` | a request named a chat the message store does not have; nothing is read |
 
 ## The protocol
 
@@ -183,6 +187,35 @@ A contact has no note here. macOS keeps that field for apps Apple has entitled, 
 framework for it without the entitlement fails the whole fetch, so the helper never does:
 `"include":["note"]` is understood and refused as `contact_note_unavailable`.
 
+**The chats**
+
+```json
+{"protocolVersion":1,"id":"8","request":"chats","limit":20}
+{"id":"8","protocolVersion":1,"result":{"chats":[{"identifier":"iMessage;+;chat001","kind":"group","lastTimestamp":"2026-09-18T09:01:00Z","participants":["+15551230001","ben@example.com"]}],"truncated":false}}
+```
+
+The newest chats with real traffic, up to `limit`, which is required and at most 500. A chat whose
+only messages are the user's own failed sends is a ghost chat and is left out. `kind` is the chat's
+own, `one-to-one` or `group`, never counted from its participants, and the user is never a
+participant. `truncated` says there were more.
+
+**A chat's messages**
+
+```json
+{"protocolVersion":1,"id":"9","request":"chat_messages","chat":"iMessage;+;chat001","limit":50,"range":{"start":null,"end":null}}
+{"id":"9","protocolVersion":1,"result":{"messages":[{"chat":"iMessage;+;chat001","direction":"incoming","handle":"ben@example.com","identifier":"…","service":"iMessage","text":"Wall at 6?","timestamp":"2026-09-18T09:00:00Z"}],"truncated":false}}
+```
+
+The chat's newest messages, oldest first. `range` may leave either bound open with `null` or by
+leaving it out; a bound that is written but is not an instant is refused. Reactions and group
+events such as a rename are left out: nobody wrote them to the chat. `handle` is where an incoming
+message came from, and `null` for the user's own. `text` is `null` when the store keeps no text the
+helper can read yet.
+
+The store is opened read-only, by path, and every value in a query is bound, never written into it.
+Before it is opened, the file is opened for reading once, because macOS refuses a protected file
+before SQLite sees it and only the error number tells a refusal from a store that is not there.
+
 ## Building it
 
 ```sh
@@ -242,6 +275,6 @@ real Mac.
 
 | Path | Holds |
 |---|---|
-| `Sources/HelperCore/` | the protocol, the calendar and reminders rules, the named failures, `CalendarStore` and `ReminderStore` |
+| `Sources/HelperCore/` | the protocol, the calendar, reminders, contacts and messages rules, the named failures, the store ports, and `SQLiteMessageStore`, which reads a SQLite file and so is specified against ones the scenarios build |
 | `Sources/Helper/` | the executable: the disclaimed relaunch, the stdio session, the EventKit adapters |
 | `Tests/HelperCoreTests/` | the scenarios, and the fake Mac they run against |

@@ -25,6 +25,8 @@ struct Request: Equatable {
     case requestContactsPermission
     case contacts
     case contactNote
+    case chats(limit: Int)
+    case chatMessages(chat: String, range: MessageRange, limit: Int)
   }
 }
 
@@ -44,6 +46,8 @@ enum RequestName: String {
   case contactsPermission = "contacts_permission"
   case requestContactsPermission = "contacts_permission_request"
   case contacts = "contacts"
+  case chats = "chats"
+  case chatMessages = "chat_messages"
 }
 
 /// What reading a line produced: a request the helper can answer, or a named failure to report
@@ -158,8 +162,49 @@ extension Request {
       case ["note"]: return .request(Request(id: id, kind: .contactNote))
       default: return .failure(id: id, .requestMalformed(line: line))
       }
+    case .chats:
+      guard let limit = readLimit(fields["limit"]) else {
+        return .failure(id: id, .requestMalformed(line: line))
+      }
+      return .request(Request(id: id, kind: .chats(limit: limit)))
+    case .chatMessages:
+      guard
+        let chat = fields["chat"] as? String, !chat.isEmpty,
+        let limit = readLimit(fields["limit"]),
+        let range = readMessageRange(fields["range"])
+      else {
+        return .failure(id: id, .requestMalformed(line: line))
+      }
+      return .request(Request(id: id, kind: .chatMessages(chat: chat, range: range, limit: limit)))
     }
   }
+}
+
+/// A range of messages, either bound left open by leaving it out or writing null. A bound that
+/// is written but is not an instant is refused, never read as open.
+private func readMessageRange(_ field: Any?) -> MessageRange? {
+  guard let field, !(field is NSNull) else { return .unbounded }
+  guard let bounds = field as? [String: Any] else { return nil }
+
+  func bound(_ name: String) -> Date?? {
+    switch OptionalInstant(bounds[name] is NSNull ? nil : bounds[name]) {
+    case .absent: return .some(nil)
+    case .instant(let instant): return .some(instant)
+    case .unreadable: return nil
+    }
+  }
+
+  guard let start = bound("start"), let end = bound("end") else { return nil }
+  return MessageRange(start: start, end: end)
+}
+
+/// The most a read of the message store answers with at once, whatever the server asks.
+let greatestMessagesLimit = 500
+
+/// A limit is required and must be one the helper answers: it never picks one for the server.
+private func readLimit(_ field: Any?) -> Int? {
+  guard let limit = field as? Int, (1...greatestMessagesLimit).contains(limit) else { return nil }
+  return limit
 }
 
 /// A range arrives as two instants. The helper never invents one: deciding what "this week" means

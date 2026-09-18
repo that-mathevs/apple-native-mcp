@@ -10,14 +10,17 @@ public struct Helper: Sendable {
   private let calendarWriting: CalendarWriting
   private let reminders: RemindersReading
   private let contacts: ContactsReading
+  private let messages: MessagesReading
 
   public init(
-    calendarStore: CalendarStore, reminderStore: ReminderStore, contactStore: ContactStore
+    calendarStore: CalendarStore, reminderStore: ReminderStore, contactStore: ContactStore,
+    messageStore: MessageStore
   ) {
     self.calendar = CalendarReading(store: calendarStore)
     self.calendarWriting = CalendarWriting(store: calendarStore)
     self.reminders = RemindersReading(store: reminderStore)
     self.contacts = ContactsReading(store: contactStore)
+    self.messages = MessagesReading(store: messageStore)
   }
 
   /// Answer one line. Always returns exactly one line of JSON, whatever arrives.
@@ -78,6 +81,14 @@ public struct Helper: Sendable {
       return answering(contacts.contacts()) { ["contacts": $0.map(\.asFields)] }
     case .contactNote:
       return ["failure": NamedFailure.contactNoteUnavailable.asFields]
+    case .chats(let limit):
+      return answering(messages.chats(limit: limit)) {
+        ["chats": $0.chats.map(\.asFields), "truncated": $0.truncated]
+      }
+    case .chatMessages(let chat, let range, let limit):
+      return answering(messages.messages(inChat: chat, within: range, limit: limit)) {
+        ["messages": $0.messages.map(\.asFields), "truncated": $0.truncated]
+      }
     }
   }
 
@@ -90,6 +101,25 @@ public struct Helper: Sendable {
     case .success(let found): ["result": fields(found)]
     case .failure(let failure): ["failure": failure.asFields]
     }
+  }
+}
+
+extension Chat {
+  var asFields: [String: Any] {
+    [
+      "identifier": identifier, "kind": kind.rawValue, "participants": participants,
+      "lastTimestamp": Instant.written(lastTimestamp),
+    ]
+  }
+}
+
+extension Message {
+  var asFields: [String: Any] {
+    [
+      "identifier": identifier, "chat": chat, "text": text ?? NSNull(),
+      "direction": direction.rawValue, "handle": handle ?? NSNull(),
+      "timestamp": Instant.written(timestamp), "service": service,
+    ]
   }
 }
 

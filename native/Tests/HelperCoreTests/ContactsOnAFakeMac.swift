@@ -69,5 +69,5 @@ struct FakeContactStore: ContactStore {
 func aContactStore() -> FakeContactStore { FakeContactStore() }
 
 func helperReading(_ store: FakeContactStore) -> Helper {
-  Helper(calendarStore: aCalendarStore(), reminderStore: aReminderStore(), contactStore: store)
+  Helper(calendarStore: aCalendarStore(), reminderStore: aReminderStore(), contactStore: store, messageStore: noMessageStore)
 }

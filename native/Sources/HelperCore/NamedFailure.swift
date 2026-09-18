@@ -47,6 +47,14 @@ public enum FailureCode: String, Equatable, Sendable {
   case contactNoteUnavailable = "contact_note_unavailable"
   /// The contact store would not be read.
   case contactsUnreadable = "contacts_unreadable"
+  /// macOS has not allowed the helper to read the message store.
+  case messageStorePermissionMissing = "message_store_permission_missing"
+  /// This Mac has no message store.
+  case messageStoreNotFound = "message_store_not_found"
+  /// The message store is there but would not be read.
+  case messageStoreUnreadable = "message_store_unreadable"
+  /// A request named a chat the message store does not have.
+  case chatUnknown = "chat_unknown"
 }
 
 extension NamedFailure {
@@ -172,4 +180,35 @@ extension NamedFailure {
     sentence: "A contact's note cannot be read: macOS keeps it for apps Apple has entitled. "
       + "Nothing was read.",
     evidence: "note")
+
+  // Upstream #62 blamed one missing permission for every way the store could fail to open, and
+  // upstream #66 turned all of them into no messages (MSG-C11). Each has its own failure.
+  static func messageStorePermissionMissing(evidence: String) -> NamedFailure {
+    NamedFailure(
+      code: .messageStorePermissionMissing,
+      sentence: "apple-native-mcp cannot read your messages until it is allowed to, in "
+        + "\(messageStorePermissionSetting).",
+      evidence: evidence)
+  }
+
+  static func messageStoreNotFound(evidence: String) -> NamedFailure {
+    NamedFailure(
+      code: .messageStoreNotFound,
+      sentence: "This Mac has no message store, so there are no messages to read.",
+      evidence: evidence)
+  }
+
+  static func messageStoreUnreadable(evidence: String) -> NamedFailure {
+    NamedFailure(
+      code: .messageStoreUnreadable,
+      sentence: "The message store is there but could not be read, so nothing was read.",
+      evidence: evidence)
+  }
+
+  static func chatUnknown(identifier: String) -> NamedFailure {
+    NamedFailure(
+      code: .chatUnknown,
+      sentence: "No chat has that identifier, so nothing was read.",
+      evidence: identifier)
+  }
 }
