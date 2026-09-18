@@ -334,7 +334,8 @@ _Avoid_: account (unqualified), provider, mail source
 **Mailbox**:
 A folder of emails inside one mail account, identified by its account and its path. Mailboxes nest,
 and names repeat across accounts. A **role mailbox** is one Mail knows by its job: Inbox, Drafts,
-Sent, Junk, Trash or Archive, whose displayed names vary by provider and language.
+Sent, Junk or Trash, whose displayed names vary by provider and language. Mail knows no such job
+for an archive, so an archive mailbox is a mailbox like any other, with no role.
 _Avoid_: folder, label, INBOX as a name
 
 **Email**:
