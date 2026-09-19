@@ -5,6 +5,7 @@ import { afterAll, describe, it } from "vitest";
 import { calendarEventStore } from "../../src/adapters/native/calendar-event-store.js";
 import { Helper } from "../../src/adapters/native/helper.js";
 import { succeeded } from "../../src/domain/failure.js";
+import { settledBeforeRunning } from "../support/mac-permissions.js";
 import {
   anEventStore,
   anEventStoreThatCreatesEvents,
@@ -29,7 +30,7 @@ const helperPath = fileURLToPath(
 
 const helper = new Helper(() => Promise.resolve(succeeded(helperPath)));
 
-await helper.ask({ request: "calendar_permission_request" }, { waitsOnTheUser: true });
+await settledBeforeRunning(helper, helperPath, ["calendar"]);
 
 afterAll(() => {
   helper.stop();

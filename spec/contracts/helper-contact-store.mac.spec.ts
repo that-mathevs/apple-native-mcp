@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { helperContactStore } from "../../src/adapters/native/contact-store.js";
 import { Helper } from "../../src/adapters/native/helper.js";
 import { succeeded } from "../../src/domain/failure.js";
+import { settledBeforeRunning } from "../support/mac-permissions.js";
 import { aContactStore } from "./contact-store.contract.js";
 
 /**
@@ -22,7 +23,7 @@ const helperPath = fileURLToPath(
 const helper = new Helper(() => Promise.resolve(succeeded(helperPath)));
 
 beforeAll(async () => {
-  await helper.ask({ request: "contacts_permission_request" }, { waitsOnTheUser: true });
+  await settledBeforeRunning(helper, helperPath, ["contacts"]);
 }, 120_000);
 
 afterAll(() => {
