@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Helper } from "../../src/adapters/native/helper.js";
 import { helperNoteStore } from "../../src/adapters/native/note-store.js";
 import { succeeded } from "../../src/domain/failure.js";
+import { settledBeforeRunning } from "../support/mac-permissions.js";
 import { aNoteStore } from "./note-store.contract.js";
 
 /**
@@ -22,7 +23,7 @@ const helperPath = fileURLToPath(
 const helper = new Helper(() => Promise.resolve(succeeded(helperPath)));
 
 beforeAll(async () => {
-  await helper.ask({ request: "notes_permission_request" }, { waitsOnTheUser: true });
+  await settledBeforeRunning(helper, helperPath, ["notes"]);
 }, 120_000);
 
 afterAll(() => {

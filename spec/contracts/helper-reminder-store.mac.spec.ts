@@ -5,6 +5,7 @@ import { afterAll, describe, it } from "vitest";
 import { Helper } from "../../src/adapters/native/helper.js";
 import { helperReminderStore } from "../../src/adapters/native/reminder-store.js";
 import { succeeded } from "../../src/domain/failure.js";
+import { settledBeforeRunning } from "../support/mac-permissions.js";
 import { aReminderStore, aReminderStoreThatCreatesReminders } from "./reminder-store.contract.js";
 
 /**
@@ -20,7 +21,7 @@ const helperPath = fileURLToPath(
 const helper = new Helper(() => Promise.resolve(succeeded(helperPath)));
 
 // Asked before anything else, the scratch list below included: the lists can't be read until then.
-await helper.ask({ request: "reminders_permission_request" }, { waitsOnTheUser: true });
+await settledBeforeRunning(helper, helperPath, ["reminders"]);
 
 afterAll(() => {
   helper.stop();
