@@ -4,6 +4,7 @@ import {
   listCalendars,
   type ListCalendarsDependencies,
 } from "../../application/calendar/list-calendars.js";
+import { calendarAccountRecord } from "../calendar-account-record.js";
 import { refusing, reporting } from "../result.js";
 import { tool, type Tool } from "../tool.js";
 
@@ -12,7 +13,7 @@ const listCalendarsOutput = {
     z.object({
       identifier: z.string(),
       title: z.string(),
-      account: z.string(),
+      account: calendarAccountRecord,
       acceptsNewEvents: z.boolean(),
     }),
   ),

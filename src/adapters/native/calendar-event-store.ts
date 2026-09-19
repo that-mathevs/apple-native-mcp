@@ -45,7 +45,7 @@ type EventRecord = {
 const asCalendar = (record: CalendarRecord): Calendar => ({
   identifier: record.identifier,
   title: record.title,
-  account: record.account.title,
+  account: { identifier: record.account.identifier, title: record.account.title },
   acceptsNewEvents: record.acceptsNewEvents,
 });
 

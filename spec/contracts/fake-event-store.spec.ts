@@ -6,6 +6,7 @@ import {
   anEventStoreThatCreatesEvents,
   anEventStoreThatListsCalendars,
 } from "./event-store.contract.js";
+import { iCloud } from "../support/calendar-accounts.js";
 
 // The fake stands in for the real store in every acceptance scenario, so it answers the
 // same contract here. The helper-backed store answers it on a Mac.
@@ -35,7 +36,7 @@ anEventStoreThatListsCalendars({
     eventStore.hasCalendars({
       identifier: "cal-1",
       title: "Work",
-      account: "iCloud",
+      account: iCloud,
       acceptsNewEvents: true,
     });
     return Promise.resolve({ eventStore });
@@ -54,7 +55,7 @@ anEventStoreThatCreatesEvents({
     eventStore.hasCalendars({
       identifier: "cal-1",
       title: "Work",
-      account: "iCloud",
+      account: iCloud,
       acceptsNewEvents: true,
     });
     return Promise.resolve({ eventStore, calendar: "cal-1", timeZone: "America/New_York" });

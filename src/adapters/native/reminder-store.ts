@@ -36,7 +36,7 @@ type ReminderRecord = {
 const asList = (record: ListRecord): ReminderList => ({
   identifier: record.identifier,
   title: record.title,
-  account: record.account.title,
+  account: { identifier: record.account.identifier, title: record.account.title },
 });
 
 /** A due date arrives as `2026-09-25` and stays a day; a due time arrives as an instant. */

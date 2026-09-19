@@ -5,6 +5,7 @@ import { settingsFrom } from "../../../src/domain/settings.js";
 import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
 import { FakeEventStore } from "../../support/fake-event-store.js";
+import { iCloud } from "../../support/calendar-accounts.js";
 
 // What an agent sees through the tool, with a fake event store behind it. Upstream
 // reported "today to next 7 days" in its description and then searched from now, so a
@@ -22,7 +23,7 @@ const anEvent = {
   start: new Date("2026-09-18T13:00:00Z"),
   end: new Date("2026-09-18T13:15:00Z"),
   isAllDay: false,
-  calendar: { identifier: "cal-1", title: "Work", account: "iCloud", acceptsNewEvents: true },
+  calendar: { identifier: "cal-1", title: "Work", account: iCloud, acceptsNewEvents: true },
 } as const;
 
 const earlier = {
@@ -60,8 +61,8 @@ describe("listing events", () => {
 
     expect(result.structuredContent).toMatchObject({
       events: [
-        { identifier: "event-0", title: "Breakfast", calendar: { title: "Work", account: "iCloud" } },
-        { identifier: "event-1", title: "Stand-up", calendar: { title: "Work", account: "iCloud" } },
+        { identifier: "event-0", title: "Breakfast", calendar: { title: "Work", account: iCloud } },
+        { identifier: "event-1", title: "Stand-up", calendar: { title: "Work", account: iCloud } },
       ],
     });
     expect(result.isError ?? false).toBe(false);

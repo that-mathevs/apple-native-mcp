@@ -4,6 +4,7 @@ import { settingsFrom } from "../../src/domain/settings.js";
 import { aServer } from "./a-server.js";
 import { connectedTo } from "./connected-client.js";
 import type { FakeEventStore } from "./fake-event-store.js";
+import { iCloud } from "./calendar-accounts.js";
 
 /** 2026-09-18 12:00 in New York, which is the user's time zone in every calendar scenario. */
 export const noon = new Date("2026-09-18T16:00:00Z");
@@ -12,7 +13,7 @@ export const timeZone = "America/New_York";
 export const work = {
   identifier: "cal-work",
   title: "Work",
-  account: "iCloud",
+  account: iCloud,
   acceptsNewEvents: true,
 } as const;
 
