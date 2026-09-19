@@ -4,12 +4,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
 import { FakeReminderStore, remindersRefused } from "../../support/fake-reminder-store.js";
+import { exchange, iCloud } from "../../support/calendar-accounts.js";
 
-const shopping = { identifier: "list-shopping", title: "Shopping", account: "iCloud" } as const;
+const shopping = { identifier: "list-shopping", title: "Shopping", account: iCloud } as const;
 const sharedShopping = {
   identifier: "list-shared",
   title: "Shopping",
-  account: "Exchange",
+  account: exchange,
 } as const;
 
 describe("listing reminder lists", () => {
@@ -38,7 +39,7 @@ describe("listing reminder lists", () => {
     const result = await listReminderLists();
 
     expect(result.structuredContent).toStrictEqual({
-      reminderLists: [{ identifier: "list-shopping", title: "Shopping", account: "iCloud" }],
+      reminderLists: [{ identifier: "list-shopping", title: "Shopping", account: iCloud }],
     });
   });
 
@@ -50,8 +51,8 @@ describe("listing reminder lists", () => {
 
     expect(result.structuredContent).toStrictEqual({
       reminderLists: [
-        { identifier: "list-shopping", title: "Shopping", account: "iCloud" },
-        { identifier: "list-shared", title: "Shopping", account: "Exchange" },
+        { identifier: "list-shopping", title: "Shopping", account: iCloud },
+        { identifier: "list-shared", title: "Shopping", account: exchange },
       ],
     });
   });

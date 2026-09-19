@@ -4,6 +4,7 @@ import type { EventStore } from "../../src/application/calendar/event-store.js";
 import type { Occurrence } from "../../src/domain/calendar/event.js";
 import type { Range } from "../../src/domain/calendar/range.js";
 import { dayIn, writtenDay } from "../../src/domain/time-zone.js";
+import { iCloud } from "../support/calendar-accounts.js";
 
 /**
  * What every event store promises, whichever way it reaches macOS.
@@ -44,7 +45,7 @@ const occurrence = (start: Date, title: string): Occurrence => ({
   start,
   end: new Date(start.getTime() + 30 * 60 * 1000),
   isAllDay: false,
-  calendar: { identifier: "cal-1", title: "Work", account: "iCloud", acceptsNewEvents: true },
+  calendar: { identifier: "cal-1", title: "Work", account: iCloud, acceptsNewEvents: true },
 });
 
 export const anEventStore = ({ name, build }: EventStoreUnderTest): void => {
@@ -101,7 +102,10 @@ export const anEventStoreThatListsCalendars = ({ name, build }: EventStoreUnderT
         expect(calendar).toStrictEqual({
           identifier: expect.any(String) as string,
           title: expect.any(String) as string,
-          account: expect.any(String) as string,
+          account: {
+            identifier: expect.any(String) as string,
+            title: expect.any(String) as string,
+          },
           acceptsNewEvents: expect.any(Boolean) as boolean,
         });
       }
@@ -243,7 +247,7 @@ export const anEventStoreThatCanBeLoaded = ({
 
       expect(read).toMatchObject({
         ok: true,
-        value: { occurrences: [{ title: "Stand-up", calendar: { account: "iCloud" } }] },
+        value: { occurrences: [{ title: "Stand-up", calendar: { account: iCloud } }] },
       });
     });
 

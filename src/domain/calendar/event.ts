@@ -1,8 +1,10 @@
+import type { CalendarAccount } from "../calendar-account.js";
+
 /** A calendar an event belongs to: titles repeat across accounts, so the identifier addresses it. */
 export type Calendar = {
   readonly identifier: string;
   readonly title: string;
-  readonly account: string;
+  readonly account: CalendarAccount;
   /** Whether it is a writable calendar. Subscriptions and birthdays are not. */
   readonly acceptsNewEvents: boolean;
 };

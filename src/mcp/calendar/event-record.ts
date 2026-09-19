@@ -2,11 +2,12 @@ import { z } from "zod";
 
 import type { Occurrence } from "../../domain/calendar/event.js";
 import { dayIn, writtenDay } from "../../domain/time-zone.js";
+import { calendarAccountRecord } from "../calendar-account-record.js";
 
 const calendar = z.object({
   identifier: z.string(),
   title: z.string(),
-  account: z.string(),
+  account: calendarAccountRecord,
 });
 
 /** One event as an index reports it, which a detail read adds to. */
@@ -53,6 +54,9 @@ export const asEventRecord = (
   calendar: {
     identifier: occurrence.calendar.identifier,
     title: occurrence.calendar.title,
-    account: occurrence.calendar.account,
+    account: {
+      identifier: occurrence.calendar.account.identifier,
+      title: occurrence.calendar.account.title,
+    },
   },
 });

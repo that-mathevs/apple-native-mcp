@@ -1,3 +1,4 @@
+import type { CalendarAccount } from "../calendar-account.js";
 import type { NamedFailure, Outcome } from "../failure.js";
 import { failed, succeeded } from "../failure.js";
 import type { LocalDay } from "../time-zone.js";
@@ -9,7 +10,7 @@ import type { LocalDay } from "../time-zone.js";
 export type ReminderList = {
   readonly identifier: string;
   readonly title: string;
-  readonly account: string;
+  readonly account: CalendarAccount;
 };
 
 /**

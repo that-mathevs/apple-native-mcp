@@ -3,13 +3,15 @@ import { describe, expect, it } from "vitest";
 import type { Occurrence } from "./event.js";
 import { duplicateOf, rangeOf, timeFrom } from "./new-event.js";
 
+const iCloud = { identifier: "account-icloud", title: "iCloud" } as const;
+
 const lunch: Occurrence = {
   identifier: "event-1",
   title: "Lunch with Sam",
   start: new Date("2026-09-22T16:30:00Z"),
   end: new Date("2026-09-22T17:30:00Z"),
   isAllDay: false,
-  calendar: { identifier: "cal-1", title: "Work", account: "iCloud", acceptsNewEvents: true },
+  calendar: { identifier: "cal-1", title: "Work", account: iCloud, acceptsNewEvents: true },
 };
 
 const the22nd = { year: 2026, month: 9, day: 22 };

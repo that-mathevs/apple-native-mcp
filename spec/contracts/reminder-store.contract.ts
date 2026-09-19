@@ -45,7 +45,10 @@ export const aReminderStore = ({ name, build }: ReminderStoreUnderTest): void =>
         expect(list).toStrictEqual({
           identifier: expect.any(String) as string,
           title: expect.any(String) as string,
-          account: expect.any(String) as string,
+          account: {
+            identifier: expect.any(String) as string,
+            title: expect.any(String) as string,
+          },
         });
       }
     });

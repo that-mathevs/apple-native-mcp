@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { aClientOfTheCalendar, therapy, work } from "../../support/calendar-server.js";
 import { FakeEventStore } from "../../support/fake-event-store.js";
+import { iCloud, subscriptions } from "../../support/calendar-accounts.js";
 
 // What happens when an agent asks for a new event. Upstream wrote to the first calendar it
 // found, which could be a subscription or somebody's shared calendar (upstream
@@ -19,7 +20,7 @@ const lunch = {
 const holidays = {
   identifier: "cal-holidays",
   title: "UK Holidays",
-  account: "Subscriptions",
+  account: subscriptions,
   acceptsNewEvents: false,
 } as const;
 
@@ -48,7 +49,7 @@ describe("creating an event", () => {
         title: "Lunch with Sam",
         start: "2026-09-22T16:30:00.000Z",
         end: "2026-09-22T17:30:00.000Z",
-        calendar: { identifier: "cal-work", title: "Work", account: "iCloud" },
+        calendar: { identifier: "cal-work", title: "Work", account: iCloud },
       },
     });
   });

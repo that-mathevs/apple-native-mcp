@@ -5,6 +5,7 @@ import type { Reminder, ReminderList } from "../../../src/domain/reminders/remin
 import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
 import { FakeReminderStore, remindersRefused } from "../../support/fake-reminder-store.js";
+import { exchange, iCloud } from "../../support/calendar-accounts.js";
 
 // What an agent sees of the user's reminders, with a fake reminder store behind the tool.
 
@@ -13,9 +14,9 @@ const timeZone = "America/New_York";
 const shopping: ReminderList = {
   identifier: "list-shopping",
   title: "Shopping",
-  account: "iCloud",
+  account: iCloud,
 };
-const errands: ReminderList = { identifier: "list-errands", title: "Errands", account: "iCloud" };
+const errands: ReminderList = { identifier: "list-errands", title: "Errands", account: iCloud };
 
 const aReminder = (
   title: string,
@@ -66,7 +67,7 @@ describe("listing reminders", () => {
           identifier: "reminder-Oat milk",
           title: "Oat milk",
           isCompleted: false,
-          reminderList: { identifier: "list-shopping", title: "Shopping", account: "iCloud" },
+          reminderList: { identifier: "list-shopping", title: "Shopping", account: iCloud },
         },
       ],
       coverage: {
@@ -117,7 +118,7 @@ describe("listing reminders", () => {
 
   // mjmcg 5ca5e55 read whichever reminder list with that title came first.
   it("given a title two accounts share, refuses and names both reminder lists by account rather than picking one", async () => {
-    const sharedShopping = { identifier: "list-shared", title: "Shopping", account: "Exchange" };
+    const sharedShopping = { identifier: "list-shared", title: "Shopping", account: exchange };
     reminderStore.holdsReminderLists(shopping, sharedShopping);
 
     const result = await listReminders({ reminderList: "Shopping" });
@@ -128,6 +129,26 @@ describe("listing reminders", () => {
         code: "reminder-list-ambiguous",
         evidence: expect.stringMatching(/list-shopping.*iCloud.*list-shared.*Exchange/su) as string,
       },
+    });
+  });
+
+  // Exchange sources are often all titled "Exchange", so an account's title alone can't tell them.
+  it("given a title two accounts with one title share, refuses and still tells the lists apart by account", async () => {
+    const work = { identifier: "account-work", title: "Exchange" };
+    const club = { identifier: "account-club", title: "Exchange" };
+    reminderStore.holdsReminderLists(
+      { identifier: "list-work-tasks", title: "Tasks", account: work },
+      { identifier: "list-club-tasks", title: "Tasks", account: club },
+    );
+
+    const result = await listReminders({ reminderList: "Tasks" });
+
+    const { failure } = result.structuredContent as { failure: { evidence: string } };
+    expect(JSON.parse(failure.evidence)).toMatchObject({
+      reminderLists: [
+        { identifier: "list-work-tasks", account: work },
+        { identifier: "list-club-tasks", account: club },
+      ],
     });
   });
 
@@ -149,7 +170,7 @@ describe("listing reminders", () => {
   // mjmcg d4ec06d: a reminder list's name was handed to a command-line tool, which read "--all"
   // as a flag.
   it("given a reminder list title that looks like a command-line flag, treats it as a title", async () => {
-    const flagLike = { identifier: "list-flag", title: "--all", account: "iCloud" };
+    const flagLike = { identifier: "list-flag", title: "--all", account: iCloud };
     reminderStore.holdsReminderLists(shopping, flagLike);
     reminderStore.holds(aReminder("Oat milk", shopping), aReminder("Tax return", flagLike));
 
@@ -295,7 +316,7 @@ describe("listing reminders within the time budget", () => {
       reminders: [{ title: "Oat milk" }],
       coverage: {
         reminderLists: 2,
-        reminderListsUnread: [{ identifier: "list-errands", title: "Errands", account: "iCloud" }],
+        reminderListsUnread: [{ identifier: "list-errands", title: "Errands", account: iCloud }],
       },
     });
   });

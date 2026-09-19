@@ -5,6 +5,7 @@ import type { Reminder, ReminderList } from "../../../src/domain/reminders/remin
 import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
 import { FakeReminderStore } from "../../support/fake-reminder-store.js";
+import { iCloud } from "../../support/calendar-accounts.js";
 
 // What an agent finds when it searches the user's reminders, with a fake reminder store behind
 // the tool. A search looks at titles and notes, open and completed reminders alike (REM-C5).
@@ -12,9 +13,9 @@ import { FakeReminderStore } from "../../support/fake-reminder-store.js";
 const shopping: ReminderList = {
   identifier: "list-shopping",
   title: "Shopping",
-  account: "iCloud",
+  account: iCloud,
 };
-const errands: ReminderList = { identifier: "list-errands", title: "Errands", account: "iCloud" };
+const errands: ReminderList = { identifier: "list-errands", title: "Errands", account: iCloud };
 
 const aReminder = (title: string, detail: Partial<Reminder> = {}): Reminder => ({
   identifier: `reminder-${title}`,

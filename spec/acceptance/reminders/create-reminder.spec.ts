@@ -6,6 +6,7 @@ import type { ReminderList } from "../../../src/domain/reminders/reminder.js";
 import { aServer } from "../../support/a-server.js";
 import { connectedTo } from "../../support/connected-client.js";
 import { FakeReminderStore } from "../../support/fake-reminder-store.js";
+import { iCloud } from "../../support/calendar-accounts.js";
 
 // What happens when an agent asks for a new reminder. Forks put it in a list that did not exist
 // by creating one, or in whichever list came first, and still reported the list asked for
@@ -13,8 +14,8 @@ import { FakeReminderStore } from "../../support/fake-reminder-store.js";
 
 const on = { APPLE_NATIVE_MCP_CAPABILITIES: "create_reminder" };
 
-const inbox: ReminderList = { identifier: "list-inbox", title: "Reminders", account: "iCloud" };
-const errands: ReminderList = { identifier: "list-errands", title: "Errands", account: "iCloud" };
+const inbox: ReminderList = { identifier: "list-inbox", title: "Reminders", account: iCloud };
+const errands: ReminderList = { identifier: "list-errands", title: "Errands", account: iCloud };
 
 describe("creating a reminder", () => {
   let reminderStore: FakeReminderStore;
@@ -43,7 +44,7 @@ describe("creating a reminder", () => {
       reminder: {
         title: "Buy stamps",
         isCompleted: false,
-        reminderList: { identifier: "list-inbox", title: "Reminders", account: "iCloud" },
+        reminderList: { identifier: "list-inbox", title: "Reminders", account: iCloud },
       },
     });
   });

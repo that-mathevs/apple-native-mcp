@@ -1,11 +1,12 @@
 import { FakeReminderStore } from "../support/fake-reminder-store.js";
 import { aReminderStore, aReminderStoreThatCreatesReminders } from "./reminder-store.contract.js";
+import { iCloud, onMyMac } from "../support/calendar-accounts.js";
 
 // The fake stands in for the real store in every acceptance scenario, so it answers the same
 // contract here, loaded the way a Mac's reminders often are: open and completed ones, some due.
 // The helper-backed store answers it on a Mac.
-const inbox = { identifier: "list-inbox", title: "Reminders", account: "iCloud" } as const;
-const errands = { identifier: "list-errands", title: "Errands", account: "On My Mac" } as const;
+const inbox = { identifier: "list-inbox", title: "Reminders", account: iCloud } as const;
+const errands = { identifier: "list-errands", title: "Errands", account: onMyMac } as const;
 
 aReminderStore({
   name: "the fake reminder store",
@@ -34,7 +35,7 @@ aReminderStore({
   },
 });
 
-const scratch = { identifier: "list-scratch", title: "scratch", account: "iCloud" } as const;
+const scratch = { identifier: "list-scratch", title: "scratch", account: iCloud } as const;
 
 aReminderStoreThatCreatesReminders({
   name: "the fake reminder store",

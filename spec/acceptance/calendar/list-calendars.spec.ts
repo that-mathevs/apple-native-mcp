@@ -2,17 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import { aClientOfTheCalendar } from "../../support/calendar-server.js";
 import { FakeEventStore } from "../../support/fake-event-store.js";
+import { exchange, iCloud, subscriptions } from "../../support/calendar-accounts.js";
 
 // What an agent learns about the calendars themselves. Upstream named a calendar by its
 // title alone, and titles repeat across accounts: two calendars called "Home" were one to it
 // (brightline 6bc977a, mjmcg 17cba98).
 
-const home = { identifier: "cal-1", title: "Home", account: "iCloud", acceptsNewEvents: true };
-const otherHome = { ...home, identifier: "cal-2", account: "Exchange" };
+const home = { identifier: "cal-1", title: "Home", account: iCloud, acceptsNewEvents: true };
+const otherHome = { ...home, identifier: "cal-2", account: exchange };
 const holidays = {
   identifier: "cal-3",
   title: "UK Holidays",
-  account: "Subscriptions",
+  account: subscriptions,
   acceptsNewEvents: false,
 };
 
@@ -35,9 +36,9 @@ describe("listing calendars", () => {
 
     expect(result.structuredContent).toMatchObject({
       calendars: [
-        { identifier: "cal-1", title: "Home", account: "iCloud" },
-        { identifier: "cal-2", title: "Home", account: "Exchange" },
-        { identifier: "cal-3", title: "UK Holidays", account: "Subscriptions" },
+        { identifier: "cal-1", title: "Home", account: iCloud },
+        { identifier: "cal-2", title: "Home", account: exchange },
+        { identifier: "cal-3", title: "UK Holidays", account: subscriptions },
       ],
     });
   });
