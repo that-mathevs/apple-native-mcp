@@ -115,12 +115,12 @@ describe("reading an event", () => {
   });
 
   it("given calendar access was never granted, refuses with a permission failure rather than reporting no such event", async () => {
-    eventStore.refuses("calendar-access-not-granted");
+    eventStore.refuses("calendar-permission-missing");
 
     const result = await readEvent({ identifier: "event-review" });
 
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "calendar-access-not-granted" },
+      failure: { code: "calendar-permission-missing" },
     });
   });
 });

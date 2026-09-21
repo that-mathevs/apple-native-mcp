@@ -126,13 +126,13 @@ describe("searching events", () => {
   });
 
   it("given calendar access was never granted, refuses with a permission failure rather than finding nothing", async () => {
-    eventStore.refuses("calendar-access-not-granted");
+    eventStore.refuses("calendar-permission-missing");
 
     const result = await searchEvents({ text: "review" });
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "calendar-access-not-granted" },
+      failure: { code: "calendar-permission-missing" },
     });
   });
 

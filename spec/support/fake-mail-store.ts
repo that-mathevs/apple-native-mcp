@@ -70,7 +70,7 @@ const mailboxKey = ({ mailAccount, path }: MailboxAddress): string =>
 
 /** What the helper answers when the user refused it Mail, word for word. */
 export const mailRefused: NamedFailure = {
-  code: "mail_permission_missing",
+  code: "mail-permission-missing",
   sentence:
     "apple-native-mcp cannot read Mail until it is allowed to, in System Settings > " +
     "Privacy & Security > Automation > apple-native-mcp > Mail.",
@@ -79,7 +79,7 @@ export const mailRefused: NamedFailure = {
 
 /** What the helper answers for a stale reference in a mailbox too large to look through. */
 export const emailReferenceStale: NamedFailure = {
-  code: "email_reference_stale",
+  code: "email-reference-stale",
   sentence:
     "The email was not where its reference said, and that mailbox holds 5045 emails, too many " +
     "to look through for it within 8 seconds. Nothing was read. List or search again for a " +
@@ -89,20 +89,20 @@ export const emailReferenceStale: NamedFailure = {
 
 /** What the helper answers for an identifier no mail account has, and a path no mailbox has. */
 const mailAccountUnknown = (identifier: string): NamedFailure => ({
-  code: "mail_account_unknown",
+  code: "mail-account-unknown",
   sentence: "No mail account has that identifier, so no mailbox was read.",
   evidence: identifier,
 });
 
 const mailboxUnknown = (path: readonly string[]): NamedFailure => ({
-  code: "mailbox_unknown",
+  code: "mailbox-unknown",
   sentence: "That mail account has no mailbox with that path, so no email was read.",
   evidence: path.join("/"),
 });
 
 /** What the helper answers when one mail account ran out of its time budget. */
 export const mailAccountTimedOut: NamedFailure = {
-  code: "mail_timed_out",
+  code: "mail-timed-out",
   sentence: "Mail did not answer within 8 seconds, so nothing was read.",
   evidence: "mailboxes",
 };

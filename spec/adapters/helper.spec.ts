@@ -15,6 +15,9 @@ import { succeeded } from "../../src/domain/failure.js";
 // already been passed by then.
 
 const dyingHelper = fileURLToPath(new URL("fixtures/a-helper-that-dies.mjs", import.meta.url));
+const refusingHelper = fileURLToPath(
+  new URL("fixtures/a-helper-that-refuses.mjs", import.meta.url),
+);
 
 const noon = new Date("2026-09-18T16:00:00Z");
 
@@ -55,5 +58,34 @@ describe("a helper that stops before it answers", () => {
 
     expect(created).toStrictEqual({ ok: true, value: { confirmed: false } });
     expect(requestsReceived()).toStrictEqual(["create_event"]);
+  });
+});
+
+// X-20: an agent branches on the code, so one idea has one spelling. The helper's protocol keeps
+// its own, which never changes once published, and the adapter translates what it sends.
+describe("a helper that refuses in the protocol's spelling", () => {
+  let helper: Helper | undefined;
+
+  const refusing = (code: string): Helper => {
+    process.env.A_HELPER_THAT_REFUSES_CODE = code;
+    helper = new Helper(() => Promise.resolve(succeeded(refusingHelper)));
+    return helper;
+  };
+
+  afterEach(() => {
+    helper?.stop();
+    delete process.env.A_HELPER_THAT_REFUSES_CODE;
+  });
+
+  it("gives the agent that failure spelt with hyphens, so one idea is never two codes", async () => {
+    const read = await calendarEventStore(refusing("calendar-permission-missing")).calendars();
+
+    expect(read).toMatchObject({ ok: false, failure: { code: "calendar-permission-missing" } });
+  });
+
+  it("given a code the server has never heard of, still gives it in the one spelling", async () => {
+    const read = await calendarEventStore(refusing("some_new_helper_failure")).calendars();
+
+    expect(read).toMatchObject({ ok: false, failure: { code: "some-new-helper-failure" } });
   });
 });

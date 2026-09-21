@@ -70,13 +70,16 @@ describe("listing calendars", () => {
 
   it("given calendar access was never granted, refuses and names the setting to enable rather than listing nothing", async () => {
     const eventStore = new FakeEventStore();
-    eventStore.refuses("calendar-access-not-granted");
+    eventStore.refuses("calendar-permission-missing");
 
     const result = await listingCalendars({}, eventStore);
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "calendar-access-not-granted", setting: "Privacy & Security > Calendars" },
+      failure: {
+        code: "calendar-permission-missing",
+        sentence: expect.stringContaining("Privacy & Security > Calendars") as string,
+      },
     });
   });
 });

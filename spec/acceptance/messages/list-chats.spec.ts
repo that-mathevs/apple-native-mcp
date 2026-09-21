@@ -86,7 +86,7 @@ describe("listing chats", () => {
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
       failure: {
-        code: "message_store_permission_missing",
+        code: "message-store-permission-missing",
         sentence: expect.stringContaining("Privacy & Security > Full Disk Access") as string,
       },
     });
@@ -98,7 +98,7 @@ describe("listing chats", () => {
     const result = await listChats();
 
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "message_store_not_found" },
+      failure: { code: "message-store-not-found" },
     });
   });
 
@@ -108,7 +108,7 @@ describe("listing chats", () => {
     const result = await listChats();
 
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "message_store_unreadable", evidence: "file is not a database" },
+      failure: { code: "message-store-unreadable", evidence: "file is not a database" },
     });
   });
 
@@ -139,7 +139,7 @@ describe("listing chats", () => {
 
     expect(result.structuredContent).toMatchObject({
       chats: [{ participants: [{ handle: "+15551230001" }, { handle: "ben@example.com" }] }],
-      coverage: { contactNamesUnavailable: { code: "contacts_permission_missing" } },
+      coverage: { contactNamesUnavailable: { code: "contacts-permission-missing" } },
     });
   });
 

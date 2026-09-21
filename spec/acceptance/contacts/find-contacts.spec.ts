@@ -252,7 +252,7 @@ describe("finding contacts", () => {
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
       failure: {
-        code: "contacts_permission_missing",
+        code: "contacts-permission-missing",
         sentence: expect.stringContaining("Privacy & Security > Contacts") as string,
       },
     });

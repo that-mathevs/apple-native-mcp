@@ -51,7 +51,7 @@ describe("listing mail accounts", () => {
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
       failure: {
-        code: "mail_permission_missing",
+        code: "mail-permission-missing",
         sentence: expect.stringContaining("Privacy & Security > Automation") as string,
       },
     });

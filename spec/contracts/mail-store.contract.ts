@@ -125,7 +125,7 @@ export const aMailStore = ({ name, build }: MailStoreUnderTest): void => {
         if (inbox === undefined) continue;
 
         const latest = await mailStore.latestEmails({ mailbox: inbox, newest: 3 });
-        if (!latest.ok && latest.failure.code === "mailbox_too_large") continue;
+        if (!latest.ok && latest.failure.code === "mailbox-too-large") continue;
         if (!latest.ok)
           throw new Error(`the latest emails could not be read: ${latest.failure.code}`);
         if (latest.value.emails.length > 0) return { inbox, emails: latest.value.emails };
@@ -258,7 +258,7 @@ export const aMailStore = ({ name, build }: MailStoreUnderTest): void => {
       });
 
       if (read.ok) expect(read.value).toBeUndefined();
-      else expect(read.failure.code).toBe("email_reference_stale");
+      else expect(read.failure.code).toBe("email-reference-stale");
     });
   });
 };

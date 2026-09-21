@@ -110,7 +110,7 @@ describe("reading a chat", () => {
     const result = await readChat({ chat: "iMessage;-;nobody" });
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toMatchObject({ failure: { code: "chat_unknown" } });
+    expect(result.structuredContent).toMatchObject({ failure: { code: "chat-unknown" } });
   });
 
   // ADR-0005: a failed send is not real traffic. Shown as a plain outgoing message, it would read
@@ -142,7 +142,7 @@ describe("reading a chat", () => {
       timestamp,
       service,
       textUnreadable: {
-        code: "message_text_unreadable",
+        code: "message-text-unreadable",
         sentence:
           "This message's text could not be read from the store, so it is answered without it.",
         evidence: "the archive ends inside a value",
@@ -157,7 +157,7 @@ describe("reading a chat", () => {
           identifier: "message-1",
           text: null,
           textUnreadable: {
-            code: "message_text_unreadable",
+            code: "message-text-unreadable",
             evidence: "the archive ends inside a value",
           },
         },
@@ -186,7 +186,7 @@ describe("reading a chat", () => {
 
     expect(result.structuredContent).toMatchObject({
       messages: [{ handle: "ben@example.com" }],
-      coverage: { contactNamesUnavailable: { code: "contacts_permission_missing" } },
+      coverage: { contactNamesUnavailable: { code: "contacts-permission-missing" } },
     });
   });
 });

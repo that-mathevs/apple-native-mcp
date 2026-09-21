@@ -305,7 +305,7 @@ describe("searching mail", () => {
   });
 
   const mailUnreadable = {
-    code: "mail_unreadable",
+    code: "mail-unreadable",
     sentence: "Mail could not be read, so nothing was listed or ruled out.",
     evidence: "Mail got an error: AppleEvent handler failed. (-10000)",
   };
@@ -347,7 +347,7 @@ describe("searching mail", () => {
 
     expect(subjectsIn(result)).toStrictEqual(["Boiler receipt"]);
     expect(result.structuredContent).toMatchObject({
-      unsearchedMailboxes: [{ mailbox: { path: ["Huge"] }, failure: { code: "mail_timed_out" } }],
+      unsearchedMailboxes: [{ mailbox: { path: ["Huge"] }, failure: { code: "mail-timed-out" } }],
     });
   });
 
@@ -388,10 +388,10 @@ describe("searching mail", () => {
     expect(mailStore.mailboxesSearched).toStrictEqual(["Personal/INBOX", "Personal/Huge"]);
     expect(result.structuredContent).toMatchObject({
       unsearchedMailboxes: [
-        { mailbox: { path: ["Huge"] }, failure: { code: "mail_timed_out" } },
+        { mailbox: { path: ["Huge"] }, failure: { code: "mail-timed-out" } },
         {
           mailbox: { path: ["Receipts"] },
-          failure: { code: "mailbox-not-asked", evidence: "Personal/Huge: mail_timed_out" },
+          failure: { code: "mailbox-not-asked", evidence: "Personal/Huge: mail-timed-out" },
         },
       ],
       unreadMailAccounts: [
@@ -433,7 +433,7 @@ describe("searching mail", () => {
       failure: {
         code: "mail-search-reached-nothing",
         sentence: "No mailbox could be searched, so nothing was found or ruled out.",
-        evidence: "Personal/INBOX: mail_unreadable",
+        evidence: "Personal/INBOX: mail-unreadable",
       },
     });
   });
@@ -604,7 +604,7 @@ describe("searching mail", () => {
             sentence:
               "This mailbox's matches could not be given a reference a later read can act on, " +
               "so they were left out. Search again.",
-            evidence: "Personal/Receipts: mail_unreadable",
+            evidence: "Personal/Receipts: mail-unreadable",
           },
         },
       ],
@@ -674,7 +674,7 @@ describe("searching mail", () => {
       partlySearchedMailboxes: [
         {
           mailbox: { path: ["INBOX"] },
-          failure: { code: "mailbox-bodies-unread", evidence: "Personal/INBOX: mail_unreadable" },
+          failure: { code: "mailbox-bodies-unread", evidence: "Personal/INBOX: mail-unreadable" },
         },
       ],
     });

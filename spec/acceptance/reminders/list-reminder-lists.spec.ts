@@ -66,7 +66,7 @@ describe("listing reminder lists", () => {
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
       failure: {
-        code: "reminders_permission_missing",
+        code: "reminders-permission-missing",
         sentence: expect.stringContaining("Privacy & Security > Reminders") as string,
       },
     });

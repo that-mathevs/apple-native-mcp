@@ -29,7 +29,7 @@ describe("the contact names messages are given", () => {
 
     const named = await contactNamesFrom(contactStore).namesOf(["+15551230001"], []);
 
-    expect(named).toMatchObject({ ok: false, failure: { code: "contacts_permission_missing" } });
+    expect(named).toMatchObject({ ok: false, failure: { code: "contacts-permission-missing" } });
   });
 
   // MSG-15 and upstream #58: one read of the whole address book per message took minutes.

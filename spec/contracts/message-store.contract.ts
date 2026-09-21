@@ -61,7 +61,7 @@ export const aMessageStore = ({ name, build }: MessageStoreUnderTest): void => {
 
       const read = await messageStore.messages({ chat: "iMessage;-;no-such-chat", limit: 5 });
 
-      expect(read).toMatchObject({ ok: false, failure: { code: "chat_unknown" } });
+      expect(read).toMatchObject({ ok: false, failure: { code: "chat-unknown" } });
     });
 
     it("answers messages to search newest first, never more than its ceiling, saying whether it stopped", async () => {
@@ -101,7 +101,7 @@ export const aMessageStore = ({ name, build }: MessageStoreUnderTest): void => {
         ceiling: 3,
       });
 
-      expect(read).toMatchObject({ ok: false, failure: { code: "chat_unknown" } });
+      expect(read).toMatchObject({ ok: false, failure: { code: "chat-unknown" } });
     });
   });
 };

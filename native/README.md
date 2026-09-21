@@ -27,7 +27,8 @@ line out, and nothing else ever reaches stdout: a single stray line of text brea
 for good. Anything meant for a human goes to stderr.
 
 **It fails by name, never by crashing.** Every failure is a stable code, one sentence, and the
-outside evidence verbatim.
+outside evidence verbatim. A code here parts its words with underscores and never changes once
+published; the server translates it to the one spelling an agent sees, parted by hyphens.
 
 | Code | When |
 |---|---|

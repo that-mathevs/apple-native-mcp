@@ -5,7 +5,7 @@ import { failed, succeeded } from "../../src/domain/failure.js";
 
 /** What the helper answers when the user refused contacts access, word for word. */
 export const contactsRefused: NamedFailure = {
-  code: "contacts_permission_missing",
+  code: "contacts-permission-missing",
   sentence:
     "apple-native-mcp cannot read your contacts until it is allowed to, in System Settings > " +
     "Privacy & Security > Contacts > apple-native-mcp.",
