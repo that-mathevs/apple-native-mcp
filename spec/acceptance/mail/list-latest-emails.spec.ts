@@ -177,7 +177,7 @@ describe("listing the latest mail", () => {
   });
 
   const mailUnreadable = {
-    code: "mail_unreadable",
+    code: "mail-unreadable",
     sentence: "Mail could not be read, so nothing was listed or ruled out.",
     evidence: "Mail got an error: AppleEvent handler failed. (-10000)",
   };
@@ -224,7 +224,7 @@ describe("listing the latest mail", () => {
     expect(result.structuredContent).toMatchObject({
       emails: [{ subject: "Standup notes" }],
       unreadMailAccounts: [
-        { mailAccount: { identifier: "account-personal" }, failure: { code: "mail_timed_out" } },
+        { mailAccount: { identifier: "account-personal" }, failure: { code: "mail-timed-out" } },
       ],
     });
   });

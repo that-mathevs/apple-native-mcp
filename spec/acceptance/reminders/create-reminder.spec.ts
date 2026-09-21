@@ -163,7 +163,7 @@ describe("creating a reminder", () => {
 
     const result = await createReminder({ title: "Buy stamps" });
 
-    expect(result.structuredContent).toMatchObject({ failure: { code: "reminders_timed_out" } });
+    expect(result.structuredContent).toMatchObject({ failure: { code: "reminders-timed-out" } });
     expect(reminderStore.created).toStrictEqual([]);
   });
 

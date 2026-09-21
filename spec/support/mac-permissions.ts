@@ -54,7 +54,7 @@ export const findingFor = (
       ? { grant, kind: "granted" }
       : { grant, kind: "missing", state: answer.value.state };
   }
-  return answer.failure.code === "message_store_permission_missing"
+  return answer.failure.code === "message-store-permission-missing"
     ? { grant, kind: "missing", state: "not granted" }
     : { grant, kind: "broken", code: answer.failure.code };
 };

@@ -5,7 +5,7 @@ import type { Note, NoteFolder } from "../../src/domain/notes/note.js";
 
 /** What the helper answers when the user has not let it script Notes, word for word. */
 export const notesRefused: NamedFailure = {
-  code: "notes_permission_missing",
+  code: "notes-permission-missing",
   sentence:
     "apple-native-mcp cannot read your notes until it is allowed to control Notes, in System " +
     "Settings > Privacy & Security > Automation > apple-native-mcp > Notes.",

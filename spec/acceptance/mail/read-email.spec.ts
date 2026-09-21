@@ -184,7 +184,7 @@ describe("reading one email", () => {
     });
 
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "mail_account_unknown", evidence: "account-gone" },
+      failure: { code: "mail-account-unknown", evidence: "account-gone" },
     });
   });
 
@@ -197,7 +197,7 @@ describe("reading one email", () => {
     });
 
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "mailbox_unknown", evidence: "Renamed since" },
+      failure: { code: "mailbox-unknown", evidence: "Renamed since" },
     });
   });
 
@@ -342,7 +342,7 @@ describe("reading one email", () => {
     const result = await readEmail(reference);
 
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "mail_permission_missing" },
+      failure: { code: "mail-permission-missing" },
     });
   });
 

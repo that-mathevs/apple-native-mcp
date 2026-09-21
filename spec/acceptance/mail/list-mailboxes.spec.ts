@@ -139,7 +139,7 @@ describe("listing mailboxes", () => {
     ]);
     expect(result.structuredContent).toMatchObject({
       mailboxes: [{ mailAccount: { identifier: "account-archive" }, path: ["INBOX"] }],
-      unreadMailAccounts: [{ mailAccount: workNamed, failure: { code: "mail_timed_out" } }],
+      unreadMailAccounts: [{ mailAccount: workNamed, failure: { code: "mail-timed-out" } }],
     });
   });
 
@@ -160,7 +160,7 @@ describe("listing mailboxes", () => {
     expect(result.structuredContent).toMatchObject({
       mailboxes: [{ mailAccount: personalNamed, path: ["INBOX"] }],
       unreadMailAccounts: [
-        { mailAccount: workNamed, failure: { code: "mail_timed_out" } },
+        { mailAccount: workNamed, failure: { code: "mail-timed-out" } },
         {
           mailAccount: { identifier: "account-archive", name: "Archive" },
           failure: {
@@ -168,7 +168,7 @@ describe("listing mailboxes", () => {
             sentence:
               "Mail stopped answering before this mail account was asked about, so it was " +
               "left alone: Mail can stay busy for minutes. Ask again later.",
-            evidence: "Work: mail_timed_out",
+            evidence: "Work: mail-timed-out",
           },
         },
       ],
@@ -178,7 +178,7 @@ describe("listing mailboxes", () => {
   it("given a mail account that failed some other way, still asks about the accounts after it", async () => {
     mailStore.holdsMailAccounts(personal, work);
     mailStore.cannotRead(personal, {
-      code: "mail_unreadable",
+      code: "mail-unreadable",
       sentence: "Mail could not be read, so nothing was listed or ruled out.",
       evidence: "Mail got an error: AppleEvent handler failed. (-10000)",
     });
@@ -188,7 +188,7 @@ describe("listing mailboxes", () => {
 
     expect(result.structuredContent).toMatchObject({
       mailboxes: [{ mailAccount: workNamed, path: ["INBOX"] }],
-      unreadMailAccounts: [{ mailAccount: personalNamed, failure: { code: "mail_unreadable" } }],
+      unreadMailAccounts: [{ mailAccount: personalNamed, failure: { code: "mail-unreadable" } }],
     });
   });
 
@@ -204,7 +204,7 @@ describe("listing mailboxes", () => {
       failure: {
         code: "mail-accounts-unread",
         sentence: "None of the 2 mail accounts could be read, so no mailbox was listed.",
-        evidence: "Personal: mail_timed_out; Work: mail_timed_out",
+        evidence: "Personal: mail-timed-out; Work: mail-timed-out",
       },
     });
   });
@@ -227,7 +227,7 @@ describe("listing mailboxes", () => {
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "mail_permission_missing" },
+      failure: { code: "mail-permission-missing" },
     });
   });
 
@@ -289,7 +289,7 @@ describe("listing mailboxes", () => {
     expect(mailStore.localMailboxesAsked).toBe(0);
     expect(result.structuredContent).toMatchObject({
       localMailboxes: [],
-      localMailboxesUnread: { code: "local-mailboxes-not-asked", evidence: "Work: mail_timed_out" },
+      localMailboxesUnread: { code: "local-mailboxes-not-asked", evidence: "Work: mail-timed-out" },
     });
   });
 

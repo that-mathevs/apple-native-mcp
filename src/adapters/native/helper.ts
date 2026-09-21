@@ -86,12 +86,29 @@ const unreadableAnswer = (evidence: string): NamedFailure => ({
 const text = (value: unknown): string | undefined =>
   typeof value === "string" ? value : undefined;
 
+/**
+ * The helper's spelling of a code, in the server's. The protocol parts a code's words with
+ * underscores and never changes one once published; an agent sees one spelling for every code,
+ * words parted by hyphens (X-20), so the translation happens here and nowhere else.
+ */
+const asWrittenForAnAgent = (code: string): string => code.replaceAll("_", "-");
+
+/** A refusal the helper sent with no code of its own, which is a failure like any other. */
+const unnamedFailure = (evidence: string): NamedFailure => ({
+  code: "helper-failure",
+  sentence: "The helper refused the request.",
+  evidence,
+});
+
 const asFailure = (failure: NonNullable<Response["failure"]>): NamedFailure => {
   const setting = text(failure.setting);
   const evidence = text(failure.evidence);
+  const code = text(failure.code);
+
+  if (code === undefined) return unnamedFailure(evidence ?? "");
 
   return {
-    code: text(failure.code) ?? "helper-failure",
+    code: asWrittenForAnAgent(code),
     sentence: text(failure.sentence) ?? "The helper refused the request.",
     ...(setting === undefined ? {} : { setting }),
     ...(evidence === undefined ? {} : { evidence }),

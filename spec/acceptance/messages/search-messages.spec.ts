@@ -122,7 +122,7 @@ describe("searching messages", () => {
       timestamp: new Date("2026-09-18T13:00:00Z"),
       service: "iMessage",
       textUnreadable: {
-        code: "message_text_unreadable",
+        code: "message-text-unreadable",
         sentence:
           "This message's text could not be read from the store, so it is answered without it.",
       },
@@ -138,7 +138,7 @@ describe("searching messages", () => {
 
     const result = await search({ query: "rope", chat: "iMessage;-;nobody" });
 
-    expect(result.structuredContent).toMatchObject({ failure: { code: "chat_unknown" } });
+    expect(result.structuredContent).toMatchObject({ failure: { code: "chat-unknown" } });
   });
 
   // MSG-84: a search for nothing that found everything handed an agent the whole store.

@@ -102,7 +102,7 @@ describe("reading a note", () => {
     const result = await readNote({ identifier: "note-shopping" });
 
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "notes_permission_missing" },
+      failure: { code: "notes-permission-missing" },
     });
   });
 

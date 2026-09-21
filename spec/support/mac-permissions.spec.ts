@@ -49,7 +49,7 @@ describe("settling a Mac spec's permissions", () => {
   it("given Full Disk Access missing, says how to add the helper, with its path", () => {
     const missing = findingFor(
       "fullDiskAccess",
-      failed({ code: "message_store_permission_missing", sentence: "…" }),
+      failed({ code: "message-store-permission-missing", sentence: "…" }),
     );
 
     expect(whatStandsInTheWay([missing], helperPath)).toMatchObject({

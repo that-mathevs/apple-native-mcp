@@ -194,7 +194,7 @@ describe("searching notes", () => {
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "notes_permission_missing" },
+      failure: { code: "notes-permission-missing" },
     });
   });
 });

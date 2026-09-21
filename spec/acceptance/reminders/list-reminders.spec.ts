@@ -219,7 +219,7 @@ describe("listing reminders", () => {
 
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
-      failure: { code: "reminders_permission_missing" },
+      failure: { code: "reminders-permission-missing" },
     });
   });
 });
@@ -328,6 +328,6 @@ describe("listing reminders within the time budget", () => {
     const result = await client.callTool({ name: "list_reminders", arguments: {} });
 
     expect(result.isError).toBe(true);
-    expect(result.structuredContent).toMatchObject({ failure: { code: "reminders_timed_out" } });
+    expect(result.structuredContent).toMatchObject({ failure: { code: "reminders-timed-out" } });
   });
 });

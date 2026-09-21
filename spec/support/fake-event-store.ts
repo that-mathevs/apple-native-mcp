@@ -13,11 +13,14 @@ import type { Range } from "../../src/domain/calendar/range.js";
 import type { NamedFailure, Outcome } from "../../src/domain/failure.js";
 import { failed, succeeded } from "../../src/domain/failure.js";
 
+/** What the helper answers when the user refused calendar access, word for word. */
 const failures: Record<string, NamedFailure> = {
-  "calendar-access-not-granted": {
-    code: "calendar-access-not-granted",
-    sentence: "Calendar access has not been granted to apple-native-mcp.",
-    setting: "Privacy & Security > Calendars",
+  "calendar-permission-missing": {
+    code: "calendar-permission-missing",
+    sentence:
+      "apple-native-mcp cannot read your calendar until it is allowed to, in System Settings > " +
+      "Privacy & Security > Calendars > apple-native-mcp.",
+    evidence: "refused",
   },
 };
 

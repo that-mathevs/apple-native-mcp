@@ -13,7 +13,7 @@ import type { Message } from "../../src/domain/messages/message.js";
 
 /** What the helper answers when it may not read the message store, word for word. */
 export const messageStorePermissionMissing: NamedFailure = {
-  code: "message_store_permission_missing",
+  code: "message-store-permission-missing",
   sentence:
     "apple-native-mcp cannot read your messages until it is allowed to, in System Settings > " +
     "Privacy & Security > Full Disk Access > apple-native-mcp.",
@@ -22,21 +22,21 @@ export const messageStorePermissionMissing: NamedFailure = {
 
 /** What the helper answers when this Mac has no message store at all. */
 export const messageStoreNotFound: NamedFailure = {
-  code: "message_store_not_found",
+  code: "message-store-not-found",
   sentence: "This Mac has no message store, so there are no messages to read.",
   evidence: "No such file or directory",
 };
 
 /** What the helper answers when the store is there but will not open as one. */
 export const messageStoreUnreadable: NamedFailure = {
-  code: "message_store_unreadable",
+  code: "message-store-unreadable",
   sentence: "The message store is there but could not be read, so nothing was read.",
   evidence: "file is not a database",
 };
 
 /** What the helper answers for a chat identifier no chat in the store has. */
 export const chatUnknown: NamedFailure = {
-  code: "chat_unknown",
+  code: "chat-unknown",
   sentence: "No chat has that identifier, so nothing was read.",
   evidence: "iMessage;-;nobody",
 };

@@ -48,6 +48,8 @@ _Avoid_: whitelist, safe list
 
 **Named failure**:
 A failure carrying a code, one sentence saying what didn't happen, and the evidence verbatim. A
+code parts its words with hyphens, whatever the store it came from: the helper's protocol spells
+its own with underscores, and the adapter translates them. A
 **permission failure** is the named failure for a missing macOS grant, and says which setting to
 change and where; while nobody has been asked, there is no setting yet, so it says to run setup.
 _Avoid_: error message, access denied, failure envelope

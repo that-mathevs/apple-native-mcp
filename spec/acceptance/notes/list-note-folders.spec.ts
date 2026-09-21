@@ -53,7 +53,7 @@ describe("listing note folders", () => {
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
       failure: {
-        code: "notes_permission_missing",
+        code: "notes-permission-missing",
         sentence: expect.stringContaining("Automation") as string,
       },
     });

@@ -11,7 +11,7 @@ import type { Reminder, ReminderList } from "../../src/domain/reminders/reminder
 
 /** What the helper answers when the user refused reminders access, word for word. */
 export const remindersRefused: NamedFailure = {
-  code: "reminders_permission_missing",
+  code: "reminders-permission-missing",
   sentence:
     "apple-native-mcp cannot read your reminders until it is allowed to, in System Settings > " +
     "Privacy & Security > Reminders > apple-native-mcp.",
@@ -20,7 +20,7 @@ export const remindersRefused: NamedFailure = {
 
 /** What the helper answers when no reminder list answered within its time budget. */
 export const remindersTimedOut: NamedFailure = {
-  code: "reminders_timed_out",
+  code: "reminders-timed-out",
   sentence: "No reminder list answered within 2 seconds, so nothing was read.",
   evidence: "2 reminder lists",
 };
@@ -107,7 +107,7 @@ export class FakeReminderStore implements ReminderStore {
     );
     if (reminderList === undefined) {
       return Promise.resolve(
-        failed({ code: "reminder_list_unknown", sentence: "The store has no such reminder list." }),
+        failed({ code: "reminder-list-unknown", sentence: "The store has no such reminder list." }),
       );
     }
 
