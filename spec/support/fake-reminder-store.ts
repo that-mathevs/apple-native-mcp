@@ -120,9 +120,19 @@ export class FakeReminderStore implements ReminderStore {
     };
     this.#reminders = [...this.#reminders, saved];
 
+    if (reminder.notes !== undefined) this.#notes.set(saved.identifier, reminder.notes);
+
     return Promise.resolve(
       succeeded(
-        this.#confirms ? { reminder: saved, confirmed: true, alerts: 0 } : { confirmed: false },
+        this.#confirms
+          ? {
+              reminder: saved,
+              confirmed: true,
+              alerts: 0,
+              // As the helper answers it: notes that say nothing are no notes.
+              hasNotes: (reminder.notes ?? "") !== "",
+            }
+          : { confirmed: false },
       ),
     );
   }

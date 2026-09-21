@@ -12,10 +12,6 @@ struct SearchingTheRemindersSpec {
       + #""includeCompleted":true,"matching":\#(quoted(text))}"#
   }
 
-  func quoted(_ text: String) -> String {
-    String(decoding: try! JSONEncoder().encode(text), as: UTF8.self)
-  }
-
   // gene-jelly c5a0edd read titles only, so a reminder whose detail was in its notes was not found.
   @Test("given text found only in a reminder's notes, finds it, and sends the notes nowhere")
   func findsTextInNotes() {

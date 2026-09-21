@@ -14,6 +14,7 @@ export type CreateReminderRequest = GivenDue & {
   readonly title: string;
   /** The reminder list, by identifier or exact title. The default reminder list when left out. */
   readonly reminderList?: string;
+  readonly notes?: string;
   /** Create it even though an open reminder in that list already has the same title. */
   readonly evenIfDuplicate?: boolean;
 };
@@ -45,7 +46,7 @@ const reminderListFor = async (
  */
 export const createReminder = async (
   dependencies: CreateReminderDependencies,
-  { title, reminderList, evenIfDuplicate, ...given }: CreateReminderRequest,
+  { title, reminderList, notes, evenIfDuplicate, ...given }: CreateReminderRequest,
 ): Promise<Outcome<CreatedReminder>> => {
   const { reminderStore } = dependencies;
 
@@ -71,5 +72,6 @@ export const createReminder = async (
     title,
     reminderListIdentifier: list.value.identifier,
     ...(due.value === undefined ? {} : { due: due.value }),
+    ...(notes === undefined ? {} : { notes }),
   });
 };

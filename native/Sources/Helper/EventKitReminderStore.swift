@@ -75,6 +75,7 @@ final class EventKitReminderStore: ReminderStore, @unchecked Sendable {
     saved.title = new.title
     saved.calendar = calendar
     saved.dueDateComponents = new.due.map(components)
+    saved.notes = new.notes
 
     do {
       try store.save(saved, commit: true)

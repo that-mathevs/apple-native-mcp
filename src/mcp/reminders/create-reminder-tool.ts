@@ -32,6 +32,10 @@ const createReminderInput = {
       "The time it is due. With an offset it is that instant; without one it is the time on " +
         "the user's own clock.",
     ),
+  notes: z
+    .string()
+    .optional()
+    .describe("Notes to store on it. They are kept as given, and never reported back in full."),
   evenIfDuplicate: z
     .boolean()
     .optional()
@@ -59,7 +63,15 @@ export const createReminderTool = (dependencies: CreateReminderToolDependencies)
           "Unconfirmed: the reminder may have been created, but the store could not show it. " +
             "Look for it before creating it again.",
         ),
-      reminder: reminderRecordOutput.optional(),
+      reminder: reminderRecordOutput
+        .extend({
+          /**
+           * Whether the store holds notes on it, never the notes themselves (ADR-0006). Left out
+           * when the store could not be read afterwards, which says nothing either way.
+           */
+          hasNotes: z.boolean().optional(),
+        })
+        .optional(),
     },
     annotations: {
       readOnlyHint: false,
@@ -68,22 +80,30 @@ export const createReminderTool = (dependencies: CreateReminderToolDependencies)
       openWorldHint: false,
     },
     capability: "create_reminder",
-    call: async ({ title, reminderList, dueDate, dueTime, evenIfDuplicate }) => {
+    call: async ({ title, reminderList, dueDate, dueTime, notes, evenIfDuplicate }) => {
       const { timeZone } = dependencies;
       const created = await createReminder(dependencies, {
         title,
         ...(reminderList === undefined ? {} : { reminderList }),
         ...(dueDate === undefined ? {} : { dueDate: dayWritten(dueDate) }),
         ...(dueTime === undefined ? {} : { dueTime: instantWritten(timeZone, dueTime) }),
+        ...(notes === undefined ? {} : { notes }),
         ...(evenIfDuplicate === undefined ? {} : { evenIfDuplicate }),
       });
 
       if (!created.ok) return refusing(created.failure);
 
-      const { reminder, confirmed } = created.value;
+      const { reminder, confirmed, hasNotes } = created.value;
       return reporting({
         outcome: confirmed ? "created" : "unconfirmed",
-        ...(reminder === undefined ? {} : { reminder: reminderRecord(reminder, timeZone) }),
+        ...(reminder === undefined
+          ? {}
+          : {
+              reminder: {
+                ...reminderRecord(reminder, timeZone),
+                ...(hasNotes === undefined ? {} : { hasNotes }),
+              },
+            }),
       });
     },
   });

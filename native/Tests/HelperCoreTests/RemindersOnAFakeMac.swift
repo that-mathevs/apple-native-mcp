@@ -101,8 +101,8 @@ struct FakeReminderStore: ReminderStore {
     if let said = refusesToSave { throw ReminderNotSaved(evidence: said) }
     record.saved.append(reminder)
     return Reminder(
-      identifier: "reminder:new:\(record.saved.count)", title: reminder.title, notes: nil,
-      isCompleted: false, due: reminder.due, reminderList: reminderList)
+      identifier: "reminder:new:\(record.saved.count)", title: reminder.title,
+      notes: reminder.notes, isCompleted: false, due: reminder.due, reminderList: reminderList)
   }
 
   /// What it saved, read back as it would be: in the list it went to, with no alert on it.
@@ -119,7 +119,7 @@ struct FakeReminderStore: ReminderStore {
 
     return HeldReminder(
       reminder: Reminder(
-        identifier: identifier, title: saved.title, notes: nil, isCompleted: false,
+        identifier: identifier, title: saved.title, notes: saved.notes, isCompleted: false,
         due: saved.due, reminderList: list),
       alerts: 0)
   }
@@ -163,6 +163,11 @@ struct FakeReminderStore: ReminderStore {
 }
 
 func aReminderStore() -> FakeReminderStore { FakeReminderStore() }
+
+/// A string as JSON writes it, quotes and all, for building a request line.
+func quoted(_ text: String) -> String {
+  String(decoding: try! JSONEncoder().encode(text), as: UTF8.self)
+}
 
 /// Reading a fake Mac's reminders at a fixed instant, so a scenario can say when the deadline is.
 func readingReminders(_ store: FakeReminderStore, at now: Date) -> RemindersReading {

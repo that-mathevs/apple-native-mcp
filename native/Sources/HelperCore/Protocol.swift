@@ -451,11 +451,18 @@ private func readNewReminder(_ fields: [String: Any]) -> NewReminder? {
     !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   else { return nil }
 
+  // Notes are optional, and anything but text is not notes.
+  let notesField = fields["notes"]
+  guard notesField == nil || notesField is String else { return nil }
+  let notes = notesField as? String
+
   guard let dueField = fields["due"] else {
-    return NewReminder(title: title, reminderListIdentifier: reminderListIdentifier, due: nil)
+    return NewReminder(
+      title: title, reminderListIdentifier: reminderListIdentifier, due: nil, notes: notes)
   }
   guard let due = readDue(dueField) else { return nil }
-  return NewReminder(title: title, reminderListIdentifier: reminderListIdentifier, due: due)
+  return NewReminder(
+    title: title, reminderListIdentifier: reminderListIdentifier, due: due, notes: notes)
 }
 
 /// `{"date":"2026-09-25"}`, a real day with no time of day, or `{"time":…}`, an instant.

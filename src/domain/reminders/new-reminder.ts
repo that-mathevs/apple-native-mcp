@@ -8,6 +8,8 @@ export type NewReminder = {
   readonly title: string;
   readonly reminderListIdentifier: string;
   readonly due?: Due;
+  /** Stored as given, and never reported back in full: an index holds no notes (ADR-0006). */
+  readonly notes?: string;
 };
 
 /** How a caller says when a reminder is due: a day, or an instant, or neither. */

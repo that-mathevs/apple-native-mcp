@@ -30,6 +30,8 @@ export type CreatedReminder = {
   readonly confirmed: boolean;
   /** How many alerts the store holds on it, when it could be read back: a due time adds none. */
   readonly alerts?: number;
+  /** Whether the store holds notes on it, when it could be read back. */
+  readonly hasNotes?: boolean;
 };
 
 /**

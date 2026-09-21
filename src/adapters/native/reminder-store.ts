@@ -76,22 +76,25 @@ export const helperReminderStore = (helper: Helper): ReminderStore => ({
       reminderListIdentifier: reminder.reminderListIdentifier,
       title: reminder.title,
       ...(reminder.due === undefined ? {} : { due: asDueRecord(reminder.due) }),
+      ...(reminder.notes === undefined ? {} : { notes: reminder.notes }),
     });
 
     // The helper stopped, or was stopped, with the request in hand: it may have saved it.
     if (!answered.ok && wentUnanswered(answered.failure)) return succeeded({ confirmed: false });
     if (!answered.ok) return failed(answered.failure);
 
-    const { reminder: saved, confirmed, alerts } = answered.value as {
+    const { reminder: saved, confirmed, alerts, hasNotes } = answered.value as {
       reminder: ReminderRecord;
       confirmed: boolean;
       alerts: number | null;
+      hasNotes: boolean | null;
     };
 
     return succeeded({
       reminder: asReminder(saved),
       confirmed,
       ...(alerts === null ? {} : { alerts }),
+      ...(hasNotes === null ? {} : { hasNotes }),
     });
   },
 
