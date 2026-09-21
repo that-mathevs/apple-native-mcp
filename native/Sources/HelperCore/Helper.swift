@@ -89,6 +89,7 @@ public struct Helper: Sendable {
           "reminder": $0.reminder.asFields,
           "confirmed": $0.confirmed,
           "alerts": $0.alerts.map { $0 as Any } ?? NSNull(),
+          "hasNotes": $0.hasNotes.map { $0 as Any } ?? NSNull(),
         ]
       }
     case .contactsPermission:

@@ -81,11 +81,14 @@ public struct NewReminder: Equatable, Sendable {
   public let title: String
   public let reminderListIdentifier: String
   public let due: Due?
+  /// Saved as given, and never sent back: an index keeps to small fixed fields (ADR-0006).
+  public let notes: String?
 
-  public init(title: String, reminderListIdentifier: String, due: Due?) {
+  public init(title: String, reminderListIdentifier: String, due: Due?, notes: String? = nil) {
     self.title = title
     self.reminderListIdentifier = reminderListIdentifier
     self.due = due
+    self.notes = notes
   }
 }
 
@@ -107,4 +110,6 @@ struct CreatedReminder: Equatable, Sendable {
   let confirmed: Bool
   /// How many alerts the store holds on it, known only when it could be read back.
   let alerts: Int?
+  /// Whether the store holds notes on it, known only when it could be read back.
+  let hasNotes: Bool?
 }

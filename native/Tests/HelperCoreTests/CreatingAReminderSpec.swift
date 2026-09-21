@@ -72,6 +72,31 @@ struct CreatingAReminderSpec {
     #expect(response.contains(#""alerts":0"#))
   }
 
+  // boutquin 8a5d2e0: notes were built into a command line and lost at the first quote. They are
+  // saved as given, and answered for only by whether the store holds any (ADR-0006).
+  @Test("given notes, saves them as given and says the reminder has notes, without sending them")
+  func savesNotesAndSaysItHasThem() {
+    let store = aReminderStore().holding(errands)
+    let notes = #"Ask about "the boiler" \ £40"#
+
+    let response = helperReading(store).respond(
+      to: creating(stamps + #","notes":\#(quoted(notes))"#))
+
+    #expect(store.record.saved.map(\.notes) == [notes])
+    #expect(response.contains(#""hasNotes":true"#))
+    #expect(!response.contains("boiler"))
+  }
+
+  @Test("given no notes, saves none and says the reminder has none")
+  func saysWhenThereAreNoNotes() {
+    let store = aReminderStore().holding(errands)
+
+    let response = helperReading(store).respond(to: creating(stamps))
+
+    #expect(store.record.saved.map(\.notes) == [nil])
+    #expect(response.contains(#""hasNotes":false"#))
+  }
+
   @Test("given a reminder list the store does not have, refuses and saves nothing")
   func refusesAnUnknownList() {
     let store = aReminderStore().holding(groceries)
@@ -122,6 +147,7 @@ struct CreatingAReminderSpec {
       stampsWith(#""due":{"date":"next friday"}"#),
       stampsWith(#""due":{"date":"2026-02-30"}"#),
       stampsWith(#""due":{"time":"five o'clock"}"#),
+      #""reminderListIdentifier":"list-errands","title":"Buy stamps","notes":7"#,
     ])
   func refusesWhatItCannotRead(fields: String) {
     let store = aReminderStore().holding(errands)

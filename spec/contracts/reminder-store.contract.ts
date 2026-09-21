@@ -221,6 +221,32 @@ export const aReminderStoreThatCreatesReminders = ({
       expect(created).toMatchObject({ ok: true, value: { reminder: { due: { at } }, alerts: 0 } });
     });
 
+    // boutquin 8a5d2e0: notes were built into a command line and lost at the first quote. They
+    // never come back in a record, so a search for their own text is what shows they were kept.
+    it("given notes, holds them as given: a search for their text finds that reminder", async () => {
+      const { reminderStore, reminderList } = await build();
+      const marker = `zq7f3a${String(Date.now())}${String(Math.random()).slice(2, 8)}`;
+      const notes = `Contract check: "${marker}" \\ £40\nsecond line`;
+
+      const created = await reminderStore.create({
+        title: "Contract check: notes",
+        reminderListIdentifier: reminderList,
+        notes,
+      });
+
+      expect(created).toMatchObject({ ok: true, value: { hasNotes: true } });
+
+      const found = await reminderStore.reminders({
+        reminderLists: [reminderList],
+        includeCompleted: true,
+        matching: `"${marker}" \\ £40`,
+      });
+
+      expect(found.ok && found.value.reminders.map(({ title }) => title)).toStrictEqual([
+        "Contract check: notes",
+      ]);
+    });
+
     // mjmcg d4ec06d: a reminder built out of a command line lost everything after a quote.
     it("given a title full of quotes, backslashes, line breaks and script text, holds it exactly as given", async () => {
       const { reminderStore, reminderList } = await build();

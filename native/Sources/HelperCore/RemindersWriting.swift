@@ -32,10 +32,13 @@ struct RemindersWriting: Sendable {
     do {
       let saved = try store.save(reminder, in: reminderList)
       guard let held = store.reminder(identifier: saved.identifier) else {
-        return .success(CreatedReminder(reminder: saved, confirmed: false, alerts: nil))
+        return .success(
+          CreatedReminder(reminder: saved, confirmed: false, alerts: nil, hasNotes: nil))
       }
       return .success(
-        CreatedReminder(reminder: held.reminder, confirmed: true, alerts: held.alerts))
+        CreatedReminder(
+          reminder: held.reminder, confirmed: true, alerts: held.alerts,
+          hasNotes: !(held.reminder.notes ?? "").isEmpty))
     } catch {
       return .failure(.reminderNotSaved(evidence: error.evidence))
     }

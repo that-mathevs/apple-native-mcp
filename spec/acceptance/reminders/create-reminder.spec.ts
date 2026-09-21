@@ -200,6 +200,45 @@ describe("creating a reminder", () => {
     expect(reminderStore.created).toMatchObject([{ title }]);
   });
 
+  // boutquin 8a5d2e0 and upstream #64: notes were built into a command line and lost at the first
+  // quote. They are never reported back in full: an index keeps to small fixed fields (ADR-0006).
+  it("given notes, hands them to the store exactly as given and reports that the reminder has notes", async () => {
+    const notes = 'Ask about "the boiler" \\ £40\nsecond line "); do shell script "id';
+
+    const result = await createReminder({ title: "Call the plumber", notes });
+
+    expect(reminderStore.created).toMatchObject([{ notes }]);
+    expect(result.structuredContent).toMatchObject({
+      outcome: "created",
+      reminder: { hasNotes: true },
+    });
+  });
+
+  it("given notes that say nothing, reports the reminder has none: empty notes are no notes", async () => {
+    const result = await createReminder({ title: "Buy stamps", notes: "" });
+
+    expect(result.structuredContent).toMatchObject({ reminder: { hasNotes: false } });
+  });
+
+  // Saying the store showed no notes, when it showed nothing at all, would not be the truth.
+  it("given the store could not show the reminder afterwards, says nothing about its notes", async () => {
+    reminderStore.losesSightOfWhatItSaves();
+
+    const result = await createReminder({ title: "Call the plumber", notes: "the boiler" });
+
+    expect(result.structuredContent).toMatchObject({ outcome: "unconfirmed" });
+    expect(result.structuredContent).not.toHaveProperty("reminder.hasNotes");
+  });
+
+  it("given no notes, hands the store none and reports that the reminder has none", async () => {
+    const result = await createReminder({ title: "Buy stamps" });
+
+    expect(reminderStore.created).toStrictEqual([
+      { title: "Buy stamps", reminderListIdentifier: "list-inbox" },
+    ]);
+    expect(result.structuredContent).toMatchObject({ reminder: { hasNotes: false } });
+  });
+
   // therealap 1a09e54 reported success before looking. A retry after a false failure makes two.
   it("given the store took the reminder but could not show it afterwards, reports an unconfirmed outcome and not a failure", async () => {
     reminderStore.losesSightOfWhatItSaves();
