@@ -92,6 +92,27 @@ export const whatStandsInTheWay = (
   };
 };
 
+/**
+ * What a build's signature says about whether macOS will remember its permissions, or nothing
+ * when it will. A build signed ad hoc, or not at all, is known by its code hash, so every rebuild
+ * is a new program and the last one's grants are gone: a session lost the calendar, reminders and
+ * contacts grants and Full Disk Access that way, and re-signing did not bring them back.
+ */
+export const theSigningWarning = (codesignSays: string): string | undefined =>
+  /Signature=adhoc|not signed at all/u.test(codesignSays)
+    ? "This helper is signed ad hoc, so macOS forgets its permissions whenever it is rebuilt, " +
+      "and asks for them again. Build it as the maintainer's own: " +
+      'HELPER_SIGNING_IDENTITY="Apple Development" npm run helper:build'
+    : undefined;
+
+/** What `codesign` says about a build, which it says on stderr. */
+const howItIsSigned = (helperPath: string): Promise<string> =>
+  new Promise((resolve) => {
+    execFile("codesign", ["--display", "--verbose=2", helperPath], (_, stdout, stderr) => {
+      resolve(`${stdout}${stderr}`);
+    });
+  });
+
 const opening = (pane: string): Promise<void> =>
   new Promise((resolve) => {
     const url = `x-apple.systempreferences:com.apple.preference.security?${pane}`;
@@ -116,6 +137,11 @@ export const settledBeforeRunning = async (
   helperPath: string,
   grants: readonly Grant[],
 ): Promise<void> => {
+  // Said before anything is asked for: a permission granted to a build macOS will forget is a
+  // prompt the user answers again on the next rebuild.
+  const warning = theSigningWarning(await howItIsSigned(helperPath));
+  if (warning !== undefined) console.warn(warning);
+
   const findings: Finding[] = [];
   for (const grant of grants) findings.push(findingFor(grant, await answerFor(helper, grant)));
 
